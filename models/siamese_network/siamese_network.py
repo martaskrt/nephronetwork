@@ -241,7 +241,7 @@ def main():
               'num_workers': args.num_workers}
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile)
-    print(test_y)
+    print(train_y)
     import sys
     sys.exit(0)
     training_set = KidneyDataset(train_X, train_y)
