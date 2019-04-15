@@ -190,9 +190,9 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
                     loss = F.cross_entropy(output, target)
 
-                    accurate_labels = torch.sum(torch.argmax(output, dim=1) == target).cpu()
+                    accurate_labels += torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
-                    all_labels = all_labels + len(target)
+                    all_labels += len(target)
 
                 accuracy = 100. * accurate_labels / all_labels
                 print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels, all_labels, accuracy, loss))
