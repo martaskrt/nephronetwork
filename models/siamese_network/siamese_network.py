@@ -157,6 +157,14 @@ def train(args, train_dataset, val_dataset, max_epochs):
     # 1. filter out unnecessary keys
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
     pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 3, 3)
+    pretrained_dict['fc6b.conv6b_s1.weight'] = model_dict['fc6b.conv6b_s1.weight']
+    pretrained_dict['fc6b.conv6b_s1.bias'] = model_dict['fc6b.conv6b_s1.bias']
+    pretrained_dict['fc6c.fc7.weight'] = model_dict['fc6c.fc7.weight']
+    pretrained_dict['fc6c.fc7.bias'] = model_dict['fc6c.fc7.bias']
+    pretrained_dict['fc7_new.fc7.weight'] = model_dict['fc7_new.fc7.weight']
+    pretrained_dict['fc7_new.fc7.bias'] = model_dict['fc7_new.fc7.bias']
+    pretrained_dict['classifier_new.fc8.weight'] = model_dict['classifier_new.fc8.weight']
+    pretrained_dict['classifier_new.fc8.bias'] = model_dict['classifier_new.fc8.bias']
     # 2. overwrite entries in the existing state dict
     model_dict.update(pretrained_dict)
     # 3. load the new state dict
