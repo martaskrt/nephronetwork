@@ -238,7 +238,7 @@ def main():
               'shuffle': True,
               'num_workers': args.num_workers}
 
-    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile)
+    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile, contrast=2)
 
     training_set = KidneyDataset(train_X, train_y)
     training_generator = DataLoader(training_set, **params)
