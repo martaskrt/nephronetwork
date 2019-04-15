@@ -6,6 +6,7 @@ import os
 from PIL import Image
 import random
 import torch
+from tqdm import tqdm
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
@@ -152,7 +153,7 @@ def train(args, device, train_dataset, val_dataset, max_epochs):
     optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
                                 weight_decay=hyperparams['weight_decay'])
 
-    for epoch in range(max_epochs):
+    for epoch in tqdm(range(max_epochs)):
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
             output = net(data)
