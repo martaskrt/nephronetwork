@@ -196,11 +196,15 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
                     loss = F.cross_entropy(output, target)
 
+                    output_softmax = torch.nn.Softmax(output)
+                    print(output_softmax)
+
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
                     all_labels_val += len(target)
 
-                    class_pred = torch.argmax(output, dim=1)
-                    print(process_results.get_metrics(y_score=class_pred.cpu().numpy(), y_true=target.cpu().numpy()))
+                    pred_prob = torch.max(output_softmax, dim=1)
+                    print(pred_prob)
+                    print(process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy()))
 
                 accuracy = 100. * accurate_labels_val / all_labels_val
                 print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss))
