@@ -165,35 +165,36 @@ def train(args, train_dataset, val_dataset, max_epochs):
                        100. * batch_idx * args.batch_size / len(train_dataset),
                 loss.item()))
 
-            if (epoch % 10) == 0:
-                checkpoint = {'epoch': epoch,
-                              'loss': loss,
-                              'hyperparams': hyperparams,
-                              'model_state_dict': net.state_dict(),
-                              'optimizer': optimizer.state_dict()}
-                if not os.path.isdir(args.dir):
-                    os.makedirs(args.dir)
-                path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
-                torch.save(checkpoint, path_to_checkpoint)
+            # if (epoch % 10) == 0:
+            #     checkpoint = {'epoch': epoch,
+            #                   'loss': loss,
+            #                   'hyperparams': hyperparams,
+            #                   'model_state_dict': net.state_dict(),
+            #                   'optimizer': optimizer.state_dict()}
+            #     if not os.path.isdir(args.dir):
+            #         os.makedirs(args.dir)
+            #     path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
+            #     torch.save(checkpoint, path_to_checkpoint)
 
-        with torch.set_grad_enabled(False):
-            accurate_labels = 0
-            all_labels = 0
-            loss = 0
-            for batch_idx, (data, target) in enumerate(val_dataset):
-                net.zero_grad()
-                optimizer.zero_grad()
-                output = net(data)
-                target = target.type(torch.LongTensor).to(device)
 
-                loss = F.cross_entropy(output, target)
+            with torch.set_grad_enabled(False):
+                accurate_labels = 0
+                all_labels = 0
+                loss = 0
+                for batch_idx, (data, target) in enumerate(val_dataset):
+                    net.zero_grad()
+                    optimizer.zero_grad()
+                    output = net(data)
+                    target = target.type(torch.LongTensor).to(device)
 
-                accurate_labels = torch.sum(torch.argmax(output, dim=1) == target).cpu()
+                    loss = F.cross_entropy(output, target)
 
-                all_labels = all_labels + len(target)
+                    accurate_labels = torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
-            accuracy = 100. * accurate_labels / all_labels
-            print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels, all_labels, accuracy, loss))
+                    all_labels = all_labels + len(target)
+
+                accuracy = 100. * accurate_labels / all_labels
+                print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels, all_labels, accuracy, loss))
 
 
 def main():
