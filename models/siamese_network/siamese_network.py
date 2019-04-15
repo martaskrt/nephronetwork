@@ -22,7 +22,7 @@ load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../prepro
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-softmax = torch.nn.Softmax()
+softmax = torch.nn.Softmax(dim=1)
 
 class KidneyDataset(torch.utils.data.Dataset):
 
@@ -197,7 +197,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
                     loss = F.cross_entropy(output, target)
 
-
+                    print(output)
                     output_softmax = softmax(output)
                     print(output_softmax)
 
