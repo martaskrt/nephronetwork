@@ -147,9 +147,10 @@ def train(args, train_dataset, val_dataset, max_epochs):
                    'momentum': args.momentum,
                    'weight_decay': args.weight_decay
                 }
-    optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
-                                weight_decay=hyperparams['weight_decay'])
+    # optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
+    #                             weight_decay=hyperparams['weight_decay'])
 
+    optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
     for epoch in tqdm(range(max_epochs)):
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
