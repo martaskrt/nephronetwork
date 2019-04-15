@@ -1,0 +1,21 @@
+# NephroNetwork
+# exclude all data and output by default
+
+# *************** IMAGE FILES ************** #
+all-images/*
+all-images-small/*
+data/*
+
+# ************IMAGE PREPROCESSING*********** #
+preprocess/preprocessed_images.pickle
+preprocess/preprocessed_images.csv
+preprocess/preprocessed_images_20190315.csv
+preprocess/preprocessed_images_20190315.pickle
+preprocess/label_files/*
+preprocess/cropped_images/*
+preprocess/samples_with_studyids_and_mrns.csv
+preprocess/kidney_sample_labels.csv
+preprocess/name_errors.txt
+preprocess/kidney_sample_labels_old.csv
+
+JigsawPuzzlePytorch-master/ILSVRC*
