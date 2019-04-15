@@ -68,8 +68,12 @@ class SiamNet(nn.Module):
         self.conv.add_module('conv6_s1', nn.ReLU(inplace=True))
         self.fc6.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
+        self.fc6.add_module('fc7', nn.Linear(1024, 512))
+        self.fc6.add_module('relu7', nn.ReLU(inplace=True))
+        self.fc6.add_module('drop7', nn.Dropout(p=0.5))
+
         self.fc7 = nn.Sequential()
-        self.fc7.add_module('fc7', nn.Linear(2 * 1024, 4096))
+        self.fc7.add_module('fc7', nn.Linear(2 * 512, 4096))
         self.fc7.add_module('relu7', nn.ReLU(inplace=True))
         self.fc7.add_module('drop7', nn.Dropout(p=0.5))
 
