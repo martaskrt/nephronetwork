@@ -202,8 +202,7 @@ def get_siamese(data, sort_by_date, split, contrast, image_dim, get_features, ge
     return load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=get_cov, siamese=True)
 
 def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
-                         crop=0, get_features=False, image_dim=256, views_to_get="all",
-                 get_cov=False, pickle_file="/Volumes/terminator/CSC2516/nephronetwork/preprocess/preprocessed_images.pickle"):
+                         crop=0, get_features=False, image_dim=256, views_to_get="all", get_cov=False, pickle_file=""):
 
     data = open_file(pickle_file)
 
