@@ -161,8 +161,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
             optimizer.step()
 
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * batch_size, len(train_dataset),
-                       100. * batch_idx * batch_size / len(train_dataset),
+                epoch, batch_idx * args.batch_size, len(train_dataset),
+                       100. * batch_idx * args.batch_size / len(train_dataset),
                 loss.item()))
 
             if (epoch % 10) == 0:
