@@ -149,7 +149,7 @@ class LRN(nn.Module):
 
 def train(args, train_dataset, val_dataset, max_epochs):
     net = SiamNet().to(device)
-    pretrained_dict = torch.load('../JigsawPuzzlePytorch-master/checkpoints/jps_999_029000.pth')
+    pretrained_dict = torch.load('../JigsawPuzzlePytorch-master/checkpoints/jps_999_029000.pth.tar')
     model_dict = net.state_dict()
 
     # 1. filter out unnecessary keys
