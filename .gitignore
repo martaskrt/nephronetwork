@@ -5,6 +5,8 @@
 all-images/*
 all-images-small/*
 data/*
+models/JigsawPuzzlePytorch-master/ILSVRC*
+models/JigsawPuzzlePytorch-master/train-jpgs/*
 
 # ************IMAGE PREPROCESSING*********** #
 preprocess/preprocessed_images.pickle
@@ -18,4 +20,4 @@ preprocess/kidney_sample_labels.csv
 preprocess/name_errors.txt
 preprocess/kidney_sample_labels_old.csv
 
-JigsawPuzzlePytorch-master/ILSVRC*
+
