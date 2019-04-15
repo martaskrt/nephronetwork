@@ -69,11 +69,11 @@ class SiamNet(nn.Module):
         self.fc6.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
         self.fc6.add_module('poolfc6', nn.Linear(1024, 256))
-        self.fc7.add_module('relu6', nn.ReLU(inplace=True))
-        self.fc7.add_module('drop6', nn.Dropout(p=0.5))
+        self.fc6.add_module('relu6', nn.ReLU(inplace=True))
+        self.fc6.add_module('drop6', nn.Dropout(p=0.5))
         self.fc6.add_module('poolfc6b', nn.Linear(256, 2))
-        self.fc7.add_module('relu6b', nn.ReLU(inplace=True))
-        self.fc7.add_module('drop6b', nn.Dropout(p=0.5))
+        self.fc6.add_module('relu6b', nn.ReLU(inplace=True))
+        self.fc6.add_module('drop6b', nn.Dropout(p=0.5))
 
         # self.fc7 = nn.Sequential()
         # self.fc7.add_module('fc7', nn.Linear(2 * 1024, 4096))
@@ -111,7 +111,7 @@ class SiamNet(nn.Module):
             z = z.view([B, 1, -1])
             x_list.append(z)
 
-        # x = torch.cat(x_list, 1)
+        x = torch.cat(x_list, 1)
         # x = self.fc7(x.view(B, -1))
         # pred = self.classifier(x)
         pred = self.classifier(x.view(B, -1))
