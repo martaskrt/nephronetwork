@@ -1,3 +1,6 @@
+# add following line to top of script to import this module: load_dataset =
+# process_results = importlib.machinery.SourceFileLoader('process_results','/path/to/models/dir/process_results.py').load_module()
+
 from sklearn import metrics
 
 def get_metrics(y_pred, y_true):
