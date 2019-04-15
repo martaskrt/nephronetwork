@@ -20,13 +20,7 @@ import argparse
 
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 
-do_learn = True
-save_frequency = 2
-batch_size = 16
-lr = 0.001
-num_epochs = 10
-weight_decay = 0.0001
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class KidneyDataset(torch.utils.data.Dataset):
 
@@ -78,7 +72,7 @@ class SiamNet(nn.Module):
         self.fc7.add_module('drop7', nn.Dropout(p=0.5))
 
         self.classifier = nn.Sequential()
-        self.classifier.add_module('fc8', nn.Linear(4096, 2))
+        self.classifier.add_module('fc8', nn.Linear(4096, classes))
 
     def load(self,checkpoint):
         model_dict = self.state_dict()
@@ -99,7 +93,7 @@ class SiamNet(nn.Module):
         for i in range(2):
             curr_x = torch.unsqueeze(x[i], 1)
             curr_x = curr_x.expand(-1, 3, -1, -1)
-            input = torch.FloatTensor(curr_x)
+            input = torch.FloatTensor(curr_x.to(device))
             z = self.conv(input)
             z = self.fc6(z)
             z = z.view([B, 1, -1])
@@ -141,7 +135,7 @@ class LRN(nn.Module):
         return x
 
 
-def train(args, device, train_dataset, val_dataset, max_epochs):
+def train(args, train_dataset, val_dataset, max_epochs):
     net = SiamNet().to(device)
     # print(summary(net, (2, 256, 256)))
     # import sys
@@ -213,7 +207,7 @@ def main():
 
     args = parser.parse_args()
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     print(device)
 
 
@@ -230,7 +224,7 @@ def main():
     validation_set = KidneyDataset(test_X, test_y)
     validation_generator = DataLoader(validation_set, **params)
 
-    train(args, device, training_generator, validation_generator, max_epochs)
+    train(args, training_generator, validation_generator, max_epochs)
 
 
 if __name__ == '__main__':
