@@ -17,7 +17,7 @@ import importlib.machinery
 from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
-
+from torch.autograd import Variable
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
 
@@ -166,7 +166,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
             output = net(data.to(device))
-            target = target.type(torch.LongTensor).to(device)
+            target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
 
             loss = F.cross_entropy(output, target)
             loss.backward()
