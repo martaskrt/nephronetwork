@@ -197,18 +197,16 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
                 loss = F.cross_entropy(output, target)
 
-                print(output)
                 output_softmax = softmax(output)
-                print(output_softmax)
 
                 accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
                 all_labels_val += len(target)
 
                 pred_prob = output_softmax[:,1]
                 pred_prob = pred_prob.squeeze()
-                print(pred_prob)
                 assert pred_prob.shape == target.shape
-                print(process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy()))
+                results = process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy())
+                print("AUC: " + results['auc'] + " | AUPRC: " + results['auprc'])
 
 
                 accuracy = 100. * accurate_labels_val / all_labels_val
@@ -241,9 +239,7 @@ def main():
               'num_workers': args.num_workers}
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile)
-    print(train_y)
-    import sys
-    sys.exit(0)
+
     training_set = KidneyDataset(train_X, train_y)
     training_generator = DataLoader(training_set, **params)
 
