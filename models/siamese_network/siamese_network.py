@@ -202,7 +202,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
                     all_labels_val += len(target)
 
-                    pred_prob = torch.max(output_softmax, dim=1)
+                    pred_prob, _ = output_softmax.max(1)
                     print(pred_prob)
                     print(process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy()))
 
