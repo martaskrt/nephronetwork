@@ -173,6 +173,8 @@ def train(args, device, train_dataset, val_dataset, max_epochs):
                               'hyperparams': hyperparams,
                               'model_state_dict': net.state_dict(),
                               'optimizer': optimizer.state_dict()}
+                if not os.path.isdir(args.dir):
+                    os.makedirs(args.dir)
                 path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
                 torch.save(checkpoint, path_to_checkpoint)
 
