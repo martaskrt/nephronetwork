@@ -94,9 +94,9 @@ class SiamNet(nn.Module):
             curr_x = torch.unsqueeze(x[i], 1)
             curr_x = curr_x.expand(-1, 3, -1, -1)
             if torch.cuda.is_available():
-                input = torch.cuda().FloatTensor(curr_x.to(device))
+                input = torch.cuda.FloatTensor(curr_x.to(device))
             else:
-                input = torch.cpu().FloatTensor(curr_x)
+                input = torch.cpu.FloatTensor(curr_x)
             z = self.conv(input)
             z = self.fc6(z)
             z = z.view([B, 1, -1])
