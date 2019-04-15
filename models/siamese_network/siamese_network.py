@@ -19,6 +19,7 @@ from torchsummary import summary
 import argparse
 
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
+process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -197,9 +198,12 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
                     all_labels_val += len(target)
+                    
+                    print(process_results.get_metrics(y_score=output, y_true=target))
 
                 accuracy = 100. * accurate_labels_val / all_labels_val
                 print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss))
+
 
 
 def main():
