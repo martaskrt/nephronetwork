@@ -78,7 +78,7 @@ class SiamNet(nn.Module):
         self.fc7.add_module('drop7', nn.Dropout(p=0.5))
 
         self.classifier = nn.Sequential()
-        self.classifier.add_module('fc8', nn.Linear(4096, classes))
+        self.classifier.add_module('fc8', nn.Linear(128, classes))
 
     def load(self,checkpoint):
         model_dict = self.state_dict()
