@@ -175,6 +175,13 @@ def train(args, train_dataset, val_dataset, max_epochs):
             optimizer.step()
             all_labels += len(target)
 
+            output_softmax = softmax(output)
+            pred_prob = output_softmax[:, 1]
+            pred_prob = pred_prob.squeeze()
+
+            results = process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy())
+            print("TRAIN...............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
+
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * args.batch_size, all_labels,
                        100. * accurate_labels / all_labels,
@@ -213,7 +220,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                 pred_prob = pred_prob.squeeze()
                 assert pred_prob.shape == target.shape
                 results = process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy())
-                print("AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
+                print("VAL.............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
 
 
                 accuracy = 100. * accurate_labels_val / all_labels_val
