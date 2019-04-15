@@ -198,10 +198,10 @@ def train(args, device, train_dataset, val_dataset, max_epochs):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=70, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
-    parser.add_argument('--lr', default=0.01, type=float, help="Learning rate")
-    parser.add_argument('--momentum', default=0.99, type=float, help="Momentum")
+    parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
+    parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
