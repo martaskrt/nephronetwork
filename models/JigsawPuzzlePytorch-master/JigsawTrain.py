@@ -123,8 +123,8 @@ def main():
     for epoch in range(int(args.iter_start/iter_per_epoch),args.epochs):
         if epoch%10==0 and epoch>0:
             test(net,criterion,logger_test,val_loader,steps)
-        #lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=20, decay=0.1)
-        lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=100, decay=0.75)
+        lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=20, decay=0.1)
+        # lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=100, decay=0.75)
         end = time()
         for i, (images, labels, original) in enumerate(train_loader):
             batch_time.append(time()-end)
@@ -170,7 +170,7 @@ def main():
                     imgs[ti] = np.stack([(im-im.min())/(im.max()-im.min()) 
                                          for im in img],axis=2)
                 
-                #logger.image_summary('input', imgs, steps)
+                logger.image_summary('input', imgs, steps)
 
             steps += 1
 
