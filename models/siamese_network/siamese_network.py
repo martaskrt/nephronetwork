@@ -179,7 +179,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
             pred_prob = output_softmax[:, 1]
             pred_prob = pred_prob.squeeze()
 
-            results = process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.detach().numpy())
+            results = process_results.get_metrics(y_score=pred_prob.detach().numpy(), y_true=target.detach().numpy())
             print("TRAIN...............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
 
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
