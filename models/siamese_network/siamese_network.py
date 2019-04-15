@@ -93,7 +93,7 @@ class SiamNet(nn.Module):
         for i in range(2):
             curr_x = torch.unsqueeze(x[i], 1)
             curr_x = curr_x.expand(-1, 3, -1, -1)
-            if device == "cuda":
+            if torch.cuda.is_available():
                 input = torch.cuda().FloatTensor(curr_x.to(device))
             else:
                 input = torch.cpu().FloatTensor(curr_x)
