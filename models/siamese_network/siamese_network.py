@@ -70,10 +70,6 @@ class SiamNet(nn.Module):
         self.fc6.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
         self.conv.add_module('conv6_s1', nn.ReLU(inplace=True))
         self.fc6.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
-        # self.fc6 = nn.Sequential()
-        # self.fc6.add_module('fc6_s1', nn.Linear(256 * 3 * 3, 1024))
-        # self.fc6.add_module('relu6_s1', nn.ReLU(inplace=True))
-        # self.fc6.add_module('drop6_s1', nn.Dropout(p=0.5))
 
         self.fc7 = nn.Sequential()
         self.fc7.add_module('fc7', nn.Linear(2 * 1024, 4096))
@@ -175,7 +171,7 @@ def train(args, device, train_dataset, val_dataset, max_epochs):
                 checkpoint = {'epoch': epoch,
                               'loss': loss,
                               'hyperparams': hyperparams,
-                              'model_state_dict': model.state_dict(),
+                              'model_state_dict': net.state_dict(),
                               'optimizer': optimizer.state_dict()}
                 path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
                 torch.save(checkpoint, path_to_checkpoint)
@@ -209,6 +205,8 @@ def main():
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
+    parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
+                                              "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -221,7 +219,7 @@ def main():
               'shuffle': True,
               'num_workers': args.num_workers}
 
-    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese")
+    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile)
     training_set = KidneyDataset(train_X, train_y)
     training_generator = DataLoader(training_set, **params)
 
