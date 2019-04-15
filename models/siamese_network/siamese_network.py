@@ -68,9 +68,10 @@ class SiamNet(nn.Module):
         self.conv.add_module('conv6_s1', nn.ReLU(inplace=True))
         self.fc6.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
-        self.fc6.add_module('fc7', nn.Linear(1024, 512))
-        self.fc6.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc6.add_module('drop7', nn.Dropout(p=0.5))
+        self.fc6b = nn.Sequential()
+        self.fc6b.add_module('fc7', nn.Linear(1024, 512))
+        self.fc6b.add_module('relu7', nn.ReLU(inplace=True))
+        self.fc6b.add_module('drop7', nn.Dropout(p=0.5))
 
         self.fc7 = nn.Sequential()
         self.fc7.add_module('fc7', nn.Linear(2 * 512, 4096))
@@ -105,6 +106,8 @@ class SiamNet(nn.Module):
                 input = torch.cpu.FloatTensor(curr_x)
             z = self.conv(input)
             z = self.fc6(z)
+            z = z.view([B, 1, -1])
+            z = self.f6b(z)
             z = z.view([B, 1, -1])
             x_list.append(z)
 
