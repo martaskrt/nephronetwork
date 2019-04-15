@@ -63,23 +63,24 @@ class SiamNet(nn.Module):
         self.conv.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         # *************************** changed layers *********************** #
         self.fc6 = nn.Sequential()
-        self.fc6.add_module('conv6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
-        self.fc6.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
-        self.conv.add_module('conv6_s1', nn.ReLU(inplace=True))
-        self.fc6.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
-
+        self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
         self.fc6b = nn.Sequential()
-        self.fc6b.add_module('fc7', nn.Linear(1024, 512))
-        self.fc6b.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc6b.add_module('drop7', nn.Dropout(p=0.5))
+        self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
+        self.conv.add_module('conv6_s1', nn.ReLU(inplace=True))
+        self.fc6b.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
-        self.fc7 = nn.Sequential()
-        self.fc7.add_module('fc7', nn.Linear(2 * 512, 4096))
-        self.fc7.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc7.add_module('drop7', nn.Dropout(p=0.5))
+        self.fc6c = nn.Sequential()
+        self.fc6c.add_module('fc7', nn.Linear(1024, 512))
+        self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
+        self.fc6c.add_module('drop7', nn.Dropout(p=0.5))
 
-        self.classifier = nn.Sequential()
-        self.classifier.add_module('fc8', nn.Linear(4096, classes))
+        self.fc7_new = nn.Sequential()
+        self.fc7_new.add_module('fc7', nn.Linear(2 * 512, 4096))
+        self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
+        self.fc7_new.add_module('drop7', nn.Dropout(p=0.5))
+
+        self.classifier_new = nn.Sequential()
+        self.classifier_new.add_module('fc8', nn.Linear(4096, classes))
 
     def load(self,checkpoint):
         model_dict = self.state_dict()
@@ -106,14 +107,15 @@ class SiamNet(nn.Module):
                 input = torch.cpu.FloatTensor(curr_x)
             z = self.conv(input)
             z = self.fc6(z)
-            z = z.view([B, 1, -1])
             z = self.fc6b(z)
+            z = z.view([B, 1, -1])
+            z = self.fc6c(z)
             z = z.view([B, 1, -1])
             x_list.append(z)
 
         x = torch.cat(x_list, 1)
-        x = self.fc7(x.view(B, -1))
-        pred = self.classifier(x)
+        x = self.fc7_new(x.view(B, -1))
+        pred = self.classifier_new(x)
 
         return pred
 
