@@ -199,7 +199,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
                     all_labels_val += len(target)
 
-                    print(process_results.get_metrics(y_score=output, y_true=target))
+                    print(process_results.get_metrics(y_score=output.numpy().cpu(), y_true=target.numpy().cpu()))
 
                 accuracy = 100. * accurate_labels_val / all_labels_val
                 print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss))
