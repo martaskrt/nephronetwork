@@ -191,6 +191,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                     loss = F.cross_entropy(output, target)
 
                     accurate_labels += torch.sum(torch.argmax(output, dim=1) == target).cpu()
+                    print(accurate_labels)
 
                     all_labels += len(target)
 
