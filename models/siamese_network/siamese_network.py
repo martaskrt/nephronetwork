@@ -183,23 +183,23 @@ def train(args, train_dataset, val_dataset, max_epochs):
             #     torch.save(checkpoint, path_to_checkpoint)
 
 
-        with torch.set_grad_enabled(False):
-            accurate_labels = 0
-            all_labels = 0
-            loss = 0
-            for batch_idx, (data, target) in enumerate(val_dataset):
-                net.zero_grad()
-                optimizer.zero_grad()
-                output = net(data)
-                target = target.type(torch.LongTensor).to(device)
+            with torch.set_grad_enabled(False):
+                accurate_labels_val = 0
+                all_labels_val = 0
+                loss = 0
+                for batch_idx, (data, target) in enumerate(val_dataset):
+                    net.zero_grad()
+                    optimizer.zero_grad()
+                    output = net(data)
+                    target = target.type(torch.LongTensor).to(device)
 
-                loss = F.cross_entropy(output, target)
+                    loss = F.cross_entropy(output, target)
 
-                accurate_labels += torch.sum(torch.argmax(output, dim=1) == target).cpu()
-                all_labels += len(target)
+                    accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
+                    all_labels_val += len(target)
 
-            accuracy = 100. * accurate_labels / all_labels
-            print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels, all_labels, accuracy, loss))
+                accuracy = 100. * accurate_labels_val / all_labels_val
+                print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss))
 
 
 def main():
@@ -227,6 +227,7 @@ def main():
               'num_workers': args.num_workers}
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile)
+
     training_set = KidneyDataset(train_X, train_y)
     training_generator = DataLoader(training_set, **params)
 
