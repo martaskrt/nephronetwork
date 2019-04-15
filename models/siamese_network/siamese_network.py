@@ -156,7 +156,7 @@ def train(args, device, train_dataset, val_dataset, max_epochs):
     for epoch in tqdm(range(max_epochs)):
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
-            output = net(data)
+            output = net(data.to(device))
             target = target.type(torch.LongTensor).to(device)
 
             loss = F.cross_entropy(output, target)
@@ -214,6 +214,7 @@ def main():
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
 
 
     max_epochs = 50
