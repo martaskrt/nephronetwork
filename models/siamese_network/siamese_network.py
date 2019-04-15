@@ -64,12 +64,12 @@ class SiamNet(nn.Module):
         # *************************** changed layers *********************** #
         self.fc6 = nn.Sequential()
         self.fc6.add_module('conv6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
-        self.fc6.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
+        # self.fc6.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
         self.conv.add_module('conv6_s1', nn.ReLU(inplace=True))
         self.fc6.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
         self.fc7 = nn.Sequential()
-        self.fc7.add_module('poolfc6', nn.Linear(1024, 256))
+        self.fc7.add_module('poolfc6', nn.Linear(1024*6*6, 256))
         self.fc7.add_module('relu6', nn.ReLU(inplace=True))
         self.fc7.add_module('drop6', nn.Dropout(p=0.5))
         self.fc7.add_module('poolfc6b', nn.Linear(256, 2))
