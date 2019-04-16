@@ -191,7 +191,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
         accurate_labels = 0
         loss_accum = 0
         counter =0
-        all_targets
+        all_targets = []
+        all_pred = []
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
             output = net(data.to(device))
@@ -207,14 +208,18 @@ def train(args, train_dataset, val_dataset, max_epochs):
             all_labels += len(target)
 
             output_softmax = softmax(output)
-            curr_pred_prob = output_softmax[:, 1]
-            curr_pred_prob = pred_prob.squeeze()
-            print(curr_pred_prob)
+            pred_prob = output_softmax[:, 1]
+            pred_prob = pred_prob.squeeze()
+
+            all_pred.append(pred_prob)
+            all_targets.append(target)
             # results = process_results.get_metrics(y_score=pred_prob.cpu().detach().numpy(),
             #                                       y_true=target.cpu().detach().numpy())
         print('Train Epoch: {} [Acc: ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, 100. * accurate_labels / all_labels, loss_accum/counter))
-        results = process_results.get_metrics(y_score=pred_prob.cpu().detach().numpy(),
-                                              y_true=target.cpu().detach().numpy())
+        all_pred = torch.cat(all_pred, 1)
+        all_targets = torch.cat(all_targets, 1)
+        results = process_results.get_metrics(y_score=all_pred.cpu().detach().numpy(),
+                                              y_true=all_targets.cpu().detach().numpy())
         print("TRAIN...............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
 
         if ((epoch+1) % 10) == 0:
