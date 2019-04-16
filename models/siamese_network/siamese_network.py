@@ -192,7 +192,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
         loss_accum = 0
         counter =0
         all_targets = []
-        all_pred = []
+        all_pred_prob = []
+        all_pred_label = []
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
             output = net(data.to(device))
@@ -209,18 +210,28 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
             output_softmax = softmax(output)
             pred_prob = output_softmax[:, 1]
+            pred_label = torch.argmax(output, dim=1)
+
             #pred_prob = pred_prob.squeeze()
 
-            all_pred.append(pred_prob)
+            all_pred_prob.append(pred_prob)
             all_targets.append(target)
+            all_pred_label.append(pred_label)
             # results = process_results.get_metrics(y_score=pred_prob.cpu().detach().numpy(),
             #                                       y_true=target.cpu().detach().numpy())
-        print('Train Epoch: {} [Acc: ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, 100. * accurate_labels / all_labels, loss_accum/counter))
-        all_pred = torch.cat(all_pred)
+
+        all_pred_prob = torch.cat(all_pred_prob)
         all_targets = torch.cat(all_targets)
-        results = process_results.get_metrics(y_score=all_pred.cpu().detach().numpy(),
-                                              y_true=all_targets.cpu().detach().numpy())
-        print("TRAIN...............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
+        all_pred_label = torch.cat(all_pred_label)
+        results = process_results.get_metrics(y_score=all_pred_prob.cpu().detach().numpy(),
+                                              y_true=all_targets.cpu().detach().numpy(),
+                                              y_pred=all_pred_label.cpu().detach().numpy())
+        print('TrainEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\TP\t{}'.format(epoch, 100.*accurate_labels/all_labels,
+                                                                    loss_accum/counter, results['auc'],results['auprc'],
+                                                                    results['tn'], results['tp'], results['fn'],
+                                                                    results['tp']))
+        # print("TRAIN" + '\t' + "AUC" + '\t' + str(results['auc']) + '\t' + "AUPRC" + '\t' + str(results['auprc']))
 
         if ((epoch+1) % 10) == 0:
             checkpoint = {'epoch': epoch,
@@ -239,6 +250,9 @@ def train(args, train_dataset, val_dataset, max_epochs):
             all_labels_val = 0
             loss_accum = 0
             counter = 0
+            all_targets = []
+            all_pred_prob = []
+            all_pred_label = []
             for batch_idx, (data, target) in enumerate(val_dataset):
                 net.zero_grad()
                 optimizer.zero_grad()
@@ -255,15 +269,32 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
                 pred_prob = output_softmax[:,1]
                 pred_prob = pred_prob.squeeze()
+                pred_label = torch.argmax(output, dim=1)
+
+                all_pred_prob.append(pred_prob)
+                all_targets.append(target)
+                all_pred_label.append(pred_label)
+
                 assert pred_prob.shape == target.shape
-                results = process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy())
-                print("VAL.............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
+            # results = process_results.get_metrics(y_score=pred_prob.cpu().numpy(), y_true=target.cpu().numpy())
+            # print("VAL.............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
+            #
+            #
+            # accuracy = 100. * accurate_labels_val / all_labels_val
+            # print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss_accum/counter))
 
-
-            accuracy = 100. * accurate_labels_val / all_labels_val
-            print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss_accum/counter))
-
-
+            all_pred_prob = torch.cat(all_pred_prob)
+            all_targets = torch.cat(all_targets)
+            all_pred_label = torch.cat(all_pred_label)
+            results = process_results.get_metrics(y_score=all_pred_prob.cpu().detach().numpy(),
+                                                  y_true=all_targets.cpu().detach().numpy(),
+                                                  y_pred=all_pred_label.cpu().detach().numpy())
+            print('ValEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\TP\t{}'.format(epoch, 100. * accurate_labels / all_labels,
+                                                                        loss_accum / counter, results['auc'],
+                                                                        results['auprc'],
+                                                                        results['tn'], results['tp'], results['fn'],
+                                                                        results['tp']))
 
 def main():
     parser = argparse.ArgumentParser()
