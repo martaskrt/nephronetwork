@@ -6,7 +6,6 @@ import os
 from PIL import Image
 import random
 import torch
-from tqdm import tqdm
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
@@ -186,7 +185,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
     optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
 
-    for epoch in tqdm(range(max_epochs)):
+    for epoch in range(max_epochs):
         all_labels = 0
         accurate_labels = 0
         loss_accum = 0
@@ -227,7 +226,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                                               y_true=all_targets.cpu().detach().numpy(),
                                               y_pred=all_pred_label.cpu().detach().numpy())
         print('TrainEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\TP\t{}'.format(epoch, 100.*accurate_labels/all_labels,
+              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, 100.*accurate_labels/all_labels,
                                                                     loss_accum/counter, results['auc'],results['auprc'],
                                                                     results['tn'], results['tp'], results['fn'],
                                                                     results['tp']))
@@ -290,7 +289,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                                                   y_true=all_targets.cpu().detach().numpy(),
                                                   y_pred=all_pred_label.cpu().detach().numpy())
             print('ValEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\TP\t{}'.format(epoch, 100. * accurate_labels / all_labels,
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, 100. * accurate_labels / all_labels,
                                                                         loss_accum / counter, results['auc'],
                                                                         results['auprc'],
                                                                         results['tn'], results['tp'], results['fn'],
