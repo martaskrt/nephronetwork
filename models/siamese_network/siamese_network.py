@@ -151,24 +151,28 @@ class LRN(nn.Module):
 
 def train(args, train_dataset, val_dataset, max_epochs):
     net = SiamNet().to(device)
-    pretrained_dict = torch.load('../JigsawPuzzlePytorch-master/checkpoints/jps_999_029000.pth.tar')
-    model_dict = net.state_dict()
+    if args.checkpoint != ""
+        pretrained_dict = torch.load('../JigsawPuzzlePytorch-master/' + args.checkpoints)
+        model_dict = net.state_dict()
 
-    # 1. filter out unnecessary keys
-    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-    pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 3, 3)
-    pretrained_dict['fc6b.conv6b_s1.weight'] = model_dict['fc6b.conv6b_s1.weight']
-    pretrained_dict['fc6b.conv6b_s1.bias'] = model_dict['fc6b.conv6b_s1.bias']
-    pretrained_dict['fc6c.fc7.weight'] = model_dict['fc6c.fc7.weight']
-    pretrained_dict['fc6c.fc7.bias'] = model_dict['fc6c.fc7.bias']
-    pretrained_dict['fc7_new.fc7.weight'] = model_dict['fc7_new.fc7.weight']
-    pretrained_dict['fc7_new.fc7.bias'] = model_dict['fc7_new.fc7.bias']
-    pretrained_dict['classifier_new.fc8.weight'] = model_dict['classifier_new.fc8.weight']
-    pretrained_dict['classifier_new.fc8.bias'] = model_dict['classifier_new.fc8.bias']
-    # 2. overwrite entries in the existing state dict
-    model_dict.update(pretrained_dict)
-    # 3. load the new state dict
-    net.load_state_dict(pretrained_dict)
+        # 1. filter out unnecessary keys
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+        pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 3, 3)
+        for k,v in model_dict.items():
+            if k not in pretrained_dict:
+                pretrained_dict[k] = model_dict[k]
+        # pretrained_dict['fc6b.conv6b_s1.weight'] = model_dict['fc6b.conv6b_s1.weight']
+        # pretrained_dict['fc6b.conv6b_s1.bias'] = model_dict['fc6b.conv6b_s1.bias']
+        # pretrained_dict['fc6c.fc7.weight'] = model_dict['fc6c.fc7.weight']
+        # pretrained_dict['fc6c.fc7.bias'] = model_dict['fc6c.fc7.bias']
+        # pretrained_dict['fc7_new.fc7.weight'] = model_dict['fc7_new.fc7.weight']
+        # pretrained_dict['fc7_new.fc7.bias'] = model_dict['fc7_new.fc7.bias']
+        # pretrained_dict['classifier_new.fc8.weight'] = model_dict['classifier_new.fc8.weight']
+        # pretrained_dict['classifier_new.fc8.bias'] = model_dict['classifier_new.fc8.bias']
+        # 2. overwrite entries in the existing state dict
+        model_dict.update(pretrained_dict)
+        # 3. load the new state dict
+        net.load_state_dict(pretrained_dict)
 
     # print(summary(net, (2, 256, 256)))
     # import sys
@@ -181,15 +185,20 @@ def train(args, train_dataset, val_dataset, max_epochs):
     #                             weight_decay=hyperparams['weight_decay'])
 
     optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
+
     for epoch in tqdm(range(max_epochs)):
         all_labels = 0
         accurate_labels = 0
+        loss_accum = 0
+        counter =0
         for batch_idx, (data, target) in enumerate(train_dataset):
             optimizer.zero_grad()
             output = net(data.to(device))
             target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
 
             loss = F.cross_entropy(output, target)
+            loss_accum += loss.item() * len(target)
+            counter += len(target)
             loss.backward()
 
             accurate_labels += torch.sum(torch.argmax(output, dim=1) == target).cpu()
@@ -203,27 +212,25 @@ def train(args, train_dataset, val_dataset, max_epochs):
             results = process_results.get_metrics(y_score=pred_prob.cpu().detach().numpy(), y_true=target.cpu().detach().numpy())
             print("TRAIN...............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
 
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * args.batch_size, all_labels,
-                       100. * accurate_labels / all_labels,
-                loss.item()))
+        print('Train Epoch: {} [({:.0f}%)]\tLoss: {:.6f}'.format(epoch, 100. * accurate_labels / all_labels, loss_accum/counter))
 
-            # if (epoch % 10) == 0:
-            #     checkpoint = {'epoch': epoch,
-            #                   'loss': loss,
-            #                   'hyperparams': hyperparams,
-            #                   'model_state_dict': net.state_dict(),
-            #                   'optimizer': optimizer.state_dict()}
-            #     if not os.path.isdir(args.dir):
-            #         os.makedirs(args.dir)
-            #     path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
-            #     torch.save(checkpoint, path_to_checkpoint)
+        if ((epoch+1) % 10) == 0:
+            checkpoint = {'epoch': epoch,
+                          'loss': loss,
+                          'hyperparams': hyperparams,
+                          'model_state_dict': net.state_dict(),
+                          'optimizer': optimizer.state_dict()}
+            if not os.path.isdir(args.dir):
+                os.makedirs(args.dir)
+            path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
+            torch.save(checkpoint, path_to_checkpoint)
 
 
         with torch.set_grad_enabled(False):
             accurate_labels_val = 0
             all_labels_val = 0
-            loss = 0
+            loss_accum = 0
+            counter = 0
             for batch_idx, (data, target) in enumerate(val_dataset):
                 net.zero_grad()
                 optimizer.zero_grad()
@@ -231,7 +238,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
                 target = target.type(torch.LongTensor).to(device)
 
                 loss = F.cross_entropy(output, target)
-
+                loss_accum += loss.item() * len(target)
+                counter += len(target)
                 output_softmax = softmax(output)
 
                 accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
@@ -244,36 +252,35 @@ def train(args, train_dataset, val_dataset, max_epochs):
                 print("VAL.............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
 
 
-                accuracy = 100. * accurate_labels_val / all_labels_val
-                print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss))
+            accuracy = 100. * accurate_labels_val / all_labels_val
+            print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss_accum.counter))
 
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=70, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
+    parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
+    parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
     parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
                                               "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
-
-    print(device)
-
-
-    max_epochs = 50
+    max_epochs = args.epochs
 
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
 
-    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile)
+    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", pickle_file=args.datafile,
+                                                                 contrast=args.contrast)
 
     training_set = KidneyDataset(train_X, train_y)
     training_generator = DataLoader(training_set, **params)
