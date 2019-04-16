@@ -151,7 +151,7 @@ class LRN(nn.Module):
 def train(args, train_dataset, val_dataset, max_epochs):
     net = SiamNet().to(device)
     if args.checkpoint != "":
-        pretrained_dict = torch.load('../JigsawPuzzlePytorch-master/' + args.checkpoints)
+        pretrained_dict = torch.load(args.checkpoint)
         model_dict = net.state_dict()
 
         # 1. filter out unnecessary keys
