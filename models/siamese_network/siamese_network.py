@@ -253,7 +253,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
 
             accuracy = 100. * accurate_labels_val / all_labels_val
-            print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss_accum.counter))
+            print('Test accuracy: {}/{} ({:.3f}%)\tLoss: {:.6f}'.format(accurate_labels_val, all_labels_val, accuracy, loss_accum/counter))
 
 
 
