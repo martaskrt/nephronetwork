@@ -216,9 +216,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
             # results = process_results.get_metrics(y_score=pred_prob.cpu().detach().numpy(),
             #                                       y_true=target.cpu().detach().numpy())
         print('Train Epoch: {} [Acc: ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, 100. * accurate_labels / all_labels, loss_accum/counter))
-        print(all_pred)
-        all_pred = torch.cat(all_pred, 1).squeeze()
-        all_targets = torch.cat(all_targets, 1).squeeze()
+        all_pred = torch.cat(all_pred)
+        all_targets = torch.cat(all_targets)
         results = process_results.get_metrics(y_score=all_pred.cpu().detach().numpy(),
                                               y_true=all_targets.cpu().detach().numpy())
         print("TRAIN...............AUC: " + str(results['auc']) + " | AUPRC: " + str(results['auprc']))
