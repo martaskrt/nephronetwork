@@ -65,11 +65,11 @@ def main():
                                             shuffle=True,
                                             num_workers=args.cores)
     
-    valpath = '/home/marta/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_val'
+    valpath = '/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_val'
     #valpath = args.data+'/'
     if os.path.exists(valpath+'_255x255'):
         valpath += '_255x255'
-    val_data = DataLoader(valpath, '/home/marta/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_val/ilsvrc12_val.txt',
+    val_data = DataLoader(valpath, '/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_val/ilsvrc12_val.txt',
                             classes=args.classes)
     val_loader = torch.utils.data.DataLoader(dataset=val_data,
                                             batch_size=args.batch,
@@ -170,7 +170,7 @@ def main():
                     imgs[ti] = np.stack([(im-im.min())/(im.max()-im.min()) 
                                          for im in img],axis=2)
                 
-                logger.image_summary('input', imgs, steps)
+                # logger.image_summary('input', imgs, steps)
 
             steps += 1
 
