@@ -20,7 +20,9 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 sys.path.append('Dataset')
-from JigsawNetwork import Network
+# from JigsawNetwork import Network
+from JigsawNetwork_batchnorm import Network
+
 
 from TrainingUtils import adjust_learning_rate, compute_accuracy
 from io import BytesIO
@@ -121,7 +123,7 @@ def main():
     batch_time, net_time = [], []
     steps = args.iter_start
     for epoch in range(int(args.iter_start/iter_per_epoch),args.epochs):
-        if epoch%10==0 and epoch>0:
+        if (epoch%10)==0 and epoch>0:
             test(net,criterion,logger_test,val_loader,steps)
         lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=20, decay=0.1)
         # lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=100, decay=0.75)
@@ -153,7 +155,7 @@ def main():
             optimizer.step()
             loss = float(loss.cpu().data.numpy())
 
-            if steps%20==0:
+            if (steps%20)==0:
                 print(('[%2d/%2d] %5d) [batch load % 2.3fsec, net %1.2fsec], LR %.5f, Loss: % 1.3f, Accuracy % 2.2f%%' %(
                             epoch+1, args.epochs, steps, 
                             np.mean(batch_time), np.mean(net_time),
@@ -174,10 +176,10 @@ def main():
 
             steps += 1
 
-            if steps%1000==0:
-                filename = '%s/jps_%03i_%06d.pth.tar'%(args.checkpoint,epoch,steps)
-                net.save(filename)
-                print('Saved: '+args.checkpoint)
+        if ((epoch+1) % 10) == 0:
+            filename = '%s/jps_%03i_%06d.pth.tar'%(args.checkpoint,epoch,steps)
+            net.save(filename)
+            print('Saved: '+args.checkpoint)
             
             end = time()
 
