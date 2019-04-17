@@ -123,7 +123,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
         print('TrainEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
               'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, 100.*accurate_labels/all_labels,
                                                                     loss_accum/counter, results['auc'],results['auprc'],
-                                                                    results['tn'], results['tp'], results['fn'],
+                                                                    results['tn'], results['fp'], results['fn'],
                                                                     results['tp']))
         # print("TRAIN" + '\t' + "AUC" + '\t' + str(results['auc']) + '\t' + "AUPRC" + '\t' + str(results['auprc']))
 
@@ -188,7 +188,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
                   'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, 100. * accurate_labels / all_labels,
                                                                         loss_accum / counter, results['auc'],
                                                                         results['auprc'],
-                                                                        results['tn'], results['tp'], results['fn'],
+                                                                        results['tn'], results['fp'], results['fn'],
                                                                         results['tp']))
 
 def main():
