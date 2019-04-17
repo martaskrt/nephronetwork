@@ -1,6 +1,8 @@
 from torch import nn
 import torch
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 class SiamNet(nn.Module):
     def __init__(self, classes=2):
         super(SiamNet, self).__init__()
@@ -36,12 +38,9 @@ class SiamNet(nn.Module):
 
         self.fc6b = nn.Sequential()
         self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
-        print(":)")
         # self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(256))
-        print(":))")
         self.fc6b.add_module('conv6b_s1', nn.ReLU(inplace=True))
         self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
-        print(":)))")
         self.fc6c = nn.Sequential()
         self.fc6c.add_module('fc7', nn.Linear(1024*6*6, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
@@ -81,7 +80,6 @@ class SiamNet(nn.Module):
             z = self.conv(input)
             z = self.fc6(z)
             z = self.fc6b(z)
-            print(z.shape)
             z = z.view([B, 1, -1])
             z = self.fc6c(z)
             z = z.view([B, 1, -1])
