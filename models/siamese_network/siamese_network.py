@@ -48,7 +48,7 @@ class SiamNet(nn.Module):
         self.conv.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
 
         self.conv.add_module('conv2_s1',nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2))
-        self.conv.add_module('batch_s1', nn.BatchNorm2d(256))
+        self.conv.add_module('batch2_s1', nn.BatchNorm2d(256))
         self.conv.add_module('relu2_s1',nn.ReLU(inplace=True))
         self.conv.add_module('pool2_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
