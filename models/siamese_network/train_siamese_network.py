@@ -104,7 +104,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
             pred_label = torch.argmax(output, dim=1)
 
             #pred_prob = pred_prob.squeeze()
-
+            assert pred_label.shape == target.shape
+            assert all_pred_prob.shape == target.shape
             all_pred_prob.append(pred_prob)
             all_targets.append(target)
             all_pred_label.append(pred_label)
