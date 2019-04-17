@@ -20,6 +20,10 @@ preprocess/kidney_sample_labels.csv
 preprocess/name_errors.txt
 preprocess/kidney_sample_labels_old.csv
 
+# ************ IDE SETTINGS **************** #
+.idea/
+
+# ******** DEFAULT PYTHON GITHUB *********** #
 # https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore
 
 # Byte-compiled / optimized / DLL files
