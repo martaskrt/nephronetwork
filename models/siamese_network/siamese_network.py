@@ -121,6 +121,7 @@ class SiamNet(nn.Module):
             z = self.conv(input)
             z = self.fc6(z)
             z = self.fc6b(z)
+            print(z.shape)
             z = z.view([B, 1, -1])
             z = self.fc6c(z)
             z = z.view([B, 1, -1])
