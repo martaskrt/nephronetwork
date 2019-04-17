@@ -39,7 +39,7 @@ class SiamNet(nn.Module):
         self.fc6b = nn.Sequential()
         self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
         # self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(256))
-        self.fc6b.add_module('conv6b_s1', nn.ReLU(inplace=True))
+        self.fc6b.add_module('relu6_s1', nn.ReLU(inplace=True))
         self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
         self.fc6c = nn.Sequential()
         self.fc6c.add_module('fc7', nn.Linear(1024*6*6, 512))
@@ -76,7 +76,7 @@ class SiamNet(nn.Module):
             if torch.cuda.is_available():
                 input = torch.cuda.FloatTensor(curr_x.to(device))
             else:
-                input = torch.cpu.FloatTensor(curr_x)
+                input = torch.FloatTensor(curr_x.to(device))
             z = self.conv(input)
             z = self.fc6(z)
             z = self.fc6b(z)
