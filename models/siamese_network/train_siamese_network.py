@@ -104,8 +104,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
             pred_label = torch.argmax(output, dim=1)
 
             #pred_prob = pred_prob.squeeze()
-            assert pred_label.shape == target.shape
-            assert all_pred_prob.shape == target.shape
+            assert len(pred_label) == len(target)
+            assert len(all_pred_prob) == len(target)
             all_pred_prob.append(pred_prob)
             all_targets.append(target)
             all_pred_label.append(pred_label)
@@ -115,6 +115,8 @@ def train(args, train_dataset, val_dataset, max_epochs):
         all_pred_prob = torch.cat(all_pred_prob)
         all_targets = torch.cat(all_targets)
         all_pred_label = torch.cat(all_pred_label)
+        assert len(all_pred_prob) == len(all_targets)
+        assert len(all_pred_label) == len(all_targets)
         results = process_results.get_metrics(y_score=all_pred_prob.cpu().detach().numpy(),
                                               y_true=all_targets.cpu().detach().numpy(),
                                               y_pred=all_pred_label.cpu().detach().numpy())
