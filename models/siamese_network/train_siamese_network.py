@@ -102,11 +102,10 @@ def train(args, train_dataset, val_dataset, max_epochs):
             output_softmax = softmax(output)
             pred_prob = output_softmax[:, 1]
             pred_label = torch.argmax(output_softmax, dim=1)
-            print(pred_label)
 
             #pred_prob = pred_prob.squeeze()
+            assert len(pred_prob) == len(target)
             assert len(pred_label) == len(target)
-            assert len(all_pred_prob) == len(target)
             all_pred_prob.append(pred_prob)
             all_targets.append(target)
             all_pred_label.append(pred_label)
