@@ -1,4 +1,5 @@
-
+from torch import nn
+import torch
 
 class SiamNet(nn.Module):
     def __init__(self, classes=2):
