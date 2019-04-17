@@ -144,6 +144,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
             all_targets = []
             all_pred_prob = []
             all_pred_label = []
+            accurate_labels = 0
             for batch_idx, (data, target) in enumerate(val_dataset):
                 net.zero_grad()
                 optimizer.zero_grad()
