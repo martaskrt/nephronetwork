@@ -42,7 +42,7 @@ class SiamNet(nn.Module):
         super(SiamNet, self).__init__()
         self.conv = nn.Sequential()
         self.conv.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
-        self.conv.add_module('batch_s1', nn.BatchNorm2d(96))
+        self.conv.add_module('batch_s1', nn.BatchNorm2d(256))
         self.conv.add_module('relu1_s1',nn.ReLU(inplace=True))
         self.conv.add_module('pool1_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
@@ -54,27 +54,27 @@ class SiamNet(nn.Module):
         self.conv.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
 
         self.conv.add_module('conv3_s1',nn.Conv2d(256, 384, kernel_size=3, padding=1))
-        self.conv.add_module('batch_s1', nn.BatchNorm2d(384))
+        self.conv.add_module('batch3_s1', nn.BatchNorm2d(384))
         self.conv.add_module('relu3_s1',nn.ReLU(inplace=True))
 
         self.conv.add_module('conv4_s1',nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2))
-        self.conv.add_module('batch_s1', nn.BatchNorm2d(384))
+        self.conv.add_module('batch4_s1', nn.BatchNorm2d(384))
         self.conv.add_module('relu4_s1',nn.ReLU(inplace=True))
 
         self.conv.add_module('conv5_s1',nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2))
-        self.conv.add_module('batch_s1', nn.BatchNorm2d(256))
+        self.conv.add_module('batch5_s1', nn.BatchNorm2d(256))
         self.conv.add_module('relu5_s1',nn.ReLU(inplace=True))
         self.conv.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         # *************************** changed layers *********************** #
         self.fc6 = nn.Sequential()
         self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
-        self.fc6.add_module('batch_s1', nn.BatchNorm2d(1024))
+        self.fc6.add_module('batch6_s1', nn.BatchNorm2d(1024))
 
         self.fc6b = nn.Sequential()
         self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
-        self.fc6b.add_module('batch_s1', nn.BatchNorm2d(256))
-        self.fc6b.add_module('conv6_s1', nn.ReLU(inplace=True))
-        self.fc6b.add_module('pool6_s1', nn.MaxPool2d(kernel_size=3, stride=2))
+        self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(256))
+        self.fc6b.add_module('conv6b_s1', nn.ReLU(inplace=True))
+        self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
         self.fc6c = nn.Sequential()
         self.fc6c.add_module('fc7', nn.Linear(1024, 512))
