@@ -20,10 +20,18 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-# from SiameseNetwork import SiamNet
-from SiameseNetworkUNet import SiamNet
+from SiameseNetwork import SiamNet
+# from SiameseNetworkUNet import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
+
+SEED = 42
+
+# Set the random seed manually for reproducibility.
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(SEED)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
@@ -40,7 +48,6 @@ class KidneyDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.X)
-
 
 
 def train(args, train_X, train_y, test_X, test_y, max_epochs):
