@@ -99,8 +99,10 @@ class SiamNet(nn.Module):
             output2 = self.conv(output1)
             z = self.fc6(output2)
             z = self.fc6b(z)
+
+            output1 = output1[:,:,:-1,:-1]
             print(output1.shape, z.shape)
-            output3 = self.uconnect(torch.cat((output1[:,:,:-1,:-1], z), dim=0))
+            output3 = self.uconnect(torch.cat((output1, z), dim=1))
             z = output3.view([B, 1, -1])
             z = self.fc6c(z)
             z = z.view([B, 1, -1])
