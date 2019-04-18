@@ -96,10 +96,9 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         counter_train = 0
         counter_val = 0
         skf = StratifiedKFold(n_splits=n_splits)
-
+        train_y = np.array(train_y)
         for train_index, test_index in skf.split(train_X, train_y):
             train_X_CV = train_X[train_index]
-            print(train_y, train_index)
             train_y_CV = train_y[train_index]
             val_X_CV = train_X[test_index]
             val_y_CV = train_y[test_index]
