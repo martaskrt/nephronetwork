@@ -181,7 +181,6 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
         train_features = get_f(train_data)
         test_features = get_f(test_data)
         if get_cov:
-            print(train_features.keys())
             train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"], train_features["saggital"]]
             test_cov = [train_features["study_id"], test_features["age_at_baseline"], test_features["male"], test_features["saggital"]]
             train_features = train_cov
