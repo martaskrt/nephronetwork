@@ -42,7 +42,7 @@ class SiamNet(nn.Module):
 
         self.fc6b = nn.Sequential()
         # self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
-        self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 96, kernel_size=3, stride=2))
+        self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 96, kernel_size=5, stride=2))
         self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(96))
         self.fc6b.add_module('relu6_s1', nn.ReLU(inplace=True))
         self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
