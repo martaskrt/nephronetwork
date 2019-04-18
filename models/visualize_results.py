@@ -51,10 +51,10 @@ def load_data(inputfile):
 
 def confusion_matrix(args):
     data = load_data(args.fname)
-    dataframe = {'jigsaw-train': data["jigsaw"]["train"]["AUPRC"],
-                 'jigsaw-val': data["jigsaw"]["val"]["AUPRC"],
-                 'control-train': data["non-jigsaw"]["train"]["AUPRC"],
-                 'control-val': data["non-jigsaw"]["val"]["AUPRC"]}
+    dataframe = {'jigsaw-train': data["jigsaw"]["train"]["AUC"],
+                 'jigsaw-val': data["jigsaw"]["val"]["AUC"],
+                 'control-train': data["non-jigsaw"]["train"]["AUC"],
+                 'control-val': data["non-jigsaw"]["val"]["AUC"]}
     p_dataframe = pd.Series(dataframe)
     # ax = sns.scatterplot(x=np.arange(50), y=data["jigsaw"]["train"]["AUC"])
     plt.scatter(x=np.arange(50), y=p_dataframe['jigsaw-train'], color='deepskyblue', label='jigsaw-train')
@@ -63,7 +63,7 @@ def confusion_matrix(args):
     plt.scatter(x=np.arange(50), y=p_dataframe['control-val'], color='violet', label='control-val')
     # ax = sns.scatterplot(data=p_dataframe)
     plt.xlabel('Epoch', fontsize=18)
-    plt.ylabel('AUPRC', fontsize=18)
+    plt.ylabel('AUC', fontsize=18)
     plt.legend()
     plt.show()
 

@@ -4,6 +4,8 @@ from skimage import exposure
 import numpy as np
 import ast
 from numpy import genfromtxt
+import matplotlib.pyplot as plt
+
 
 def open_file(file):
     print(file)
@@ -66,8 +68,9 @@ def get_X(data, contrast, image_dim, siamese=False):
             if (data[i]['image'].shape[0] < 2):
                 samples_to_exclude.append(i)
                 continue
+            group = np.zeros((2, image_dim, image_dim))
             for j in range(2):
-                group = np.zeros((2, image_dim, image_dim))
+
                 if data[i]['kidney_view'].iloc[j] == "Sag":
                     idx = 0
                 elif data[i]['kidney_view'].iloc[j] == "Trans":
@@ -219,3 +222,30 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
         return get_siamese(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
 
 
+
+def view_images(imgs, num_images_to_view=5, views_to_get="siamese"):
+    counter = 0
+    if views_to_get=="siamese":
+        for img in imgs:
+            if counter >= num_images_to_view:
+                break
+            plt.figure()
+            plt.subplot(1, 2, 1)
+            plt.imshow(img[0], cmap='gray')
+            plt.subplot(1, 2, 2)
+            plt.imshow(img[1], cmap='gray')
+            plt.show()
+            counter += 1
+    else:
+        for img in imgs:
+            if counter >= num_images_to_view:
+                break
+            plt.figure()
+            plt.subplot(1, 1, 1)
+            plt.imshow(img[0], cmap='gray')
+            counter += 1
+
+# datafile = "preprocessed_images_20190315.pickle"
+# train_X, train_y, test_X, test_y = load_dataset(views_to_get="siamese", pickle_file=datafile)
+#
+# view_images(test_X)
