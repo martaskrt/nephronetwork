@@ -54,7 +54,7 @@ class DataLoader():
                             transforms.CenterCrop(225)])
         self.__augment_tile = transforms.Compose([
                     transforms.RandomCrop(64),
-                    transforms.Resize((75,75)),
+                    #transforms.Resize((75,75)),
                     transforms.Lambda(rgb_jittering),
                     transforms.ToTensor(),
                     transforms.Normalize(mean=[0.485, 0.456, 0.406],

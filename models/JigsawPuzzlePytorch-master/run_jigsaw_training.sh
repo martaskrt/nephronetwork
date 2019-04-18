@@ -5,4 +5,4 @@ CHECKPOINTS_FOLD=${2} #path_to_output_folder
 
 #python JigsawTrain.py ${IMAGENET_FOLD} --checkpoint=${CHECKPOINTS_FOLD} \
 #                      --classes=1000 --batch 128 --lr=0.001 --gpu=${GPU} --cores=10
-python3 JigsawTrain.py ${IMAGENET_FOLD} --classes=1000 --cores=10 --checkpoint "checkpoints_20190415_bs256_e70_lr0.01" --lr=0.01 --epochs 120 
+python3 JigsawTrain.py ${IMAGENET_FOLD} --classes=1000 --cores=10 --checkpoint "checkpoints_20190415_bs256_e70_lr0.01_64" --lr=0.01 --epochs 70
