@@ -20,8 +20,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 sys.path.append('Dataset')
-# from JigsawNetwork import Network
-from JigsawNetwork_batchnorm import Network
+from JigsawNetwork import Network
+# from JigsawNetwork_batchnorm import Network
 
 
 from TrainingUtils import adjust_learning_rate, compute_accuracy
@@ -161,16 +161,16 @@ def main():
                             np.mean(batch_time), np.mean(net_time),
                             lr, loss,acc)))
 
-            if steps%20==0:
-                logger.scalar_summary('accuracy', acc, steps)
-                logger.scalar_summary('loss', loss, steps)
+            #if steps%20==0:
+             #   logger.scalar_summary('accuracy', acc, steps)
+              #  logger.scalar_summary('loss', loss, steps)
                 
-                original = [im[0] for im in original]
-                imgs = np.zeros([9,75,75,3])
-                for ti, img in enumerate(original):
-                    img = img.numpy()
-                    imgs[ti] = np.stack([(im-im.min())/(im.max()-im.min()) 
-                                         for im in img],axis=2)
+               # original = [im[0] for im in original]
+                #imgs = np.zeros([9,75,75,3])
+                #for ti, img in enumerate(original):
+                 #   img = img.numpy()
+                  #  imgs[ti] = np.stack([(im-im.min())/(im.max()-im.min()) 
+                   #                      for im in img],axis=2)
                 
                 # logger.image_summary('input', imgs, steps)
 
