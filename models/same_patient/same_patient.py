@@ -303,16 +303,16 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
-    parser.add_argument('--batch_size', default=2, type=int, help="Batch size")
+    parser.add_argument('--epochs', default=5, type=int, help="Number of epochs")
+    parser.add_argument('--batch_size', default=64, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
-    parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
+    parser.add_argument("--num_workers", default=4, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    parser.add_argument("--datafile", default="../../data/preprocessed_images_20190315_25%.pkl", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../data/preprocessed_images_20190315.pkl", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -371,9 +371,9 @@ def main():
             test_combinations_y[i] = 0
         test_combinations[i] = [combo[0], combo[2]]
 
-    limit = 50
+    limit = 4000
     training_combinations = np.asarray(training_combinations[:limit])
-    training_combinations_y = training_combinations_y[:5000]
+    training_combinations_y = training_combinations_y[:limit]
     test_combinations = np.asarray(test_combinations[:limit])
     test_combinations_y = test_combinations_y[:limit]
 
@@ -385,6 +385,7 @@ def main():
     validation_set = KidneyDataset(test_combinations, test_combinations_y)
     validation_generator = DataLoader(validation_set, **params)
 
+    print("Starting training")
     train(args, training_generator, validation_generator, max_epochs)
 
 
