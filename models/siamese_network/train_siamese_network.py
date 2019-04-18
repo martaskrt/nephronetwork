@@ -25,6 +25,14 @@ process_results = importlib.machinery.SourceFileLoader('process_results','../pro
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
 
+SEED = 42
+
+# Set the random seed manually for reproducibility.
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(SEED)
+
 class KidneyDataset(torch.utils.data.Dataset):
 
     def __init__(self, X, y):
