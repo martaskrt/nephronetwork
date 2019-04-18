@@ -60,7 +60,7 @@ class SiamNet(nn.Module):
 
         self.fc6c = nn.Sequential()
         # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
-        self.fc6c.add_module('fc7', nn.Linear(256*3*3, 512))
+        self.fc6c.add_module('fc7', nn.Linear(256*14*14, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
         self.fc6c.add_module('drop7', nn.Dropout(p=0.5))
 
