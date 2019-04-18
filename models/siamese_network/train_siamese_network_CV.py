@@ -99,6 +99,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
         for train_index, test_index in skf.split(train_X, train_y):
             train_X_CV = train_X[train_index]
+            print(train_y, train_index)
             train_y_CV = train_y[train_index]
             val_X_CV = train_X[test_index]
             val_y_CV = train_y[test_index]
@@ -130,7 +131,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
                 assert len(pred_prob) == len(target)
                 assert len(pred_label) == len(target)
-                
+
                 all_pred_prob_train.append(pred_prob)
                 all_targets_train.append(target)
                 all_pred_label_train.append(pred_label)
@@ -230,8 +231,9 @@ def main():
 
 
 
-    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", sort_by_date=True, pickle_file=args.datafile,
-                                                                 contrast=args.contrast)
+    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", sort_by_date=True,
+                                                                 pickle_file=args.datafile, contrast=args.contrast,
+                                                                 split=0.9)
 
 
     train(args,  train_X, train_y, test_X, test_y, max_epochs)
