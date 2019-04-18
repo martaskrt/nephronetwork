@@ -33,7 +33,8 @@ class SiamNet(nn.Module):
         self.conv.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         # *************************** changed layers *********************** #
         self.fc6 = nn.Sequential()
-        self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
+        # self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
+        self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=2, stride=1, padding=1))
         self.fc6.add_module('batch6_s1', nn.BatchNorm2d(1024))
 
         self.fc6b = nn.Sequential()
@@ -43,7 +44,8 @@ class SiamNet(nn.Module):
         self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
         self.fc6c = nn.Sequential()
-        self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
+        # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
+        self.fc6c.add_module('fc7', nn.Linear(256*3*3, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
         self.fc6c.add_module('drop7', nn.Dropout(p=0.5))
 
