@@ -93,7 +93,7 @@ class SiamNet(nn.Module):
             else:
                 input = torch.FloatTensor(curr_x.to(device))
             output1 = self.conv1(input)
-            output2 = self.conv(input)
+            output2 = self.conv(output1)
             z = self.fc6(output2)
             z = self.fc6b(z)
             output3 = self.uconnect(torch.cat((output1, z), dim=0))
