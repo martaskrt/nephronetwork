@@ -87,9 +87,11 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     for epoch in range(max_epochs):
         accurate_labels_train = 0
         accurate_labels_val = 0
+        accurate_labels_test = 0
 
         loss_accum_train = 0
         loss_accum_val = 0
+        loss_accum_test = 0
 
         all_targets_train = []
         all_pred_prob_train = []
@@ -99,9 +101,16 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         all_pred_prob_val = []
         all_pred_label_val = []
 
-        n_splits = 5
+        all_targets_test = []
+        all_pred_prob_test = []
+        all_pred_label_test = []
+
+
         counter_train = 0
         counter_val = 0
+        counter_test = 0
+
+        n_splits = 5
         skf = StratifiedKFold(n_splits=n_splits)
         train_y = np.array(train_y)
         for train_index, test_index in skf.split(train_X, train_y):
@@ -167,6 +176,32 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                     all_targets_val.append(target)
                     all_pred_label_val.append(pred_label)
 
+        with torch.set_grad_enabled(False):
+            test_set = KidneyDataset(test_X, test_y)
+            test_generator = DataLoader(test_set, **params)
+            for batch_idx, (data, target) in enumerate(test_generator):
+                net.zero_grad()
+                optimizer.zero_grad()
+                output = net(data)
+                target = target.type(torch.LongTensor).to(device)
+
+                loss = F.cross_entropy(output, target)
+                loss_accum_test += loss.item() * len(target)
+                counter_test += len(target)
+                output_softmax = softmax(output)
+
+                accurate_labels_test += torch.sum(torch.argmax(output, dim=1) == target).cpu()
+
+                pred_prob = output_softmax[:, 1]
+                pred_prob = pred_prob.squeeze()
+                pred_label = torch.argmax(output, dim=1)
+
+                assert len(pred_prob) == len(target)
+                assert len(pred_label) == len(target)
+
+                all_pred_prob_test.append(pred_prob)
+                all_targets_test.append(target)
+                all_pred_label_test.append(pred_label)
 
         all_pred_prob_train = torch.cat(all_pred_prob_train)
         all_targets_train = torch.cat(all_targets_train)
@@ -203,6 +238,25 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                                                                      results_val['fp'], results_val['fn'],
                                                                      results_val['tp']))
 
+        all_pred_prob_test = torch.cat(all_pred_prob_test)
+        all_targets_test = torch.cat(all_targets_test)
+        all_pred_label_test = torch.cat(all_pred_label_test)
+
+        assert len(all_targets_test) == len(test_y)
+        assert len(all_pred_label_test) == len(test_y)
+        assert len(all_pred_prob_test) == len(test_y)
+
+        results_test = process_results.get_metrics(y_score=all_pred_label_test.cpu().detach().numpy(),
+                                                  y_true=all_targets_test.cpu().detach().numpy(),
+                                                  y_pred=all_pred_prob_test.cpu().detach().numpy())
+        print('ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, int(accurate_labels_test) / counter_test,
+                                                                     loss_accum_test / counter_test, results_test['auc'],
+                                                                     results_test['auprc'], results_test['tn'],
+                                                                     results_test['fp'], results_test['fn'],
+                                                                     results_test['tp']))
+
+
         if ((epoch+1) % 5) == 0 and epoch > 0:
             checkpoint = {'epoch': epoch,
                           'loss': loss,
@@ -211,14 +265,20 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                           'optimizer': optimizer.state_dict(),
                           'loss_train': loss_accum_train / counter_train,
                           'loss_val': loss_accum_val / counter_val,
-                          'accuracy_train': accurate_labels_train / counter_train,
-                          'accuracy_val': accurate_labels_val / counter_val,
+                          'loss_test': loss_accum_test / counter_test,
+                          'accuracy_train': int(accurate_labels_train) / counter_train,
+                          'accuracy_val': int(accurate_labels_val) / counter_val,
+                          'accuracy_test': int(accurate_labels_test) / counter_test,
                           'results_train': results_train,
                           'results_val': results_val,
+                          'results_test': results_test,
                           'all_pred_prob_train': all_pred_prob_train,
                           'all_pred_prob_val': all_pred_prob_val,
+                          'all_pred_prob_test': all_pred_prob_test,
                           'all_targets_train': all_targets_train,
-                          'all_targets_val': all_targets_val}
+                          'all_targets_val': all_targets_val,
+                          'all_targets_test': all_targets_test}
+            
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
             path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
@@ -243,8 +303,6 @@ def main():
     args = parser.parse_args()
 
     max_epochs = args.epochs
-
-
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", sort_by_date=True,
                                                                  pickle_file=args.datafile, contrast=args.contrast,
