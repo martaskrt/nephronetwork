@@ -135,11 +135,11 @@ class SiamNet(nn.Module):
             input_1 = torch.cuda.FloatTensor(curr_x_1.to(device))
         else:
             input_1 = torch.FloatTensor(curr_x_1.to(device))
-        z_1 = self.conv_0(input_1)
-        z_1 = self.fc6_0(z_1)
-        z_1 = self.fc6b_0(z_1)
+        z_1 = self.conv_1(input_1)
+        z_1 = self.fc6_1(z_1)
+        z_1 = self.fc6b_1(z_1)
         z_1 = z_1.view([B, 1, -1])
-        z_1 = self.fc6c_0(z_1)
+        z_1 = self.fc6c_1(z_1)
         z_1 = z_1.view([B, 1, -1])
         x_list.append(z_1)
 
