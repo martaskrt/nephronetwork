@@ -246,10 +246,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         assert len(all_pred_label_test) == len(test_y)
         assert len(all_pred_prob_test) == len(test_y)
 
-        results_test = process_results.get_metrics(y_score=all_pred_label_test.cpu().detach().numpy(),
+        results_test = process_results.get_metrics(y_score=all_pred_prob_test.cpu().detach().numpy(),
                                                   y_true=all_targets_test.cpu().detach().numpy(),
-                                                  y_pred=all_pred_prob_test.cpu().detach().numpy())
-        print('ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+                                                  y_pred=all_pred_label_test.cpu().detach().numpy())
+        print('TestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
               'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, int(accurate_labels_test) / counter_test,
                                                                      loss_accum_test / counter_test, results_test['auc'],
                                                                      results_test['auprc'], results_test['tn'],
@@ -278,7 +278,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                           'all_targets_train': all_targets_train,
                           'all_targets_val': all_targets_val,
                           'all_targets_test': all_targets_test}
-            
+
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
             path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
