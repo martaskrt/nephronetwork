@@ -181,7 +181,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                                               y_pred=all_pred_label_train.cpu().detach().numpy())
 
         print('TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, accurate_labels_train/counter_train,
+              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, int(accurate_labels_train)/counter_train,
                                                                     loss_accum_train/counter_train, results_train['auc'],
                                                                     results_train['auprc'], results_train['tn'],
                                                                     results_train['fp'], results_train['fn'],
@@ -193,12 +193,11 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         assert len(all_targets_val) == len(train_y)
         assert len(all_pred_prob_val) == len(train_y)
         assert len(all_pred_label_val) == len(train_y)
-
         results_val = process_results.get_metrics(y_score=all_pred_prob_val.cpu().detach().numpy(),
                                                   y_true=all_targets_val.cpu().detach().numpy(),
                                                   y_pred=all_pred_label_val.cpu().detach().numpy())
         print('ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, accurate_labels_val / counter_val,
+              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, int(accurate_labels_val) / counter_val,
                                                                      loss_accum_val / counter_val, results_val['auc'],
                                                                      results_val['auprc'], results_val['tn'],
                                                                      results_val['fp'], results_val['fn'],
