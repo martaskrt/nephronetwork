@@ -211,9 +211,9 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_targets_train = torch.cat(all_targets_train)
             all_pred_label_train = torch.cat(all_pred_label_train)
 
-            assert len(all_targets_train) == len(train_y)
-            assert len(all_pred_prob_train) == len(train_y)
-            assert len(all_pred_label_train) == len(train_y)
+            assert len(all_targets_train) == len(training_set)
+            assert len(all_pred_prob_train) == len(training_set)
+            assert len(all_pred_label_train) == len(training_set)
 
             results_train = process_results.get_metrics(y_score=all_pred_prob_train.cpu().detach().numpy(),
                                                   y_true=all_targets_train.cpu().detach().numpy(),
@@ -229,9 +229,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_targets_val = torch.cat(all_targets_val)
             all_pred_label_val = torch.cat(all_pred_label_val)
 
-            assert len(all_targets_val) == len(train_y)
-            assert len(all_pred_prob_val) == len(train_y)
-            assert len(all_pred_label_val) == len(train_y)
+            assert len(all_targets_val) == len(validation_set)
+            assert len(all_pred_prob_val) == len(validation_set)
+            assert len(all_pred_label_val) == len(validation_set)
+
             results_val = process_results.get_metrics(y_score=all_pred_prob_val.cpu().detach().numpy(),
                                                       y_true=all_targets_val.cpu().detach().numpy(),
                                                       y_pred=all_pred_label_val.cpu().detach().numpy())
