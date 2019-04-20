@@ -51,35 +51,10 @@ class KidneyDataset(torch.utils.data.Dataset):
 
 
 def train(args, train_X, train_y, test_X, test_y, max_epochs):
-    net = SiamNet().to(device)
-    if args.checkpoint != "":
-        pretrained_dict = torch.load(args.checkpoint)
-        model_dict = net.state_dict()
-
-        # 1. filter out unnecessary keys
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-        for k,v in model_dict.items():
-            if k not in pretrained_dict:
-                pretrained_dict[k] = model_dict[k]
-        # 2. overwrite entries in the existing state dict
-        model_dict.update(pretrained_dict)
-        # 3. load the new state dict
-        net.load_state_dict(pretrained_dict)
-
-    # print(summary(net, (2, 256, 256)))
-    # import sys
-    # sys.exit(0)
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
                    'weight_decay': args.weight_decay
-                }
-    if args.adam:
-        optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
-    else:
-        optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
-                                    weight_decay=hyperparams['weight_decay'])
-
+                   }
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
@@ -88,11 +63,35 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     test_generator = DataLoader(test_set, **params)
 
     fold=1
-
     n_splits = 5
     skf = StratifiedKFold(n_splits=n_splits)
     train_y = np.array(train_y)
     for train_index, test_index in skf.split(train_X, train_y):
+
+        net = SiamNet().to(device)
+        if args.checkpoint != "":
+            pretrained_dict = torch.load(args.checkpoint)
+            model_dict = net.state_dict()
+
+            # 1. filter out unnecessary keys
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+            pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            for k, v in model_dict.items():
+                if k not in pretrained_dict:
+                    pretrained_dict[k] = model_dict[k]
+            # 2. overwrite entries in the existing state dict
+            model_dict.update(pretrained_dict)
+            # 3. load the new state dict
+            net.load_state_dict(pretrained_dict)
+
+        if args.adam:
+            optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
+                                         weight_decay=hyperparams['weight_decay'])
+        else:
+            optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
+                                        weight_decay=hyperparams['weight_decay'])
+
+
         train_X_CV = train_X[train_index]
         train_y_CV = train_y[train_index]
         val_X_CV = train_X[test_index]
