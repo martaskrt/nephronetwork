@@ -3,7 +3,6 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import StratifiedKFold
 import codecs
 import errno
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 from PIL import Image
