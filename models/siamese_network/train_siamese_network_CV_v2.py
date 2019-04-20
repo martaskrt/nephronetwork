@@ -211,9 +211,9 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_targets_train = torch.cat(all_targets_train)
             all_pred_label_train = torch.cat(all_pred_label_train)
 
-            assert len(all_targets_train) == len(train_y)*(n_splits-1)
-            assert len(all_pred_prob_train) == len(train_y)*(n_splits-1)
-            assert len(all_pred_label_train) == len(train_y)*(n_splits-1)
+            assert len(all_targets_train) == len(train_y)
+            assert len(all_pred_prob_train) == len(train_y)
+            assert len(all_pred_label_train) == len(train_y)
 
             results_train = process_results.get_metrics(y_score=all_pred_prob_train.cpu().detach().numpy(),
                                                   y_true=all_targets_train.cpu().detach().numpy(),
