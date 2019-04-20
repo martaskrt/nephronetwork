@@ -246,7 +246,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_dir', default='/home/lauren/train-us-seqs', type=int, help="Number of epochs")
+    parser.add_argument('--train_dir', default='/home/lauren/train-us-seqs',help="Number of epochs")
     parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
