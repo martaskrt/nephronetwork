@@ -66,6 +66,9 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     n_splits = 5
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     train_y = np.array(train_y)
+
+    train_X, train_y = shuffle(train_X, train_y, random_state=42)
+
     for train_index, test_index in skf.split(train_X, train_y):
 
         net = SiamNet().to(device)
