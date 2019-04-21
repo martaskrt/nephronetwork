@@ -21,7 +21,7 @@ from torch.autograd import Variable
 import pandas as pd
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print("Device: " + device)
+print("Device: " + str(device))
 softmax = torch.nn.Softmax(dim=1)
 
 # FUNCTION to load all us triad seq paths
