@@ -68,6 +68,12 @@ def get_X(data, contrast, image_dim, siamese=False):
             if (data[i]['image'].shape[0] < 2):
                 samples_to_exclude.append(i)
                 continue
+            if (data[i]['kidney_view'].iloc[0] == "Sag" and data[i]['kidney_view'].iloc[1] == "Trans") or \
+                    (data[i]['kidney_view'].iloc[1] == "Sag" and data[i]['kidney_view'].iloc[0] == "Trans"):
+                pass
+            else:
+                samples_to_exclude.append(i)
+                continue
             group = np.zeros((2, image_dim, image_dim))
             for j in range(2):
 
