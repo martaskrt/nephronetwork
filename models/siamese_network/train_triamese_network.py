@@ -274,6 +274,8 @@ def main():
 
     process_results = importlib.machinery.SourceFileLoader('process_results',os.path.join(args.git_dir,'models/process_results.py')).load_module()
     
+    
+    print(args.git_dir +'/models/siamese_network/')
     os.chdir(args.git_dir +'/models/siamese_network/')
     if args.siam_unet:
         from SiameseNetworkUNet import SiamNet
