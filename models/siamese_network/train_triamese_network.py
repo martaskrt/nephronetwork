@@ -94,7 +94,7 @@ class TriadDataset(torch.utils.data.Dataset):
         imgs,target = load_sample(self.filelist[index])
         return (imgs,target)
 
-def train(args, training_generator, validation_generator, max_epochs):
+def train(args, training_generator, validation_generator, max_epochs,SiamNet):
     net = SiamNet().to(device)
     if args.checkpoint != "":
         pretrained_dict = torch.load(args.checkpoint)
@@ -295,7 +295,7 @@ def main():
                                                    batch_size=args.batch_size,
                                                    shuffle=True)
  
-    train(args,triad_training_dataloader, triad_valid_dataloader,max_epochs)
+    train(args,triad_training_dataloader, triad_valid_dataloader,max_epochs,SiamNet)
 
 if __name__ == '__main__':
     main()
