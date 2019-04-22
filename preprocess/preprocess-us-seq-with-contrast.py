@@ -168,15 +168,15 @@ def main():
     parser.add_argument('-params', default=1, help="parameter settings to crop images "
                                                    "(see IMAGE_PARAMS_1 at top of file)")
     parser.add_argument('-view', default=0, help="number of images to visualize")
-    parser.add_argument('-contrast', default=1, help="0 = original image, 1 = exposure.equalize_hist(image), 2 = exposure.equalize_adapthist(image), 3 = exposure.rescale_intensity(image)")
+    parser.add_argument('-contrast', default=2, help="0 = original image, 1 = exposure.equalize_hist(image), 2 = exposure.equalize_adapthist(image), 3 = exposure.rescale_intensity(image)")
     parser.add_argument('-output_dim', default=256, help="dimension of output image")
     parser.add_argument('-rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/test-cabs/', 
                         help="directory of US sequence dicoms")
     parser.add_argument('-dcm_dir', default='D5048003_1', 
                         help="directory of US sequence dicoms")
-    parser.add_argument('-jpg_dump_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-jpgs/contrast1/', 
+    parser.add_argument('-jpg_dump_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-jpgs/contrast2/', 
                         help="directory of US sequence dicoms")
-    parser.add_argument('-out_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-us-seqs/contrast1/', 
+    parser.add_argument('-out_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-us-seqs/contrast2/', 
                         help="directory of US sequence dicoms")
 
     opt = parser.parse_args()

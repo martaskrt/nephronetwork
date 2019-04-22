@@ -105,11 +105,11 @@ def train_test_assg(n_us_seqs,test_prob = 0.2):
     return np.random.choice(["train","test"],n_us_seqs,p=[1-test_prob,test_prob])
     
 ## get out file name based on in file name for pandas df using pickle 
-def get_out_file_name(in_file,group="train"):
+def get_out_file_name(in_file,img_num,group="train"):
     if group=="train":
-        out_file_name = in_file.split("/")[-1][:-7] + "_us_seq_training.pickle"
+        out_file_name = in_file.split("/")[-1][:-7] + "_" + img_num + "_us_seq_training.pickle"
     elif group=="test":
-        out_file_name = in_file.split("/")[-1][:-7] + "_us_seq_test.pickle"
+        out_file_name = in_file.split("/")[-1][:-7] + "_" + img_num + "_us_seq_test.pickle"
     
     return out_file_name
 
@@ -146,8 +146,8 @@ def get_out_file_name(in_file,group="train"):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-in_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-us-seqs/', help="directory of ultrasound sequences")
-    parser.add_argument('-train_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/triad_model/training_samples/', help="output directory of training triads")
-    parser.add_argument('-test_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/triad_model/test_samples/', help="output directory of test triads")
+    parser.add_argument('-train_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/triad_model/ind_training_samples/', help="output directory of training triads")
+    parser.add_argument('-test_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/triad_model/ind_test_samples/', help="output directory of test triads")
     parser.add_argument('-contrast', default=0, 
                         help="Maybe check contrast beforehand! 0 = original image, 1 = exposure.equalize_hist(image), 2 = exposure.equalize_adapthist(image), 3 = exposure.rescale_intensity(image)")
 
@@ -163,21 +163,27 @@ def main():
         us_seq = load_us_seq(file,opt)
         
         try:
-            training_df = get_training_samples(us_seq)             
-            if train_vs_test == "train":
-                out_file = os.path.join(opt.train_dir,get_out_file_name(file,group = "train"))
-                #os.makedirs(os.path.dirname(out_file), exist_ok=True)
-                training_df.to_pickle(out_file)
-            elif train_vs_test == "test":
-                out_file = os.path.join(opt.test_dir,get_out_file_name(file,group = "test"))
-                #os.makedirs(os.path.dirname(out_file), exist_ok=True)
-                training_df.to_pickle(out_file)
+            training_df = get_training_samples(us_seq)      
+            
+            for k in range(len(training_df.label)):
+                
+                if train_vs_test == "train":
+                    out_file = os.path.join(opt.train_dir,get_out_file_name(file,str(k),group = "train"))
+                    #os.makedirs(os.path.dirname(out_file), exist_ok=True)
+                    training_df.iloc[k].to_pickle(out_file)
+                elif train_vs_test == "test":
+                    out_file = os.path.join(opt.test_dir,get_out_file_name(file,str(k),group = "test"))
+                    #os.makedirs(os.path.dirname(out_file), exist_ok=True)
+                    training_df.iloc[k].to_pickle(out_file)
+                    
         except:
             print("Error getting training samples for: " + file)
+
         i=i+1
 
 if __name__ == "__main__":
     main()
+
 
 ## DEBUG MAIN_FUNCTION
 # =============================================================================
@@ -187,51 +193,33 @@ if __name__ == "__main__":
 # opt = options()
 # opt.in_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/test-dir/'
 # opt.contrast = 0
+# opt.train_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/test-dir/test/'
+# opt.test_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/test-dir/test/'
 # 
 # pickle_files = get_pickle_files(opt.in_dir)
 # 
-# file = pickle_files[0]
-# #for file in pickle_files:
-# us_seq = load_us_seq(file,opt)
-# 
-# get_out_file_name(file)
-# 
-# for k in range(len(us_seq)):
-#     view_sample_images(us_seq[k])
-# 
-# training_df = get_training_samples(us_seq)
-# 
-# training_df.label[200]
-# plot_triads(training_df.triad[200])
-# =============================================================================
-
-# =============================================================================
-#class options(object):
-#    pass
-## 
-#opt = options()
-#opt.in_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/test-dir/'
-#opt.contrast = 2
-#opt.train_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/triad/training-dir/'
-#opt.test_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/triad/test-dir/'
-## 
-#pickle_files = get_pickle_files(opt.in_dir)
-## 
-#train_test_split = train_test_assg(len(pickle_files))
+# train_test_split = train_test_assg(len(pickle_files))
 # 
 # i = 0    
+# file = pickle_files[0]
 # for file in pickle_files:
 #     train_vs_test = train_test_split[i]        
 #     us_seq = load_us_seq(file,opt)
-#     training_df = get_training_samples(us_seq) 
-#     if train_vs_test == "train":
-#         out_file = os.path.join(opt.train_dir,get_out_file_name(file,group = "train"))
-#         os.makedirs(os.path.dirname(out_file), exist_ok=True)
-#         training_df.to_pickle(out_file)
-#     elif train_vs_test == "test":
-#         out_file = os.path.join(opt.test_dir,get_out_file_name(file,group = "test"))
-#         os.makedirs(os.path.dirname(out_file), exist_ok=True)
-#         training_df.to_pickle(out_file)
+#     
+#     try:
+#         training_df = get_training_samples(us_seq)      
+#         
+#         for k in range(len(training_df.label)):
+#             
+#             if train_vs_test == "train":
+#                 out_file = os.path.join(opt.train_dir,get_out_file_name(file,str(k),group = "train"))
+#                 #os.makedirs(os.path.dirname(out_file), exist_ok=True)
+#                 training_df.iloc[k].to_pickle(out_file)
+#             elif train_vs_test == "test":
+#                 out_file = os.path.join(opt.test_dir,get_out_file_name(file,str(k),group = "test"))
+#                 #os.makedirs(os.path.dirname(out_file), exist_ok=True)
+#                 training_df.iloc[k].to_pickle(out_file)
+#     except:
+#         print("Error getting training samples for: " + file)
 #     i=i+1
-# 
-# =============================================================================
+# # =============================================================================
