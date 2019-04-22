@@ -243,7 +243,7 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
                                                                      results_val['fp'], results_val['fn'],
                                                                      results_val['tp']))
             #
-        if ((epoch+1) % 50) == 0:
+        if ((epoch+1) % 10) == 0:
             checkpoint = {'epoch': epoch,
                           'loss': loss,
                           'hyperparams': hyperparams,
@@ -251,9 +251,9 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
                           'optimizer': optimizer.state_dict()}
             #if not os.path.isdir(args.dir):
             #    os.makedirs(args.dir)
-            if epoch > 50:
-                path_to_prev_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch-50) + '.pth'
-                os.remove(path_to_prev_checkpoint)
+            # if epoch > 50:
+            #     path_to_prev_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch-50) + '.pth'
+            #     os.remove(path_to_prev_checkpoint)
             path_to_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
 
