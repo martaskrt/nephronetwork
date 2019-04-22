@@ -4,4 +4,4 @@
 
 module load python/2.7.16
 
-python /hpf/largeprojects/agoldenb/lauren/Hydronephrosis/triad_model/code/preparing-data-for-triad-model.py
+python /hpf/largeprojects/agoldenb/lauren/Hydronephrosis/triad_model/code/preparing-data-for-triad-model_ind_pickles.py
