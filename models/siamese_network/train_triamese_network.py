@@ -254,7 +254,7 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
             # if epoch > 50:
             #     path_to_prev_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch-50) + '.pth'
             #     os.remove(path_to_prev_checkpoint)
-            path_to_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch) + '.pth'
+            path_to_checkpoint = args.git_dir + '/models/siamese_network/' + "triamese_checkpoint_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
 
 
