@@ -1,17 +1,18 @@
 from sklearn.utils import shuffle
 # from sklearn.model_selection import KFold
-from sklearn.model_selection import StratifiedKFold
 import codecs
 import errno
 import numpy as np
 import os
-from PIL import Image
+#from PIL import Image
 import random
 import torch
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
-import torchvision.datasets.mnist
+# =============================================================================
+# import torchvision.datasets.mnist
+# =============================================================================
 from torchvision import transforms
 # from tqdm import tqdm
 import importlib.machinery
@@ -242,16 +243,19 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
                                                                      results_val['fp'], results_val['fn'],
                                                                      results_val['tp']))
             #
-            # if ((epoch+1) % 10) == 0:
-            #     checkpoint = {'epoch': epoch,
-            #                   'loss': loss,
-            #                   'hyperparams': hyperparams,
-            #                   'model_state_dict': net.state_dict(),
-            #                   'optimizer': optimizer.state_dict()}
-            #     if not os.path.isdir(args.dir):
-            #         os.makedirs(args.dir)
-            #     path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
-            #     torch.save(checkpoint, path_to_checkpoint)
+        if ((epoch+1) % 50) == 0:
+            checkpoint = {'epoch': epoch,
+                          'loss': loss,
+                          'hyperparams': hyperparams,
+                          'model_state_dict': net.state_dict(),
+                          'optimizer': optimizer.state_dict()}
+            #if not os.path.isdir(args.dir):
+            #    os.makedirs(args.dir)
+            if epoch > 50:
+                path_to_prev_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch-50) + '.pth'
+                os.remove(path_to_prev_checkpoint)
+            path_to_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch) + '.pth'
+            torch.save(checkpoint, path_to_checkpoint)
 
 
 
@@ -259,7 +263,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_dir', default='/home/lauren/ind_train_us_seqs/',help="Number of epochs")
     parser.add_argument('--valid_dir', default='/home/lauren/ind_val_us_seq/', help="Number of epochs")
-    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=1000, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
