@@ -18,7 +18,7 @@ while read cab_file ; do
 	
 	/hpf/largeprojects/agoldenb/lauren/software/cabextract-1.9.1/cabextract -d $dcm_file $cab_file	
 	
-	python /hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/preprocess-us-seq-with-contrast.py -dcm_dir $dcm_file -rootdir $cab_dir -contrast 2 -jpg_dump_dir /hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-jpgs/contrast2/ -out_dir /hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-us-seqs/contrast2/
+	python /hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/preprocess-us-seq-with-contrast.py -dcm_dir $dcm_file -rootdir $cab_dir
 	
 	rm -r $dcm_file
 	
