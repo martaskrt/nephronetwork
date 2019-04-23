@@ -20,6 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 import argparse
 from torch.autograd import Variable
 import pandas as pd
+import time
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Device: " + str(device))
@@ -211,6 +212,7 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
                 all_pred_prob_val.append(pred_prob)
                 all_targets_val.append(target)
                 all_pred_label_val.append(pred_label)
+		
 
         all_pred_prob_train = torch.cat(all_pred_prob_train)
         all_targets_train = torch.cat(all_targets_train)
@@ -265,7 +267,7 @@ def main():
     parser.add_argument('--valid_dir', default='/storage/ind_val_us_seq/', help="Number of epochs")
     parser.add_argument('--epochs', default=100, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
-    parser.add_argument('--lr', default=0.01, type=float, help="Learning rate")
+    parser.add_argument('--lr', default=0.5, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
@@ -292,8 +294,7 @@ def main():
     
     max_epochs = args.epochs
     
-    training_triad_data = TriadDataset(args.train_dir)
-    
+    training_triad_data = TriadDataset(args.train_dir)    
     triad_training_dataloader = torch.utils.data.DataLoader(dataset=training_triad_data,
                                                    batch_size=args.batch_size,
                                                    shuffle=True)
