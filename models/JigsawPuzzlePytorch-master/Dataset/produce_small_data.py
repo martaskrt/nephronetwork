@@ -15,10 +15,10 @@ import torchvision.transforms as transforms
 
 from PIL import Image
 
-# datapath = '/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_train'
-datapath = '/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_val'
-# trainval = 'train'
-trainval = 'val'
+datapath = '/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_train'
+#datapath = '/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzlePytorch-master/ILSVRC2012_img_val'
+trainval = 'train'
+#trainval = 'val'
 
 def main():
     #data = DataLoader(datapath+'/ILSVRC2012_img_train', datapath+'/ilsvrc12_train.txt')
