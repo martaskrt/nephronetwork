@@ -20,8 +20,9 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-from SiameseNetwork import SiamNet
+# from SiameseNetwork import SiamNet
 # from SiameseNetworkUNet import SiamNet
+from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
 
@@ -74,10 +75,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                    'momentum': args.momentum,
                    'weight_decay': args.weight_decay
                 }
-    # optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
-    #                             weight_decay=hyperparams['weight_decay'])
+    optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
+                                 weight_decay=hyperparams['weight_decay'])
 
-    optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
+    #optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'], weight_decay=hyperparams['weight_decay'])
 
     params = {'batch_size': args.batch_size,
               'shuffle': True,
@@ -306,7 +307,7 @@ def main():
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", sort_by_date=True,
                                                                  pickle_file=args.datafile, contrast=args.contrast,
-                                                                 split=0.9)
+                                                                  split=0.9)
 
 
     train(args,  train_X, train_y, test_X, test_y, max_epochs)

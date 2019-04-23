@@ -21,7 +21,7 @@ from torch.autograd import Variable
 
 sys.path.append('Dataset')
 from JigsawNetwork import Network
-# from JigsawNetwork_batchnorm import Network
+#from JigsawNetwork_batchnorm import Network
 
 
 from TrainingUtils import adjust_learning_rate, compute_accuracy

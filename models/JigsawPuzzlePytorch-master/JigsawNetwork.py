@@ -41,8 +41,8 @@ class Network(nn.Module):
 
         self.fc6 = nn.Sequential()
         #self.fc6.add_module('fc6_s1',nn.Linear(256*3*3, 1024))
-        # self.fc6.add_module('fc6_s1',nn.Linear(256*2*2, 1024))
-        self.fc6.add_module('fc6_s1', nn.Linear(256 * 1 * 1, 1024))
+        self.fc6.add_module('fc6_s1',nn.Linear(256*2*2, 1024))
+        # self.fc6.add_module('fc6_s1', nn.Linear(256 * 1 * 1, 1024))
         self.fc6.add_module('relu6_s1',nn.ReLU(inplace=True))
         self.fc6.add_module('drop6_s1',nn.Dropout(p=0.5))
 

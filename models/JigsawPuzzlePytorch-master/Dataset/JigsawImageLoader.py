@@ -22,8 +22,8 @@ class DataLoader(data.Dataset):
             transforms.Resize(256, Image.BILINEAR),
             transforms.CenterCrop(255)])
         self.__augment_tile = transforms.Compose([
-            # transforms.RandomCrop(64),
-            transforms.RandomCrop(50),
+            transforms.RandomCrop(64),
+            # transforms.RandomCrop(50),
             #transforms.Resize((75, 75), Image.BILINEAR),
             transforms.Lambda(rgb_jittering),
             transforms.ToTensor(),
@@ -41,32 +41,31 @@ class DataLoader(data.Dataset):
         if img.size[0] != 255:
             img = self.__image_transformer(img)
 
-        # s = float(img.size[0]) / 3
-        s = float(img.size[0]) / 4
+        s = float(img.size[0]) / 3
+        # s = float(img.size[0]) / 4
         a = s / 2
-        # tiles = [None] * 9
-        tiles = [None] * 16
-        # for n in range(9):
-        for n in range(16):
-            # i = n / 3
-            i = n / 4
-            # j = n % 3
-            j = n % 4
+        tiles = [None] * 9
+        # tiles = [None] * 16
+        for n in range(9):
+        # for n in range(16):
+            i = n / 3
+            # i = n / 4
+            j = n % 3
+            # j = n % 4
             c = [a * i * 2 + a, a * j * 2 + a]
             c = np.array([c[1] - a, c[0] - a, c[1] + a + 1, c[0] + a + 1]).astype(int)
             tile = img.crop(c.tolist())
             tile = self.__augment_tile(tile)
             # Normalize the patches indipendently to avoid low level features shortcut
-            # m, s = tile.view(3, -1).mean(dim=1).numpy(), tile.view(3, -1).std(dim=1).numpy()
-            m, s = tile.view(3, -1).mean(dim=1).numpy(), tile.view(3, -1).std(dim=1).numpy()
-            s[s == 0] = 1
-            norm = transforms.Normalize(mean=m.tolist(), std=s.tolist())
-            tile = norm(tile)
+            #m, s = tile.view(3, -1).mean(dim=1).numpy(), tile.view(3, -1).std(dim=1).numpy()
+            #s[s == 0] = 1
+            #norm = transforms.Normalize(mean=m.tolist(), std=s.tolist())
+            #tile = norm(tile)
             tiles[n] = tile
 
         order = np.random.randint(len(self.permutations))
-        # data = [tiles[self.permutations[order][t]] for t in range(9)]
-        data = [tiles[self.permutations[order][t]] for t in range(16)]
+        data = [tiles[self.permutations[order][t]] for t in range(9)]
+        # data = [tiles[int(self.permutations[order][t])] for t in range(16)]
         data = torch.stack(data, 0)
 
         return data, int(order), tiles
