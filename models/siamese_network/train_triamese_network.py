@@ -1,17 +1,18 @@
 from sklearn.utils import shuffle
 # from sklearn.model_selection import KFold
-from sklearn.model_selection import StratifiedKFold
 import codecs
 import errno
 import numpy as np
 import os
-from PIL import Image
+#from PIL import Image
 import random
 import torch
 from torch import nn
 from torch import optim
 import torch.nn.functional as F
-import torchvision.datasets.mnist
+# =============================================================================
+# import torchvision.datasets.mnist
+# =============================================================================
 from torchvision import transforms
 # from tqdm import tqdm
 import importlib.machinery
@@ -21,6 +22,7 @@ from torch.autograd import Variable
 import pandas as pd
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print("Device: " + str(device))
 softmax = torch.nn.Softmax(dim=1)
 
 # FUNCTION to load all us triad seq paths
@@ -94,7 +96,7 @@ class TriadDataset(torch.utils.data.Dataset):
         imgs,target = load_sample(self.filelist[index])
         return (imgs,target)
 
-def train(args, training_generator, validation_generator, max_epochs):
+def train(args, training_generator, validation_generator, max_epochs,SiamNet,process_results):
     net = SiamNet().to(device)
     if args.checkpoint != "":
         pretrained_dict = torch.load(args.checkpoint)
@@ -210,6 +212,9 @@ def train(args, training_generator, validation_generator, max_epochs):
                 all_targets_val.append(target)
                 all_pred_label_val.append(pred_label)
 
+        all_pred_prob_train = torch.cat(all_pred_prob_train)
+        all_targets_train = torch.cat(all_targets_train)
+        all_pred_label_train = torch.cat(all_pred_label_train)
 
         all_pred_prob_val = torch.cat(all_pred_prob_val)
         all_targets_val = torch.cat(all_targets_val)
@@ -218,10 +223,19 @@ def train(args, training_generator, validation_generator, max_epochs):
         #assert len(all_targets_val) == len(train_y)
         #assert len(all_pred_prob_val) == len(train_y)
         #assert len(all_pred_label_val) == len(train_y)
+        results_train = process_results.get_metrics(y_score=all_pred_prob_train.cpu().detach().numpy(),
+                                                  y_true=all_targets_train.cpu().detach().numpy(),
+                                                  y_pred=all_pred_label_train.cpu().detach().numpy())
+        print('TrainEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, 100. * accurate_labels_train / counter_train,
+                                                                     loss_accum_train / counter_train, results_train['auc'],
+                                                                     results_train['auprc'], results_train['tn'],
+                                                                     results_train['fp'], results_train['fn'],
+                                                                     results_train['tp']))
     
         results_val = process_results.get_metrics(y_score=all_pred_prob_val.cpu().detach().numpy(),
                                                   y_true=all_targets_val.cpu().detach().numpy(),
-                                                  y_pred=all_pred_label_val.cpu().detach().numpy())
+                                                      y_pred=all_pred_label_val.cpu().detach().numpy())
         print('ValEpoch\t{}\tACC\t{:.0f}%\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
               'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch, 100. * accurate_labels_val / counter_val,
                                                                      loss_accum_val / counter_val, results_val['auc'],
@@ -229,26 +243,29 @@ def train(args, training_generator, validation_generator, max_epochs):
                                                                      results_val['fp'], results_val['fn'],
                                                                      results_val['tp']))
             #
-            # if ((epoch+1) % 10) == 0:
-            #     checkpoint = {'epoch': epoch,
-            #                   'loss': loss,
-            #                   'hyperparams': hyperparams,
-            #                   'model_state_dict': net.state_dict(),
-            #                   'optimizer': optimizer.state_dict()}
-            #     if not os.path.isdir(args.dir):
-            #         os.makedirs(args.dir)
-            #     path_to_checkpoint = args.dir + '/' + "checkpoint_" + str(epoch) + '.pth'
-            #     torch.save(checkpoint, path_to_checkpoint)
+        if ((epoch+1) % 10) == 0:
+            checkpoint = {'epoch': epoch,
+                          'loss': loss,
+                          'hyperparams': hyperparams,
+                          'model_state_dict': net.state_dict(),
+                          'optimizer': optimizer.state_dict()}
+            #if not os.path.isdir(args.dir):
+            #    os.makedirs(args.dir)
+            # if epoch > 50:
+            #     path_to_prev_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch-50) + '.pth'
+            #     os.remove(path_to_prev_checkpoint)
+            path_to_checkpoint = args.git_dir + '/models/siamese_network/' + "triamese_checkpoint_" + str(epoch) + '.pth'
+            torch.save(checkpoint, path_to_checkpoint)
 
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train_dir', default='/home/lauren/ind_train_us_seqs',help="Number of epochs")
-    parser.add_argument('--valid_dir', default='/home/lauren/ind_val_us_seqs', type=int, help="Number of epochs")
-    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
+    parser.add_argument('--train_dir', default='/home/lauren/ind_train_us_seqs/',help="Number of epochs")
+    parser.add_argument('--valid_dir', default='/home/lauren/ind_val_us_seq/', help="Number of epochs")
+    parser.add_argument('--epochs', default=1000, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
-    parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
+    parser.add_argument('--lr', default=0.01, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
@@ -262,6 +279,8 @@ def main():
 
     process_results = importlib.machinery.SourceFileLoader('process_results',os.path.join(args.git_dir,'models/process_results.py')).load_module()
     
+    
+    print(args.git_dir +'/models/siamese_network/')
     os.chdir(args.git_dir +'/models/siamese_network/')
     if args.siam_unet:
         from SiameseNetworkUNet import SiamNet
@@ -281,7 +300,7 @@ def main():
                                                    batch_size=args.batch_size,
                                                    shuffle=True)
  
-    train(args,triad_training_dataloader, triad_valid_dataloader,max_epochs)
+    train(args,triad_training_dataloader, triad_valid_dataloader,max_epochs,SiamNet,process_results)
 
 if __name__ == '__main__':
     main()
