@@ -23,7 +23,7 @@ class DataLoader(data.Dataset):
             transforms.CenterCrop(255)])
         self.__augment_tile = transforms.Compose([
             # transforms.RandomCrop(64),
-            transforms.RandomCrop(45),
+            transforms.RandomCrop(50),
             #transforms.Resize((75, 75), Image.BILINEAR),
             transforms.Lambda(rgb_jittering),
             transforms.ToTensor(),
