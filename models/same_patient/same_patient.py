@@ -303,7 +303,7 @@ def train(args, train_dataset, val_dataset, max_epochs):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=5, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=25, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=64, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
@@ -312,7 +312,7 @@ def main():
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    parser.add_argument("--datafile", default="../../data/preprocessed_images_20190315.pkl", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../data/preprocessed_images_20190315_25%.pkl", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -363,6 +363,19 @@ def main():
             training_combinations_y[i] = 0
         training_combinations[i] = [combo[0], combo[2]]
 
+    # print(len(training_combinations))
+    # print(training_combinations_y.shape)
+
+    pos_train = sum(training_combinations_y)
+    neg_train = training_combinations_y.shape[0] - pos_train
+    neg_cases = np.nonzero(training_combinations_y == 0)[0]
+    difference = (neg_train - pos_train)
+    # print(pos_train, neg_train, difference)
+    throw_away = np.random.choice(neg_cases, difference, replace = False)
+    # print(throw_away.shape)
+
+
+
     test_combinations_y = np.zeros(len(test_combinations),dtype=np.int8)
     for i, combo in enumerate(test_combinations):
         if combo[1] == combo[3]:
@@ -371,12 +384,21 @@ def main():
             test_combinations_y[i] = 0
         test_combinations[i] = [combo[0], combo[2]]
 
-    limit = 4000
-    training_combinations = np.asarray(training_combinations[:limit])
-    training_combinations_y = training_combinations_y[:limit]
-    test_combinations = np.asarray(test_combinations[:limit])
-    test_combinations_y = test_combinations_y[:limit]
+    from collections import Counter
+    print(Counter(training_combinations_y))
+    training_combinations = np.asarray(training_combinations)
+    training_combinations_y = training_combinations_y
+    training_combinations = np.delete(training_combinations, throw_away, axis = 0)
+    print(throw_away[:15])
+    training_combinations_y = np.delete(training_combinations_y, throw_away)
+    print(throw_away.shape)
+    print(Counter(training_combinations_y))
+    print(training_combinations.shape)
 
+    test_combinations = np.asarray(test_combinations)
+    test_combinations_y = test_combinations_y
+
+    train_bal = train_bal_y = []
 
     # train_X = [#batch, 2, 256, 256]
     training_set = KidneyDataset(training_combinations, training_combinations_y)
