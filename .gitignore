@@ -20,4 +20,7 @@ preprocess/kidney_sample_labels.csv
 preprocess/name_errors.txt
 preprocess/kidney_sample_labels_old.csv
 
-
+# *********** MODELS AND RESULTS ********** #
+models/siamese_network/model_results_noCV/*
+models/siamese_network/baseline_models_CV_results/*
+models/siamese_network/baseline_models_noCV/*
