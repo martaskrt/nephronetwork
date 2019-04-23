@@ -75,13 +75,23 @@ class SiamNet(nn.Module):
         torch.save(self.state_dict(), checkpoint)
 
     def forward(self, x):
-        B, T, C, H = x.size()
-        x = x.transpose(0, 1)
+        if self.num_inputs == 1:
+            B, C, H = x.size()
+        else:
+            B, T, C, H = x.size()
+            x = x.transpose(0, 1)
         x_list = []
 
         for i in range(self.num_inputs):
-            curr_x = torch.unsqueeze(x[i], 1)
+            if self.num_inputs == 1:
+                curr_x = torch.unsqueeze(x, 1)
+            else:
+                curr_x = torch.unsqueeze(x[i], 1)
+            #if self.num_inputs == 1:
+             #   curr_x = curr_x.expand(-1, 3, -1)
+            #else:
             curr_x = curr_x.expand(-1, 3, -1, -1)
+            print(curr_x.shape)
             if torch.cuda.is_available():
                 input = torch.cuda.FloatTensor(curr_x.to(device))
             else:

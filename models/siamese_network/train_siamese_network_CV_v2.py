@@ -83,7 +83,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     for train_index, test_index in skf.split(train_X, train_y):
 
         if args.view != "siamese":
-            net = SiamNet(num_samples=1).to(device)
+            net = SiamNet(num_inputs=1).to(device)
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
