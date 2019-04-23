@@ -11,7 +11,7 @@ def get_metrics(y_score, y_true, y_pred):
     auc = metrics.auc(fpr, tpr)
     auprc = metrics.average_precision_score(y_score=y_score, y_true=y_true)
 
-    tn, fp, fn, tp = metrics.confusion_matrix(y_pred=y_pred, y_true=y_true).ravel()
+    tn, fp, fn, tp = metrics.confusion_matrix(y_pred=y_pred, y_true=y_true, labels = [0, 1]).ravel()
 
     results = {'fpr': fpr,
                'fp': fp,

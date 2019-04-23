@@ -7,6 +7,8 @@ class SiamNet(nn.Module):
     def __init__(self, classes=2,num_inputs=2):
         super(SiamNet, self).__init__()
         
+
+	
         self.num_inputs = num_inputs
         
         self.conv = nn.Sequential()
@@ -38,6 +40,7 @@ class SiamNet(nn.Module):
         self.fc6 = nn.Sequential()
         # self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
         self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=2, stride=1, padding=1))
+        # self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=1, stride=1, padding=1))
         self.fc6.add_module('batch6_s1', nn.BatchNorm2d(1024))
 
         self.fc6b = nn.Sequential()

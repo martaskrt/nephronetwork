@@ -22,6 +22,7 @@ import argparse
 from torch.autograd import Variable
 from SiameseNetwork import SiamNet
 # from SiameseNetworkUNet import SiamNet
+# from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
 
@@ -44,6 +45,16 @@ class KidneyDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         imgs, target = self.X[index], self.y[index]
+        #to_pil = transforms.ToPILImage()
+        #to_tensor = transforms.ToTensor()
+        #for n in range(2):
+         #   temp_img = imgs[n]
+          #  m, s = temp_img.view(1, -1).mean(dim=1).numpy(), temp_img.view(1, -1).std(dim=1).numpy()
+           # s[s == 0] = 1
+           # norm = transforms.Normalize(mean=m.tolist(), std=s.tolist())
+           # temp_img = norm(to_tensor(to_pil(temp_img)))
+           # imgs[n] = temp_img
+        
         return imgs, target
 
     def __len__(self):
@@ -71,7 +82,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
     for train_index, test_index in skf.split(train_X, train_y):
 
-        net = SiamNet().to(device)
+        if args.view != "siamese":
+            net = SiamNet(num_samples=1).to(device)
+        else:
+            net = SiamNet().to(device)
         if args.checkpoint != "":
             pretrained_dict = torch.load(args.checkpoint)
             model_dict = net.state_dict()
@@ -306,19 +320,36 @@ def main():
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
+    parser.add_argument("--view", default = "siamese", help="siamese, sag, trans")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
-                                              "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
-
+    # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
+    #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
+                        help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
     max_epochs = args.epochs
 
-    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", sort_by_date=True,
+    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get=args.view, sort_by_date=True,
                                                                  pickle_file=args.datafile, contrast=args.contrast,
                                                                   split=0.9)
 
+    #n_splits = 5
+    #fold = 4
+    #counter =1
+    #skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    #train_y = np.array(train_y)
 
+    #train_X, train_y = shuffle(train_X, train_y, random_state=42)
+
+    #for train_index, test_index in skf.split(train_X, train_y):
+     #   if counter != fold:
+      #      counter += 1
+       #     continue
+        #counter += 1
+        #val_X_CV = train_X[test_index]
+
+        #load_dataset.view_images(val_X_CV, num_images_to_view=300)
     train(args,  train_X, train_y, test_X, test_y, max_epochs)
 
 
