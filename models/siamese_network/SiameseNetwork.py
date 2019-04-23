@@ -91,7 +91,6 @@ class SiamNet(nn.Module):
              #   curr_x = curr_x.expand(-1, 3, -1)
             #else:
             curr_x = curr_x.expand(-1, 3, -1, -1)
-            print(curr_x.shape)
             if torch.cuda.is_available():
                 input = torch.cuda.FloatTensor(curr_x.to(device))
             else:
