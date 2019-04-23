@@ -16,25 +16,28 @@ def load_data(inputfile):
     data = {}
 
     for file in file_names:
+
         if "jigsaw" in file:
             model = "jigsaw"
         else:
-            model = "non-jigsaw"
+            model = "vanilla"
         if model not in data:
             data[model] = {}
 
         with open(file, 'r') as f:
             data[model]["train"] = {}
             data[model]["val"] = {}
+            data[model]["test"] = {}
             counter = 0
             for line in f:
                 content = line[:-1].split('\t')
-                if content[0] not in ["ValEpoch", "TrainEpoch"]:
+                if content[0] not in ["ValEpoch", "TrainEpoch", "TestEpoch"]:
                     continue
                 if counter == 0:
                     for label in range(2, len(content), 2):
                         data[model]["train"][content[label]] = []
                         data[model]["val"][content[label]] = []
+                        data[model]["test"][content[label]] = []
                     counter += 1
                 for item in range(3, len(content), 2):
                     label = item-1
@@ -46,26 +49,47 @@ def load_data(inputfile):
                         data[model]["train"][content[label]].append(val)
                     elif "Val" in content[0]:
                         data[model]["val"][content[label]].append(val)
+                    elif "Test" in content[0]:
+                        data[model]["test"][content[label]].append(val)
 
     return data
 
 def confusion_matrix(args):
     data = load_data(args.fname)
-    dataframe = {'jigsaw-train': data["jigsaw"]["train"]["AUC"],
-                 'jigsaw-val': data["jigsaw"]["val"]["AUC"],
-                 'control-train': data["non-jigsaw"]["train"]["AUC"],
-                 'control-val': data["non-jigsaw"]["val"]["AUC"]}
+    dataframe = {'vanilla-train': data["vanilla"]["train"]["Loss"],
+                 'vanilla-val': data["vanilla"]["val"]["Loss"],
+                 'jigsaw-train': data["jigsaw"]["train"]["Loss"],
+                 'jigsaw-val': data["jigsaw"]["val"]["Loss"],
+                 }
     p_dataframe = pd.Series(dataframe)
     # ax = sns.scatterplot(x=np.arange(50), y=data["jigsaw"]["train"]["AUC"])
-    plt.scatter(x=np.arange(50), y=p_dataframe['jigsaw-train'], color='deepskyblue', label='jigsaw-train')
-    plt.scatter(x=np.arange(50), y=p_dataframe['jigsaw-val'], color='gold', label='jigsaw-val')
-    plt.scatter(x=np.arange(50), y=p_dataframe['control-train'], color='slateblue', label='control-train')
-    plt.scatter(x=np.arange(50), y=p_dataframe['control-val'], color='violet', label='control-val')
+    plt.scatter(x=np.arange(50), y=p_dataframe['vanilla-train'], color='deepskyblue', label='sgd+m+lr0.0001-train')
+    plt.scatter(x=np.arange(50), y=p_dataframe['vanilla-val'], color='gold', label='sgd+m+lr0.0001-val')
+    plt.scatter(x=np.arange(50), y=p_dataframe['jigsaw-train'], color='slateblue', label='sgd+m+lr0.001-train')
+    plt.scatter(x=np.arange(50), y=p_dataframe['jigsaw-val'], color='violet', label='sgd+m+lr0.001-val')
     # ax = sns.scatterplot(data=p_dataframe)
     plt.xlabel('Epoch', fontsize=18)
-    plt.ylabel('AUC', fontsize=18)
+    plt.ylabel('Loss', fontsize=18)
     plt.legend()
     plt.show()
+
+    # data = load_data(args.fname)
+    # dataframe = {'vanilla-train': data["vanilla"]["train"]["Loss"],
+    #              'vanilla-val': data["vanilla"]["val"]["Loss"],
+    #              'jigsaw-train': data["jigsaw"]["train"]["Loss"],
+    #              'jigsaw-val': data["jigsaw"]["val"]["Loss"],
+    #              }
+    # p_dataframe = pd.Series(dataframe)
+    # # ax = sns.scatterplot(x=np.arange(50), y=data["jigsaw"]["train"]["AUC"])
+    # plt.scatter(x=np.arange(50), y=p_dataframe['0.0001-train'], color='deepskyblue', label='sgd+m+lr0.0001-train')
+    # plt.scatter(x=np.arange(50), y=p_dataframe['0.0001-val'], color='gold', label='sgd+m+lr0.0001-val')
+    # plt.scatter(x=np.arange(50), y=p_dataframe['0.001-train'], color='slateblue', label='sgd+m+lr0.001-train')
+    # plt.scatter(x=np.arange(50), y=p_dataframe['0.001-val'], color='violet', label='sgd+m+lr0.001-val')
+    # # ax = sns.scatterplot(data=p_dataframe)
+    # plt.xlabel('Epoch', fontsize=18)
+    # plt.ylabel('Loss', fontsize=18)
+    # plt.legend()
+    # plt.show()
 
 
 

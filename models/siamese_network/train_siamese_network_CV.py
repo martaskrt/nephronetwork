@@ -306,7 +306,7 @@ def main():
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get="siamese", sort_by_date=True,
                                                                  pickle_file=args.datafile, contrast=args.contrast,
-                                                                 split=0.9)
+                                                                  split=0.9)
 
 
     train(args,  train_X, train_y, test_X, test_y, max_epochs)

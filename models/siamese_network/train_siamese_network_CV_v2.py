@@ -307,9 +307,10 @@ def main():
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
-                                              "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
-
+    # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
+    #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
+                        help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
     max_epochs = args.epochs
@@ -318,8 +319,23 @@ def main():
                                                                  pickle_file=args.datafile, contrast=args.contrast,
                                                                   split=0.9)
 
+    n_splits = 5
+    fold = 4
+    counter =1
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+    train_y = np.array(train_y)
 
-    train(args,  train_X, train_y, test_X, test_y, max_epochs)
+    train_X, train_y = shuffle(train_X, train_y, random_state=42)
+
+    for train_index, test_index in skf.split(train_X, train_y):
+        if counter != fold:
+            counter += 1
+            continue
+        counter += 1
+        val_X_CV = train_X[test_index]
+
+        load_dataset.view_images(val_X_CV, num_images_to_view=300)
+    #train(args,  train_X, train_y, test_X, test_y, max_epochs)
 
 
 if __name__ == '__main__':
