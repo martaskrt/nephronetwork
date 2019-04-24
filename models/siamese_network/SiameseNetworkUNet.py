@@ -10,8 +10,9 @@ class SiamNet(nn.Module):
         self.conv1.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
         self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
         self.conv1.add_module('relu1_s1',nn.ReLU(inplace=True))
-        self.conv1.add_module('pool1_s1',nn.MaxPool2d(kernel_size=3, stride=2))
+        self.conv1.add_module('pool1_s1', nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv1.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
+        self.conv1.add_module('pool1_s2', nn.MaxPool2d(kernel_size=2, stride=1))
 
         self.conv2 = nn.Sequential()
         self.conv2.add_module('conv2_s1',nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2))
@@ -88,7 +89,6 @@ class SiamNet(nn.Module):
         self.uconnect4.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect4.add_module('relu', nn.ReLU(inplace=True))
         self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
-        self.uconnect4.add_module('maxpool', nn.MaxPool2d(kernel_size=2, padding=2)) # 256 * 60 * 60
 
         self.uconnect5 = nn.Sequential()
         self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
