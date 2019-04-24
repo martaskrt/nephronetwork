@@ -7,13 +7,13 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 from torchvision import datasets, transforms
-import tqdm
+from tqdm import tqdm
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
 else:
     device = torch.device('cpu')
-device = torch.device('cpu')
+# device = torch.device('cpu')
 print(device)
 softmax = torch.nn.Softmax(dim=1)
 
@@ -70,7 +70,7 @@ def train(args, train_dataset, val_dataset, test_dataset):
         all_targets = []
         all_pred_prob = []
         all_pred_label = []
-        for batch_idx, (data, target) in enumerate(train_dataset):
+        for batch_idx, (data, target) in enumerate(tqdm(train_dataset)):
             optimizer.zero_grad()
             output = net(data.to(device))
             target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
