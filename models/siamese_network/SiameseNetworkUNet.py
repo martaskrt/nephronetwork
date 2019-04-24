@@ -87,7 +87,8 @@ class SiamNet(nn.Module):
         self.uconnect4.add_module('conv', nn.Conv2d(2*256, 256, kernel_size=3, stride=2, padding=1))
         self.uconnect4.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect4.add_module('relu', nn.ReLU(inplace=True))
-        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4)) # 256 * 60 * 60
+        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
+        self.uconnect4.add_module('maxpool', nn.MaxPool2d(kernel_size=2, padding=2)) # 256 * 60 * 60
 
         self.uconnect5 = nn.Sequential()
         self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
@@ -151,7 +152,6 @@ class SiamNet(nn.Module):
             unet4 = self.uconnect4(torch.cat((out2, unet3), dim=1))
             print(unet4.shape)
 
-            unet4 = unet4.expand(-1, -1, 61, 61)
             unet5 = self.uconnect4(torch.cat((out1, unet4), dim=1))
             print(unet5.shape)
 
