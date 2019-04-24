@@ -35,7 +35,7 @@ class SiamNet(nn.Module):
         self.conv5.add_module('batch5_s1', nn.BatchNorm2d(256))
         self.conv5.add_module('relu5_s1',nn.ReLU(inplace=True))
         # self.conv5.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
-        self.conv5.add_module('pool5_s1', nn.MaxPool2d(kernel_size=2, stride=2))
+        # self.conv5.add_module('pool5_s1', nn.MaxPool2d(kernel_size=2, stride=2))
 
         # *************************** changed layers *********************** #
 
