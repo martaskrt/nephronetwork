@@ -1,0 +1,4 @@
+Device: cuda
+/home/lauren/nephronetwork/models/siamese_network/
+/storage/ind_train_us_seq/
+/storage/ind_val_us_seq/
