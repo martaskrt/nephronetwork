@@ -20,8 +20,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-#from SiameseNetwork import SiamNet
-from SiameseNetworkUNet import SiamNet
+from SiameseNetwork import SiamNet
+# from SiameseNetworkUNet import SiamNet
 # from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
@@ -79,23 +79,27 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     train_y = np.array(train_y)
 
     train_X, train_y = shuffle(train_X, train_y, random_state=42)
-
+    h = 1
     for train_index, test_index in skf.split(train_X, train_y):
-
+        if h < 5:
+            h += 1
+            continue
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
-            pretrained_dict = torch.load(args.checkpoint)
+            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
             model_dict = net.state_dict()
 
             # 1. filter out unnecessary keys
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-            pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            for k, v in model_dict.items():
-                if k not in pretrained_dict:
-                    pretrained_dict[k] = model_dict[k]
+           
+            
+            # pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            # for k, v in model_dict.items():
+              #  if k not in pretrained_dict:
+               #     pretrained_dict[k] = model_dict[k]
             # 2. overwrite entries in the existing state dict
             model_dict.update(pretrained_dict)
             # 3. load the new state dict
@@ -145,7 +149,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             counter_train = 0
             counter_val = 0
             counter_test = 0
-
+            
             for batch_idx, (data, target) in enumerate(training_generator):
                 optimizer.zero_grad()
 
@@ -303,7 +307,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
             path_to_checkpoint = args.dir + '/fold_' + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
-            #torch.save(checkpoint, path_to_checkpoint)
+            torch.save(checkpoint, path_to_checkpoint)
 
         fold += 1
 
