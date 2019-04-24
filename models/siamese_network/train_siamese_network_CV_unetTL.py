@@ -20,11 +20,10 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-from SiameseNetwork import SiamNet
-# from SiameseNetworkUNet import SiamNet
+from SiameseNetworkUNet import SiamNet
 # from FraternalSiameseNetwork import SiamNet
-load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
-process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
+load_dataset = importlib.machinery.SourceFileLoader('load_dataset', '../../preprocess/load_dataset.py').load_module()
+process_results = importlib.machinery.SourceFileLoader('process_results', '../process_results.py').load_module()
 
 SEED = 42
 
@@ -37,24 +36,24 @@ if torch.cuda.is_available():
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
 
-class KidneyDataset(torch.utils.data.Dataset):
 
+class KidneyDataset(torch.utils.data.Dataset):
     def __init__(self, X, y):
         self.X = torch.from_numpy(X).float()
         self.y = y
 
     def __getitem__(self, index):
         imgs, target = self.X[index], self.y[index]
-        #to_pil = transforms.ToPILImage()
-        #to_tensor = transforms.ToTensor()
-        #for n in range(2):
-         #   temp_img = imgs[n]
-          #  m, s = temp_img.view(1, -1).mean(dim=1).numpy(), temp_img.view(1, -1).std(dim=1).numpy()
-           # s[s == 0] = 1
-           # norm = transforms.Normalize(mean=m.tolist(), std=s.tolist())
-           # temp_img = norm(to_tensor(to_pil(temp_img)))
-           # imgs[n] = temp_img
-        
+        # to_pil = transforms.ToPILImage()
+        # to_tensor = transforms.ToTensor()
+        # for n in range(2):
+        #   temp_img = imgs[n]
+        #  m, s = temp_img.view(1, -1).mean(dim=1).numpy(), temp_img.view(1, -1).std(dim=1).numpy()
+        # s[s == 0] = 1
+        # norm = transforms.Normalize(mean=m.tolist(), std=s.tolist())
+        # temp_img = norm(to_tensor(to_pil(temp_img)))
+        # imgs[n] = temp_img
+
         return imgs, target
 
     def __len__(self):
@@ -73,7 +72,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
     test_generator = DataLoader(test_set, **params)
 
-    fold=1
+    fold = 1
     n_splits = 5
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     train_y = np.array(train_y)
@@ -89,21 +88,37 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
-            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+            pretrained_dict = torch.load(args.checkpoint)
             model_dict = net.state_dict()
+            unet_dict = {}
+
+            unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
+            unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
+            unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
+            unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
+            unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
+            unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
+            unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
+            unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
+            unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
+            unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
+
+            unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
+
 
             # 1. filter out unnecessary keys
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-           
-            
+            # pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+
             # pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            # for k, v in model_dict.items():
-              #  if k not in pretrained_dict:
-               #     pretrained_dict[k] = model_dict[k]
+            for k, v in model_dict.items():
+                if k not in unet_dict:
+                    unet_dict[k] = model_dict[k]
             # 2. overwrite entries in the existing state dict
-            model_dict.update(pretrained_dict)
+            print(unet_dict)
+            model_dict.update(unet_dict)
             # 3. load the new state dict
-            net.load_state_dict(pretrained_dict)
+            net.load_state_dict(unet_dict)
 
         if args.adam:
             optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
@@ -111,7 +126,6 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         else:
             optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
                                         weight_decay=hyperparams['weight_decay'])
-
 
         train_X_CV = train_X[train_index]
         train_y_CV = train_y[train_index]
@@ -145,11 +159,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_pred_prob_test = []
             all_pred_label_test = []
 
-
             counter_train = 0
             counter_val = 0
             counter_test = 0
-            
+
             for batch_idx, (data, target) in enumerate(training_generator):
                 optimizer.zero_grad()
 
@@ -190,7 +203,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
-                    pred_prob = output_softmax[:,1]
+                    pred_prob = output_softmax[:, 1]
                     pred_prob = pred_prob.squeeze()
                     pred_label = torch.argmax(output, dim=1)
 
@@ -236,15 +249,17 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             assert len(all_pred_label_train) == len(training_set)
 
             results_train = process_results.get_metrics(y_score=all_pred_prob_train.cpu().detach().numpy(),
-                                                  y_true=all_targets_train.cpu().detach().numpy(),
-                                                  y_pred=all_pred_label_train.cpu().detach().numpy())
+                                                        y_true=all_targets_train.cpu().detach().numpy(),
+                                                        y_pred=all_pred_label_train.cpu().detach().numpy())
 
             print('Fold\t{}\tTrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_train)/counter_train,
-                                                                        loss_accum_train/counter_train, results_train['auc'],
-                                                                        results_train['auprc'], results_train['tn'],
-                                                                        results_train['fp'], results_train['fn'],
-                                                                        results_train['tp']))
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch,
+                                                                         int(accurate_labels_train) / counter_train,
+                                                                         loss_accum_train / counter_train,
+                                                                         results_train['auc'],
+                                                                         results_train['auprc'], results_train['tn'],
+                                                                         results_train['fp'], results_train['fn'],
+                                                                         results_train['tp']))
             all_pred_prob_val = torch.cat(all_pred_prob_val)
             all_targets_val = torch.cat(all_targets_val)
             all_pred_label_val = torch.cat(all_pred_label_val)
@@ -257,8 +272,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                                                       y_true=all_targets_val.cpu().detach().numpy(),
                                                       y_pred=all_pred_label_val.cpu().detach().numpy())
             print('Fold\t{}\tValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_val) / counter_val,
-                                                                         loss_accum_val / counter_val, results_val['auc'],
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch,
+                                                                         int(accurate_labels_val) / counter_val,
+                                                                         loss_accum_val / counter_val,
+                                                                         results_val['auc'],
                                                                          results_val['auprc'], results_val['tn'],
                                                                          results_val['fp'], results_val['fn'],
                                                                          results_val['tp']))
@@ -272,15 +289,16 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             assert len(all_pred_prob_test) == len(test_y)
 
             results_test = process_results.get_metrics(y_score=all_pred_prob_test.cpu().detach().numpy(),
-                                                      y_true=all_targets_test.cpu().detach().numpy(),
-                                                      y_pred=all_pred_label_test.cpu().detach().numpy())
+                                                       y_true=all_targets_test.cpu().detach().numpy(),
+                                                       y_pred=all_pred_label_test.cpu().detach().numpy())
             print('Fold\t{}\tTestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_test) / counter_test,
-                                                                         loss_accum_test / counter_test, results_test['auc'],
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch,
+                                                                         int(accurate_labels_test) / counter_test,
+                                                                         loss_accum_test / counter_test,
+                                                                         results_test['auc'],
                                                                          results_test['auprc'], results_test['tn'],
                                                                          results_test['fp'], results_test['fn'],
                                                                          results_test['tp']))
-
 
             # if ((epoch+1) % 5) == 0 and epoch > 0:
             checkpoint = {'epoch': epoch,
@@ -312,7 +330,6 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         fold += 1
 
 
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
@@ -324,10 +341,8 @@ def main():
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
-    parser.add_argument("--view", default = "siamese", help="siamese, sag, trans")
+    parser.add_argument("--view", default="siamese", help="siamese, sag, trans")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
-    #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
     parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
                         help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
@@ -336,25 +351,9 @@ def main():
 
     train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get=args.view, sort_by_date=True,
                                                                  pickle_file=args.datafile, contrast=args.contrast,
-                                                                  split=0.9)
+                                                                 split=0.9)
 
-    #n_splits = 5
-    #fold = 4
-    #counter =1
-    #skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-    #train_y = np.array(train_y)
-
-    #train_X, train_y = shuffle(train_X, train_y, random_state=42)
-
-    #for train_index, test_index in skf.split(train_X, train_y):
-     #   if counter != fold:
-      #      counter += 1
-       #     continue
-        #counter += 1
-        #val_X_CV = train_X[test_index]
-
-        #load_dataset.view_images(val_X_CV, num_images_to_view=300)
-    train(args,  train_X, train_y, test_X, test_y, max_epochs)
+    train(args, train_X, train_y, test_X, test_y, max_epochs)
 
 
 if __name__ == '__main__':
