@@ -90,7 +90,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
-            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+            pretrained_dict = torch.load(args.checkpoint)
             model_dict = net.state_dict()
             unet_dict = {}
 
