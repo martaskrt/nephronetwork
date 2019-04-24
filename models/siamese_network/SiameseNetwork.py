@@ -75,16 +75,17 @@ class SiamNet(nn.Module):
         torch.save(self.state_dict(), checkpoint)
 
     def forward(self, x):
+        # x = x.unsqueeze(0)
         if self.num_inputs == 1:
-            B, C, H = x.size()
-        else:
-            B, T, C, H = x.size()
-            x = x.transpose(0, 1)
+            x = x.unsqueeze(1)
+         #   B, C, H = x.size()
+        #else:
+        B, T, C, H = x.size()
+        x = x.transpose(0, 1)
         x_list = []
-
         for i in range(self.num_inputs):
             if self.num_inputs == 1:
-                curr_x = torch.unsqueeze(x, 1)
+                curr_x = torch.unsqueeze(x[i], 1)
             else:
                 curr_x = torch.unsqueeze(x[i], 1)
             #if self.num_inputs == 1:
