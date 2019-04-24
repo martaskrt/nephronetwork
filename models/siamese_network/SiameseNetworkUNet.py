@@ -23,13 +23,13 @@ class SiamNet(nn.Module):
         self.conv2.add_module('pool2_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv2.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
 
+        # ********** added*********** #
+        self.conv2.add_module('pool', nn.MaxPool2d(kernel_size=2, stride=1))
+
         self.conv3 = nn.Sequential()
         self.conv3.add_module('conv3_s1',nn.Conv2d(256, 384, kernel_size=3, padding=1))
         self.conv3.add_module('batch3_s1', nn.BatchNorm2d(384))
         self.conv3.add_module('relu3_s1',nn.ReLU(inplace=True))
-        # ********** added*********** #
-        self.conv3.add_module('pool', nn.MaxPool2d(kernel_size=2, stride=1))
-
 
         self.conv4 = nn.Sequential()
         self.conv4.add_module('conv4_s1',nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2))
