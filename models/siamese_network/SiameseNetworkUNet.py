@@ -95,7 +95,7 @@ class SiamNet(nn.Module):
         self.uconnect4.add_module('conv', nn.Conv2d(2*256, 256, kernel_size=3, stride=2, padding=1))
         self.uconnect4.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect4.add_module('relu', nn.ReLU(inplace=True))
-        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=2))
+        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
 
         self.uconnect5 = nn.Sequential()
         self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
@@ -145,34 +145,20 @@ class SiamNet(nn.Module):
 
 
             out1 = self.conv1(input)
-            print(out1.shape)
             out2 = self.conv2(out1)
-            print(out2.shape)
             out3 = self.conv3(out2)
-            print(out3.shape)
             out4 = self.conv4(out3)
-            print(out4.shape)
             out5 = self.conv5(out4)
-            print(out5.shape)
             out6 = self.fc6(out5)
-            print(out6.shape)
 
             unet1 = self.uconnect1(torch.cat((out5, out6), dim=1))
-            print(unet1.shape)
             unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
-            print(unet2.shape)
             unet3 = self.uconnect3(torch.cat((out3, unet2), dim=1))
-            print(unet3.shape)
             unet4 = self.uconnect4(torch.cat((out2, unet3), dim=1))
-            print(unet4.shape)
-
             unet5 = self.uconnect5(torch.cat((out1, unet4), dim=1))
-            print(unet5.shape)
 
             z = unet5.view([B, 1, -1])
-            print(z.shape)
             z = self.fc6c(z)
-            print(z.shape)
             z = z.view([B, 1, -1])
             x_list.append(z)
 
