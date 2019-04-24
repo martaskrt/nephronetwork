@@ -10,28 +10,40 @@ class SiamNet(nn.Module):
         self.conv1.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
         self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
         self.conv1.add_module('relu1_s1',nn.ReLU(inplace=True))
-        self.conv1.add_module('pool1_s1',nn.MaxPool2d(kernel_size=3, stride=2))
+        self.conv1.add_module('pool1_s1', nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv1.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
 
-        self.conv = nn.Sequential()
-        self.conv.add_module('conv2_s1',nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2))
-        self.conv.add_module('batch2_s1', nn.BatchNorm2d(256))
-        self.conv.add_module('relu2_s1',nn.ReLU(inplace=True))
-        self.conv.add_module('pool2_s1',nn.MaxPool2d(kernel_size=3, stride=2))
-        self.conv.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
+        #**************** ADDED *******************#
+        self.conv1.add_module('pool1_s2', nn.MaxPool2d(kernel_size=2, stride=1))
 
-        self.conv.add_module('conv3_s1',nn.Conv2d(256, 384, kernel_size=3, padding=1))
-        self.conv.add_module('batch3_s1', nn.BatchNorm2d(384))
-        self.conv.add_module('relu3_s1',nn.ReLU(inplace=True))
+        self.conv2 = nn.Sequential()
+        self.conv2.add_module('conv2_s1',nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2))
+        self.conv2.add_module('batch2_s1', nn.BatchNorm2d(256))
+        self.conv2.add_module('relu2_s1',nn.ReLU(inplace=True))
+        self.conv2.add_module('pool2_s1',nn.MaxPool2d(kernel_size=3, stride=2))
+        self.conv2.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
 
-        self.conv.add_module('conv4_s1',nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2))
-        self.conv.add_module('batch4_s1', nn.BatchNorm2d(384))
-        self.conv.add_module('relu4_s1',nn.ReLU(inplace=True))
+        # ********** added*********** #
+        # self.conv2.add_module('pool', nn.MaxPool2d(kernel_size=2, padding=2, stride=1))
+        self.conv2.add_module('conv2b', nn.Conv2d(256, 256, kernel_size=2, padding=1, stride=1))
 
-        self.conv.add_module('conv5_s1',nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2))
-        self.conv.add_module('batch5_s1', nn.BatchNorm2d(256))
-        self.conv.add_module('relu5_s1',nn.ReLU(inplace=True))
-        self.conv.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
+        self.conv3 = nn.Sequential()
+        self.conv3.add_module('conv3_s1',nn.Conv2d(256, 384, kernel_size=3, padding=1))
+        self.conv3.add_module('batch3_s1', nn.BatchNorm2d(384))
+        self.conv3.add_module('relu3_s1',nn.ReLU(inplace=True))
+
+        self.conv4 = nn.Sequential()
+        self.conv4.add_module('conv4_s1',nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2))
+        self.conv4.add_module('batch4_s1', nn.BatchNorm2d(384))
+        self.conv4.add_module('relu4_s1',nn.ReLU(inplace=True))
+
+
+        self.conv5 = nn.Sequential()
+        self.conv5.add_module('conv5_s1',nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2))
+        self.conv5.add_module('batch5_s1', nn.BatchNorm2d(256))
+        self.conv5.add_module('relu5_s1',nn.ReLU(inplace=True))
+        # self.conv5.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
+        self.conv5.add_module('pool5_s1', nn.MaxPool2d(kernel_size=2, stride=2))
 
         # *************************** changed layers *********************** #
 
@@ -39,23 +51,58 @@ class SiamNet(nn.Module):
         # self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=3, stride=1, padding=1))
         self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=2, stride=1, padding=1))
         self.fc6.add_module('batch6_s1', nn.BatchNorm2d(1024))
-
-        self.fc6b = nn.Sequential()
-        # self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
-        self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 96, kernel_size=1, stride=1))
-        self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(96))
-        self.fc6b.add_module('relu6_s1', nn.ReLU(inplace=True))
-        self.fc6b.add_module('upsample', nn.Upsample(scale_factor=4))
-
-        # self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
+        self.fc6.add_module('pool5_s1', nn.MaxPool2d(kernel_size=2, stride=1))
+        #
+        # self.fc6b = nn.Sequential()
+        # # self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
+        # self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 96, kernel_size=1, stride=1))
+        # self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(96))
+        # self.fc6b.add_module('relu6_s1', nn.ReLU(inplace=True))
+        # self.fc6b.add_module('upsample', nn.Upsample(scale_factor=4))
+        #
+        # # self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
         # ***********************************************************************#
         # U-NET #
-        self.uconnect= nn.Sequential()
-        self.uconnect.add_module('conv_sc', nn.Conv2d(2*96, 256, kernel_size=3, stride=2))
-        self.uconnect.add_module('batch_sc', nn.BatchNorm2d(256))
-        self.uconnect.add_module('relu_sc', nn.ReLU(inplace=True))
-        self.uconnect.add_module('pool_sc', nn.MaxPool2d(kernel_size=3, stride=2))
+        # self.uconnect= nn.Sequential()
+        # self.uconnect.add_module('conv_sc', nn.Conv2d(2*96, 256, kernel_size=3, stride=2))
+        # self.uconnect.add_module('batch_sc', nn.BatchNorm2d(256))
+        # self.uconnect.add_module('relu_sc', nn.ReLU(inplace=True))
+        # self.uconnect.add_module('pool_sc', nn.MaxPool2d(kernel_size=3, stride=2))
+        # ***********************************************************************#
+
+        # ***********************************************************************#
+        # U-NET #
+        self.uconnect1= nn.Sequential()
+        self.uconnect1.add_module('conv', nn.Conv2d(1024+256, 256, kernel_size=3, stride=1, padding=1))
+        self.uconnect1.add_module('batch', nn.BatchNorm2d(256))
+        self.uconnect1.add_module('relu', nn.ReLU(inplace=True))
+        self.uconnect1.add_module('upsample', nn.Upsample(scale_factor=2))  # 256 * 30 * 30
+
+        self.uconnect2= nn.Sequential()
+        self.uconnect2.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=2, padding=1))
+        self.uconnect2.add_module('batch', nn.BatchNorm2d(256))
+        self.uconnect2.add_module('relu', nn.ReLU(inplace=True))
+        self.uconnect2.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
+
+        self.uconnect3= nn.Sequential()
+        self.uconnect3.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=2, padding=1))
+        self.uconnect3.add_module('batch', nn.BatchNorm2d(256))
+        self.uconnect3.add_module('relu', nn.ReLU(inplace=True))
+        self.uconnect3.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
+
+        self.uconnect4= nn.Sequential()
+        self.uconnect4.add_module('conv', nn.Conv2d(2*256, 256, kernel_size=3, stride=2, padding=1))
+        self.uconnect4.add_module('batch', nn.BatchNorm2d(256))
+        self.uconnect4.add_module('relu', nn.ReLU(inplace=True))
+        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
+
+        self.uconnect5 = nn.Sequential()
+        self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
+        self.uconnect5.add_module('batch', nn.BatchNorm2d(256))
+        self.uconnect5.add_module('relu', nn.ReLU(inplace=True))
+        # self.uconnect5.add_module('upsample', nn.Upsample(scale_factor=2))
+        self.uconnect5.add_module('pool', nn.MaxPool2d(kernel_size=2, stride=2))
         # ***********************************************************************#
 
         self.fc6c = nn.Sequential()
@@ -95,15 +142,37 @@ class SiamNet(nn.Module):
                 input = torch.cuda.FloatTensor(curr_x.to(device))
             else:
                 input = torch.FloatTensor(curr_x.to(device))
-            output1 = self.conv1(input)
-            output2 = self.conv(output1)
-            z = self.fc6(output2)
-            z = self.fc6b(z)
 
-            output1 = output1[:,:,:-1,:-1]
-            output3 = self.uconnect(torch.cat((output1, z), dim=1))
-            z = output3.view([B, 1, -1])
+
+            out1 = self.conv1(input)
+            print(out1.shape)
+            out2 = self.conv2(out1)
+            print(out2.shape)
+            out3 = self.conv3(out2)
+            print(out3.shape)
+            out4 = self.conv4(out3)
+            print(out4.shape)
+            out5 = self.conv5(out4)
+            print(out5.shape)
+            out6 = self.fc6(out5)
+            print(out6.shape)
+
+            unet1 = self.uconnect1(torch.cat((out5, out6), dim=1))
+            print(unet1.shape)
+            unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
+            print(unet2.shape)
+            unet3 = self.uconnect3(torch.cat((out3, unet2), dim=1))
+            print(unet3.shape)
+            unet4 = self.uconnect4(torch.cat((out2, unet3), dim=1))
+            print(unet4.shape)
+
+            unet5 = self.uconnect5(torch.cat((out1, unet4), dim=1))
+            print(unet5.shape)
+
+            z = unet5.view([B, 1, -1])
+            print(z.shape)
             z = self.fc6c(z)
+            print(z.shape)
             z = z.view([B, 1, -1])
             x_list.append(z)
 
