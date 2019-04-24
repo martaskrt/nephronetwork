@@ -85,11 +85,11 @@ class SiamNet(nn.Module):
         self.uconnect2.add_module('relu', nn.ReLU(inplace=True))
         self.uconnect2.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
 
-        self.uconnect3= nn.Sequential()
-        self.uconnect3.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=2, padding=1))
-        self.uconnect3.add_module('batch', nn.BatchNorm2d(256))
-        self.uconnect3.add_module('relu', nn.ReLU(inplace=True))
-        self.uconnect3.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
+        # self.uconnect3= nn.Sequential()
+        # self.uconnect3.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=2, padding=1))
+        # self.uconnect3.add_module('batch', nn.BatchNorm2d(256))
+        # self.uconnect3.add_module('relu', nn.ReLU(inplace=True))
+        # self.uconnect3.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
 
         self.uconnect4= nn.Sequential()
         self.uconnect4.add_module('conv', nn.Conv2d(2*256, 256, kernel_size=3, stride=2, padding=1))
@@ -98,21 +98,21 @@ class SiamNet(nn.Module):
         self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
 
         self.uconnect5 = nn.Sequential()
-        self.uconnect5.add_module('conv', nn.Conv2d(96+256, 128, kernel_size=5, stride=2))
-        self.uconnect5.add_module('batch', nn.BatchNorm2d(128))
+        self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
+        self.uconnect5.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect5.add_module('relu', nn.ReLU(inplace=True))
         # self.uconnect5.add_module('upsample', nn.Upsample(scale_factor=2))
-        self.uconnect5.add_module('pool', nn.MaxPool2d(kernel_size=5, stride=2))
+        self.uconnect5.add_module('pool', nn.MaxPool2d(kernel_size=2, stride=2))
         # ***********************************************************************#
 
         self.fc6c = nn.Sequential()
         # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
-        self.fc6c.add_module('fc7', nn.Linear(128*12*12, 256))
+        self.fc6c.add_module('fc7', nn.Linear(256*14*14, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
         self.fc6c.add_module('drop7', nn.Dropout(p=0.5))
 
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear(2 * 256, 4096))
+        self.fc7_new.add_module('fc7', nn.Linear(2 * 512, 4096))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
         self.fc7_new.add_module('drop7', nn.Dropout(p=0.5))
 
@@ -161,9 +161,9 @@ class SiamNet(nn.Module):
             print(unet1.shape)
             unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
             print(unet2.shape)
-            unet3 = self.uconnect3(torch.cat((out3, unet2), dim=1))
+            # unet3 = self.uconnect3(torch.cat((out3, unet2), dim=1))
             print(unet3.shape)
-            unet4 = self.uconnect4(torch.cat((out2, unet3), dim=1))
+            unet4 = self.uconnect4(torch.cat((out2, unet2), dim=1))
             print(unet4.shape)
 
             unet5 = self.uconnect5(torch.cat((out1, unet4), dim=1))
