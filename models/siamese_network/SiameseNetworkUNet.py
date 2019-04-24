@@ -95,7 +95,7 @@ class SiamNet(nn.Module):
         self.uconnect4.add_module('conv', nn.Conv2d(2*256, 256, kernel_size=3, stride=2, padding=1))
         self.uconnect4.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect4.add_module('relu', nn.ReLU(inplace=True))
-        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
+        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=2))
 
         self.uconnect5 = nn.Sequential()
         self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
