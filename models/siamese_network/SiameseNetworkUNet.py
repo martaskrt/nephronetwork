@@ -149,7 +149,9 @@ class SiamNet(nn.Module):
             unet5 = self.uconnect4(torch.cat((out1, unet4), dim=1))
 
             z = unet5.view([B, 1, -1])
+            print(z.shape)
             z = self.fc6c(z)
+            print(z.shape)
             z = z.view([B, 1, -1])
             x_list.append(z)
 
