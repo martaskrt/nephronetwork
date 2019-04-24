@@ -95,7 +95,7 @@ class SiamNet(nn.Module):
         self.uconnect4.add_module('conv', nn.Conv2d(2*256, 256, kernel_size=3, stride=2, padding=1))
         self.uconnect4.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect4.add_module('relu', nn.ReLU(inplace=True))
-        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=4))
+        self.uconnect4.add_module('upsample', nn.Upsample(scale_factor=2))
 
         self.uconnect5 = nn.Sequential()
         self.uconnect5.add_module('conv', nn.Conv2d(96+256, 256, kernel_size=5, stride=2))
@@ -107,17 +107,17 @@ class SiamNet(nn.Module):
 
         self.fc6c = nn.Sequential()
         # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
-        self.fc6c.add_module('fc7', nn.Linear(256*14*14, 256))
+        self.fc6c.add_module('fc7', nn.Linear(256*14*14, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
         self.fc6c.add_module('drop7', nn.Dropout(p=0.5))
 
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear(2 * 256, 1024))
+        self.fc7_new.add_module('fc7', nn.Linear(2 * 512, 4096))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
         self.fc7_new.add_module('drop7', nn.Dropout(p=0.5))
 
         self.classifier_new = nn.Sequential()
-        self.classifier_new.add_module('fc8', nn.Linear(1024, classes))
+        self.classifier_new.add_module('fc8', nn.Linear(4096, classes))
 
     def load(self, checkpoint):
         model_dict = self.state_dict()
