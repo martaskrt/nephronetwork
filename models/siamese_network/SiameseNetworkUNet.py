@@ -12,6 +12,8 @@ class SiamNet(nn.Module):
         self.conv1.add_module('relu1_s1',nn.ReLU(inplace=True))
         self.conv1.add_module('pool1_s1', nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv1.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
+
+        #**************** ADDED *******************#
         self.conv1.add_module('pool1_s2', nn.MaxPool2d(kernel_size=2, stride=1))
 
         self.conv2 = nn.Sequential()
@@ -25,11 +27,15 @@ class SiamNet(nn.Module):
         self.conv3.add_module('conv3_s1',nn.Conv2d(256, 384, kernel_size=3, padding=1))
         self.conv3.add_module('batch3_s1', nn.BatchNorm2d(384))
         self.conv3.add_module('relu3_s1',nn.ReLU(inplace=True))
+        # ********** added*********** #
+        self.conv3.add_module('pool', nn.MaxPool2d(kernel_size=2, stride=1))
+
 
         self.conv4 = nn.Sequential()
         self.conv4.add_module('conv4_s1',nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2))
         self.conv4.add_module('batch4_s1', nn.BatchNorm2d(384))
         self.conv4.add_module('relu4_s1',nn.ReLU(inplace=True))
+
 
         self.conv5 = nn.Sequential()
         self.conv5.add_module('conv5_s1',nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2))
@@ -137,11 +143,17 @@ class SiamNet(nn.Module):
 
 
             out1 = self.conv1(input)
+            print(out1.shape)
             out2 = self.conv2(out1)
+            print(out2.shape)
             out3 = self.conv3(out2)
+            print(out3.shape)
             out4 = self.conv4(out3)
+            print(out4.shape)
             out5 = self.conv5(out4)
+            print(out5.shape)
             out6 = self.fc6(out5)
+            print(out6.shape)
 
             unet1 = self.uconnect1(torch.cat((out5, out6), dim=1))
             print(unet1.shape)
