@@ -56,11 +56,11 @@ class SiamNet(nn.Module):
 
         # ***********************************************************************#
         # U-NET #
-        self.uconnect= nn.Sequential()
-        self.uconnect.add_module('conv_sc', nn.Conv2d(2*96, 256, kernel_size=3, stride=2))
-        self.uconnect.add_module('batch_sc', nn.BatchNorm2d(256))
-        self.uconnect.add_module('relu_sc', nn.ReLU(inplace=True))
-        self.uconnect.add_module('pool_sc', nn.MaxPool2d(kernel_size=3, stride=2))
+        # self.uconnect= nn.Sequential()
+        # self.uconnect.add_module('conv_sc', nn.Conv2d(2*96, 256, kernel_size=3, stride=2))
+        # self.uconnect.add_module('batch_sc', nn.BatchNorm2d(256))
+        # self.uconnect.add_module('relu_sc', nn.ReLU(inplace=True))
+        # self.uconnect.add_module('pool_sc', nn.MaxPool2d(kernel_size=3, stride=2))
         # ***********************************************************************#
 
         # ***********************************************************************#
@@ -140,7 +140,9 @@ class SiamNet(nn.Module):
             out3 = self.conv3(out2)
             out4 = self.conv4(out3)
             out5 = self.conv5(out4)
+            print(out5.shape)
             out6 = self.fc6(out5)
+            print(out6.shape)
 
             unet1 = self.uconnect1(torch.cat((out5, out6), dim=1))
             unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
