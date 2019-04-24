@@ -20,8 +20,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-from SiameseNetwork import SiamNet
-# from SiameseNetworkUNet import SiamNet
+#from SiameseNetwork import SiamNet
+from SiameseNetworkUNet import SiamNet
 # from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
