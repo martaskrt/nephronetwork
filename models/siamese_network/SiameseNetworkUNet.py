@@ -138,7 +138,7 @@ class SiamNet(nn.Module):
             out3 = self.conv3(out2)
             out4 = self.conv4(out3)
             out5 = self.conv5(out4)
-            out6 = self.fc6c(out5)
+            out6 = self.fc6(out5)
 
             unet1 = self.uconnect1(torch.cat((out5, out6), dim=1))
             unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
