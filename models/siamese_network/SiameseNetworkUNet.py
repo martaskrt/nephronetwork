@@ -162,7 +162,7 @@ class SiamNet(nn.Module):
             unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
             print(unet2.shape)
             # unet3 = self.uconnect3(torch.cat((out3, unet2), dim=1))
-            print(unet3.shape)
+            # print(unet3.shape)
             unet4 = self.uconnect4(torch.cat((out2, unet2), dim=1))
             print(unet4.shape)
 
