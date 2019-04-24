@@ -66,19 +66,19 @@ class SiamNet(nn.Module):
         # ***********************************************************************#
         # U-NET #
         self.uconnect1= nn.Sequential()
-        self.uconnect1.add_module('conv', nn.Conv2d(1024+256, 256, kernel_size=2, stride=2))
+        self.uconnect1.add_module('conv', nn.Conv2d(1024+256, 256, kernel_size=3, stride=1, padding=1))
         self.uconnect1.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect1.add_module('relu', nn.ReLU(inplace=True))
         self.uconnect1.add_module('upsample', nn.Upsample(scale_factor=2))  # 256 * 30 * 30
 
         self.uconnect2= nn.Sequential()
-        self.uconnect2.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=2, padding=1))
+        self.uconnect2.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=1, padding=1))
         self.uconnect2.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect2.add_module('relu', nn.ReLU(inplace=True))
         self.uconnect2.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
 
         self.uconnect3= nn.Sequential()
-        self.uconnect3.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=2, padding=1))
+        self.uconnect3.add_module('conv', nn.Conv2d(384+256, 256, kernel_size=3, stride=1, padding=1))
         self.uconnect3.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect3.add_module('relu', nn.ReLU(inplace=True))
         self.uconnect3.add_module('upsample', nn.Upsample(scale_factor=2)) # 256 * 30 * 30
@@ -139,13 +139,11 @@ class SiamNet(nn.Module):
             out2 = self.conv2(out1)
             out3 = self.conv3(out2)
             out4 = self.conv4(out3)
-            print(out4.shape)
             out5 = self.conv5(out4)
-            print(out5.shape)
             out6 = self.fc6(out5)
-            print(out6.shape)
 
             unet1 = self.uconnect1(torch.cat((out5, out6), dim=1))
+            print(unet1.shape)
             unet2 = self.uconnect2(torch.cat((out4, unet1), dim=1))
             unet3 = self.uconnect3(torch.cat((out3, unet2), dim=1))
             unet4 = self.uconnect4(torch.cat((out2, unet3), dim=1))
