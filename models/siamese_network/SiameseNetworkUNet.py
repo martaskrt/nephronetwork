@@ -139,6 +139,7 @@ class SiamNet(nn.Module):
             out2 = self.conv2(out1)
             out3 = self.conv3(out2)
             out4 = self.conv4(out3)
+            print(out4.shape)
             out5 = self.conv5(out4)
             print(out5.shape)
             out6 = self.fc6(out5)
