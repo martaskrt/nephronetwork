@@ -221,7 +221,15 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
         all_pred_prob_val = torch.cat(all_pred_prob_val)
         all_targets_val = torch.cat(all_targets_val)
         all_pred_label_val = torch.cat(all_pred_label_val)
-    
+
+        # print(all_pred_prob_train)
+        # print(all_targets_train)
+        # print(all_pred_label_train)
+
+        # print(all_pred_prob_val)
+        # print(all_targets_val)
+        # print(all_pred_label_val)
+
         #assert len(all_targets_val) == len(train_y)
         #assert len(all_pred_prob_val) == len(train_y)
         #assert len(all_pred_label_val) == len(train_y)
@@ -267,7 +275,7 @@ def main():
     parser.add_argument('--valid_dir', default='/storage/ind_val_us_seq/', help="Number of epochs")
     parser.add_argument('--epochs', default=100, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
-    parser.add_argument('--lr', default=0.5, type=float, help="Learning rate")
+    parser.add_argument('--lr', default=0.01, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
