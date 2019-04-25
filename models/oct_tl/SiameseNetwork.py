@@ -75,9 +75,12 @@ class SiamNet(nn.Module):
         torch.save(self.state_dict(), checkpoint)
 
     def forward(self, x):
+        x_orig = x.size()
+        # print(x_orig)
+        # input()
         # x = x.unsqueeze(0)
-        if self.num_inputs == 1:
-            x = x.unsqueeze(1)
+        # if self.num_inputs == 1:
+        #     x = x.unsqueeze(1)
          #   B, C, H = x.size()
         #else:
         B, T, C, H = x.size()
@@ -93,10 +96,10 @@ class SiamNet(nn.Module):
             #else:
             curr_x = curr_x.expand(-1, 3, -1, -1)
             if torch.cuda.is_available():
-                input = torch.cuda.FloatTensor(curr_x.to(device))
+                inp = torch.cuda.FloatTensor(curr_x.to(device))
             else:
-                input = torch.FloatTensor(curr_x.to(device))
-            z = self.conv(input)
+                inp = torch.FloatTensor(curr_x.to(device))
+            z = self.conv(inp)
             z = self.fc6(z)
             z = self.fc6b(z)
             z = z.view([B, 1, -1])
@@ -107,6 +110,9 @@ class SiamNet(nn.Module):
         x = torch.cat(x_list, 1)
         x = self.fc7_new(x.view(B, -1))
         pred = self.classifier_new(x)
+
+        # print("\tIn Model: input size", x_orig,
+        #       "output size", pred.size())
 
         return pred
 
