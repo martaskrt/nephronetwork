@@ -28,7 +28,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(SEED)
 
 def train(args, train_dataset, val_dataset, test_dataset):
-    net = SiamNet(classes=4, num_inputs = 1)
+    net = SiamNet(classes=10, num_inputs = 1)
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
@@ -79,8 +79,6 @@ def train(args, train_dataset, val_dataset, test_dataset):
         all_pred_prob = []
         all_pred_label = []
         for batch_idx, (data, target) in enumerate(tqdm(train_dataset)):
-            print(type(data))
-            # input("Start batch...")
             optimizer.zero_grad()
             inp = data.to(device)
             output = net(inp)
@@ -130,7 +128,7 @@ def train(args, train_dataset, val_dataset, test_dataset):
                           'optimizer': optimizer.state_dict()}
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
-            path_to_checkpoint = args.dir + '/' + "checkpoint_oct_" + str(epoch) + '.pth'
+            path_to_checkpoint = args.dir + '/' + "checkpoint_mnist_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
 
 
@@ -184,59 +182,30 @@ def train(args, train_dataset, val_dataset, test_dataset):
 
 
 def load_data(args):
-    TRAIN = 'train'
-    VAL = 'val'
-    TEST = 'test'
-
-    data_transforms = {
-        TRAIN: transforms.Compose([
-            transforms.Grayscale(1),
-            transforms.RandomResizedCrop(256),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-        ]),
-        VAL: transforms.Compose([
-            transforms.Grayscale(1),
-            transforms.Resize(256),
-            transforms.CenterCrop(256),
-            transforms.ToTensor(),
-        ]),
-        TEST: transforms.Compose([
-            transforms.Grayscale(1),
-            transforms.Resize(256),
-            transforms.CenterCrop(256),
-            transforms.ToTensor(),
+    transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.ToTensor()
         ])
-    }
+    mnist_trainset = datasets.MNIST(root='../../data', train=True, download=True, transform=transform)
+    mnist_testset = datasets.MNIST(root='../../data', train=False, download=True, transform=transform)
 
-    image_datasets = {
-        x: datasets.ImageFolder(
-            os.path.join(args.data_dir, x),
-            transform=data_transforms[x]
+    train_dl = torch.utils.data.DataLoader(
+        mnist_trainset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers
         )
-        for x in [TRAIN, VAL, TEST]
-    }
-
-    dataloaders = {
-        x: torch.utils.data.DataLoader(
-            image_datasets[x],
-            batch_size=args.batch_size,
-            shuffle=True,
-            num_workers=args.num_workers
+    test_dl = torch.utils.data.DataLoader(
+        mnist_testset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers
         )
-        for x in [TRAIN, VAL, TEST]
-    }
 
-    dataset_sizes = {x: len(image_datasets[x]) for x in [TRAIN, VAL, TEST]}
+    print("Training Set Size:   %d" % len(mnist_trainset))
+    print("Test Set Size:       %d" % len(mnist_testset))
 
-    for x in [TRAIN, VAL, TEST]:
-        print("Loaded {} images under {}".format(dataset_sizes[x], x))
-
-    print("Classes: ")
-    class_names = image_datasets[TRAIN].classes
-    print(image_datasets[TRAIN].classes)
-
-    return dataloaders[TRAIN], dataloaders[VAL], dataloaders[TEST]
+    return train_dl, test_dl
 
 
 def main():
@@ -255,7 +224,7 @@ def main():
 
     args = parser.parse_args()
 
-    train_gen, val_gen, test_gen = load_data(args)
+    train_gen, test_gen = load_data(args)
 
     train(args, train_gen, test_gen, test_gen)
 
