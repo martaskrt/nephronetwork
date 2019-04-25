@@ -4,7 +4,7 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, classes=2):
+    def __init__(self, classes=2,dropout_rate=0.5):
         super(SiamNet, self).__init__()
         self.conv1 = nn.Sequential()
         self.conv1.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
@@ -110,12 +110,12 @@ class SiamNet(nn.Module):
         # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
         self.fc6c.add_module('fc7', nn.Linear(256*14*14, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc6c.add_module('drop7', nn.Dropout(p=0.5))
+        self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
         self.fc7_new.add_module('fc7', nn.Linear(2 * 512, 4096))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc7_new.add_module('drop7', nn.Dropout(p=0.5))
+        self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.classifier_new = nn.Sequential()
         self.classifier_new.add_module('fc8', nn.Linear(4096, classes))
