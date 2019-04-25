@@ -27,6 +27,7 @@ models/siamese_network/baseline_models_noCV/*
 
 # ************** PYTHON STUFF ************ #
 *.pyc
+*.pth
 
 # GitHub Python .gitignore
 # https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore
