@@ -110,42 +110,69 @@ def get_X(data, contrast, image_dim, siamese=False):
 '''
 
 '''
-def get_f(data):
+def get_f(data, samples_to_exclude=None, siamese=False):
     features = {}
-
-    for column in data.columns:
-
-        if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view',
-                          'kidney_side']:
-            features[column] = []
+    if siamese:
+        for column in data[0]:
+            if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view',
+                              'kidney_side']:
+                features[column] = []
+    else:
+        for column in data.columns:
+            if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view',
+                              'kidney_side']:
+                features[column] = []
 
     features["saggital"] = []
     features["male"] = []
 
-    if 'sample_num' in features:
-        features['total_patient_samples'] = []
-        total_patient_samples = list(set(zip(data.study_id, data.sample_num)))
-        id2numsamples = {}  # map study_id to total_num of samples
-        for i in total_patient_samples:
-            id2numsamples[i[0]] = i[1]
+    # if 'sample_num' in features:
+    #     features['total_patient_samples'] = []
+    #     total_patient_samples = list(set(zip(data.study_id, data.sample_num)))
+    #     id2numsamples = {}  # map study_id to total_num of samples
+    #     for i in total_patient_samples:
+    #         id2numsamples[i[0]] = i[1]
+    if siamese:
+        num_samples = len(data)
+        for i in range(num_samples):
+            if i in samples_to_exclude:
+                continue
+            for j in features:
+                if j == "saggital":
+                    if data[i]['kidney_view'].iloc[0] == "Sag":
+                        features[j].append(0)
+                    elif data[i]['kidney_view'].iloc[0] == "Trans":
+                        features[j].append(1)
+                elif j == "male":
+                    if data[i]['gender'].iloc[0] == "Male":
+                        features[j].append(0)
+                    elif data[i]['gender'].iloc[0] == "Female":
+                        features[j].append(1)
+                elif j != 'total_patient_samples':
+                    features[j].append(data[i][j].iloc[0])
+                else:
+                    study_id = data[i]['study_id'].iloc[0]
+                    features[j].append(id2numsamples[study_id])
 
-    for i in range(data.shape[0]):
-        for j in features:
-            if j == "saggital":
-                if data.iloc[i]['kidney_view'] == "Sag":
-                    features[j].append(0)
-                elif data.iloc[i]['kidney_view'] == "Trans":
-                    features[j].append(1)
-            elif j == "male":
-                if data.iloc[i]['gender'] == "Male":
-                    features[j].append(0)
-                elif data.iloc[i]['gender'] == "Female":
-                    features[j].append(1)
-            elif j != 'total_patient_samples':
-                features[j].append(data.iloc[i][j])
-            else:
-                study_id = data.iloc[i]['study_id']
-                features[j].append(id2numsamples[study_id])
+    else:
+        num_samples = data.shape[0]
+        for i in range(num_samples):
+            for j in features:
+                if j == "saggital":
+                    if data.iloc[i]['kidney_view'] == "Sag":
+                        features[j].append(0)
+                    elif data.iloc[i]['kidney_view'] == "Trans":
+                        features[j].append(1)
+                elif j == "male":
+                    if data.iloc[i]['gender'] == "Male":
+                        features[j].append(0)
+                    elif data.iloc[i]['gender'] == "Female":
+                        features[j].append(1)
+                elif j != 'total_patient_samples':
+                    features[j].append(data.iloc[i][j])
+                else:
+                    study_id = data.iloc[i]['study_id']
+                    features[j].append(id2numsamples[study_id])
     return features
 
 
@@ -168,12 +195,27 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
         train_X, samples_to_exclude = get_X(train_groups, contrast, image_dim, siamese=True)
         train_y = get_y(train_groups, siamese=True, samples_to_exclude=samples_to_exclude)
 
+        if get_features or get_cov:
+            train_features = get_f(train_groups, samples_to_exclude=samples_to_exclude, siamese=True)
+            if get_cov:
+                train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
+                             train_features["saggital"]]
+                train_features = train_cov
         test_grouped = test_data.groupby(['study_id', 'sample_num', 'kidney_side'])
         test_groups = []
         for name, group in test_grouped:
             test_groups.append(group)
         test_X, samples_to_exclude = get_X(test_groups, contrast, image_dim, siamese=True)
         test_y = get_y(test_groups, siamese=True, samples_to_exclude=samples_to_exclude)
+        if get_features or get_cov:
+            test_features = get_f(test_groups, samples_to_exclude=samples_to_exclude, siamese=True)
+            if get_cov:
+                test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
+                            test_features["saggital"]]
+                test_features = test_cov
+            return train_X, train_y, train_features, test_X, test_y, test_features
+        else:
+            return train_X, train_y, test_X, test_y
 
 
     else:
@@ -183,18 +225,20 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
         test_y = get_y(test_data)
         test_X = get_X(test_data, contrast, image_dim)
 
-    if get_features or get_cov:
-        train_features = get_f(train_data)
-        test_features = get_f(test_data)
-        if get_cov:
-            train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"], train_features["saggital"]]
-            test_cov = [train_features["study_id"], test_features["age_at_baseline"], test_features["male"], test_features["saggital"]]
-            train_features = train_cov
-            test_features = test_cov
-        return train_X, train_y, train_features, test_X, test_y, test_features
+        if get_features or get_cov:
+            train_features = get_f(train_data)
+            test_features = get_f(test_data)
+            if get_cov:
+                train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
+                             train_features["saggital"]]
+                test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
+                            test_features["saggital"]]
+                train_features = train_cov
+                test_features = test_cov
+            return train_X, train_y, train_features, test_X, test_y, test_features
 
-    else:
-        return train_X, train_y, test_X, test_y
+        else:
+            return train_X, train_y, test_X, test_y
 
 
 def get_sag(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=False):
@@ -228,7 +272,7 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
 
 
 
-def view_images(imgs, num_images_to_view=5, views_to_get="siamese"):
+def view_images(imgs, num_images_to_view=20, views_to_get="siamese"):
     counter = 0
     if views_to_get=="siamese":
         for img in imgs:
@@ -250,7 +294,38 @@ def view_images(imgs, num_images_to_view=5, views_to_get="siamese"):
             plt.imshow(img[0], cmap='gray')
             counter += 1
 
-# datafile = "preprocessed_images_20190315.pickle"
-# train_X, train_y, test_X, test_y = load_dataset(views_to_get="siamese", pickle_file=datafile)
+#datafile = "preprocessed_images_20190315.pickle"
+#train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
+
+# from sklearn.utils import shuffle
+# train_X_shuffled = shuffle(train_X, random_state=42)
+# train_X = train_X_shuffled[:int(len(train_X_shuffled)*0.8)]
+# val_X = train_X_shuffled[int(len(train_X_shuffled)*0.8):]
 #
-# view_images(test_X)
+# import os
+# os.makedirs("ILSVRC2012_img_train")
+# f = open("ILSVRC2012_img_train/ilsvrc12_train.txt", 'w')
+# import scipy.misc
+# counter = 0
+# for img in train_X:
+#     scipy.misc.imsave("ILSVRC2012_img_train/" + str(counter) +'.jpg', img[0])
+#     f.write(str(counter) +'.jpg\n')
+#     counter += 1
+#     scipy.misc.imsave("ILSVRC2012_img_train/" + str(counter) + '.jpg', img[1])
+#     f.write(str(counter) + '.jpg\n')
+#     counter += 1
+# f.close()
+#
+# os.makedirs("ILSVRC2012_img_val")
+# f = open("ILSVRC2012_img_val/ilsvrc12_val.txt", 'w')
+# counter = 0
+# for img in val_X:
+#     scipy.misc.imsave("ILSVRC2012_img_val/" + str(counter) + '.jpg', img[0])
+#     f.write(str(counter) + '.jpg\n')
+#     counter += 1
+#     scipy.misc.imsave("ILSVRC2012_img_val/" + str(counter) + '.jpg', img[1])
+#     f.write(str(counter) + '.jpg\n')
+#     counter += 1
+# f.close()
+# #
+#view_images(test_X)
