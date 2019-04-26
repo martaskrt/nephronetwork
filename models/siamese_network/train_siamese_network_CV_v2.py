@@ -79,11 +79,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     train_y = np.array(train_y)
 
     train_X, train_y = shuffle(train_X, train_y, random_state=42)
-    h = 1
     for train_index, test_index in skf.split(train_X, train_y):
-        if h < 5:
-            h += 1
-            continue
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
         else:
