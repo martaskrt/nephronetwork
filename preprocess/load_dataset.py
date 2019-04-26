@@ -294,8 +294,8 @@ def view_images(imgs, num_images_to_view=20, views_to_get="siamese"):
             plt.imshow(img[0], cmap='gray')
             counter += 1
 
-datafile = "preprocessed_images_20190315.pickle"
-train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
+#datafile = "preprocessed_images_20190315.pickle"
+#train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
 
 # from sklearn.utils import shuffle
 # train_X_shuffled = shuffle(train_X, random_state=42)
