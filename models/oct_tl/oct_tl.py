@@ -29,10 +29,10 @@ if torch.cuda.is_available():
 
 def train(args, train_dataset, val_dataset, test_dataset):
     net = SiamNet(classes=4, num_inputs = 1)
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
-        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-        net = nn.DataParallel(net)
+    # if torch.cuda.device_count() > 1:
+    #     print("Let's use", torch.cuda.device_count(), "GPUs!")
+    #     # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+    #     net = nn.DataParallel(net)
     net.to(device)
     if args.checkpoint != "":
         pretrained_dict = torch.load(args.checkpoint)
@@ -79,7 +79,6 @@ def train(args, train_dataset, val_dataset, test_dataset):
         all_pred_prob = []
         all_pred_label = []
         for batch_idx, (data, target) in enumerate(tqdm(train_dataset)):
-            print(type(data))
             # input("Start batch...")
             optimizer.zero_grad()
             inp = data.to(device)
