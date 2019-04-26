@@ -20,8 +20,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-from SiameseNetwork import SiamNet
-# from SiameseNetworkUNet import SiamNet
+#from SiameseNetwork import SiamNet
+from SiameseNetworkUNet import SiamNet
 # from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
@@ -307,7 +307,7 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
             path_to_checkpoint = args.dir + '/fold_' + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
-            torch.save(checkpoint, path_to_checkpoint)
+            #torch.save(checkpoint, path_to_checkpoint)
 
         fold += 1
 
@@ -316,8 +316,8 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
-    parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
-    parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
+    parser.add_argument('--batch_size', default=128, type=int, help="Batch size")
+    parser.add_argument('--lr', default=0.005, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument('--adam', action="store_true", help="Use Adam optimizer instead of SGD")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
