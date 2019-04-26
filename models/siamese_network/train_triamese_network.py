@@ -98,7 +98,7 @@ class TriadDataset(torch.utils.data.Dataset):
         return (imgs,target)
 
 def train(args, training_generator, validation_generator, max_epochs,SiamNet,process_results):
-    net = SiamNet().to(device)
+    net = SiamNet(dropout_rate=args.dropout_rate).to(device)
     if args.checkpoint != "":
         pretrained_dict = torch.load(args.checkpoint)
         model_dict = net.state_dict()
@@ -284,7 +284,8 @@ def main():
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
     parser.add_argument("--git_dir", default="/home/lauren/nephronetwork", help="Path to github repo with necessary modules to load")
     parser.add_argument("--siam_unet", default=False, help="Use Regular Siam Net or Siame UNet")
-    
+    parser.add_argument("--dropout_rate",default=0.5,type=float,help="Dropout rate for fully connected layers of NN")    
+
     args = parser.parse_args()
 
     process_results = importlib.machinery.SourceFileLoader('process_results',os.path.join(args.git_dir,'models/process_results.py')).load_module()
