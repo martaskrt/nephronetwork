@@ -111,20 +111,21 @@ def get_X(data, contrast, image_dim, siamese=False):
 
 '''
 def get_f(data, samples_to_exclude=None, siamese=False):
+    study_id_date_map = pd.read_csv("../../preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
     if siamese:
         for column in data[0]:
-            if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view',
-                              'kidney_side']:
+            if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view']:
                 features[column] = []
     else:
         for column in data.columns:
-            if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view',
-                              'kidney_side']:
+            if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view']:
                 features[column] = []
 
     features["saggital"] = []
     features["male"] = []
+    features["sample_us_date"] = []
+
 
     # if 'sample_num' in features:
     #     features['total_patient_samples'] = []
@@ -148,11 +149,23 @@ def get_f(data, samples_to_exclude=None, siamese=False):
                         features[j].append(0)
                     elif data[i]['gender'].iloc[0] == "Female":
                         features[j].append(1)
-                elif j != 'total_patient_samples':
-                    features[j].append(data[i][j].iloc[0])
-                else:
+                elif j == "sample_num":
+                    sample_num = int(data[i][j].iloc[0])
+                    features[j].append(sample_num)
+                    us_num = "date_us" + str(sample_num)
                     study_id = data[i]['study_id'].iloc[0]
-                    features[j].append(id2numsamples[study_id])
+                    # print(study_id, type(study_id))
+                    # print(study_id_date_map['study_id'].iloc[0], type(study_id_date_map['study_id'].iloc[0]))
+                    # print(study_id_date_map.loc[study_id_date_map['study_id'] == int(study_id)][us_num])
+                    us_date = str(study_id_date_map.loc[study_id_date_map['study_id'] == int(study_id)][us_num]).split("\n")[0].split()[1]
+
+                    features['sample_us_date'].append(us_date)
+
+                elif j != 'total_patient_samples' and j != "sample_us_date":
+                    features[j].append(data[i][j].iloc[0])
+                # else:
+                #     study_id = data[i]['study_id'].iloc[0]
+                #     features[j].append(id2numsamples[study_id])_
 
     else:
         num_samples = data.shape[0]
@@ -168,11 +181,18 @@ def get_f(data, samples_to_exclude=None, siamese=False):
                         features[j].append(0)
                     elif data.iloc[i]['gender'] == "Female":
                         features[j].append(1)
-                elif j != 'total_patient_samples':
+                elif j == "sample_num":
+                    sample_num = int(data.iloc[i][j])
+                    features[j].append(sample_num)
+                    us_num = "date_us" + str(sample_num)
+                    features['sample_us_date'].append(
+                        study_id_date_map.loc[study_id_date_map['study_id'] == data.iloc[i]['study_id']][us_num])
+
+                elif j != 'total_patient_samples' and j != "sample_us_date":
                     features[j].append(data.iloc[i][j])
-                else:
-                    study_id = data.iloc[i]['study_id']
-                    features[j].append(id2numsamples[study_id])
+                # else:
+                #     study_id = data.iloc[i]['study_id']
+                #     features[j].append(id2numsamples[study_id])
     return features
 
 
@@ -194,12 +214,15 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
 
         train_X, samples_to_exclude = get_X(train_groups, contrast, image_dim, siamese=True)
         train_y = get_y(train_groups, siamese=True, samples_to_exclude=samples_to_exclude)
-
+        assert len(train_y) == len(train_X)
         if get_features or get_cov:
             train_features = get_f(train_groups, samples_to_exclude=samples_to_exclude, siamese=True)
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
-                             train_features["saggital"]]
+                             train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
+                             train_features["date_of_ultrasound_1"], train_features['sample_us_date']]
+                for item in train_cov:
+                    assert len(item) == len(train_y)
                 train_features = train_cov
         test_grouped = test_data.groupby(['study_id', 'sample_num', 'kidney_side'])
         test_groups = []
@@ -207,11 +230,16 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
             test_groups.append(group)
         test_X, samples_to_exclude = get_X(test_groups, contrast, image_dim, siamese=True)
         test_y = get_y(test_groups, siamese=True, samples_to_exclude=samples_to_exclude)
+        assert len(test_y) == len(test_X)
+
         if get_features or get_cov:
             test_features = get_f(test_groups, samples_to_exclude=samples_to_exclude, siamese=True)
             if get_cov:
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
-                            test_features["saggital"]]
+                            test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
+                            test_features["date_of_ultrasound_1"], test_features['sample_us_date']]
+                for item in test_cov:
+                    assert len(item) == len(test_y)
                 test_features = test_cov
             return train_X, train_y, train_features, test_X, test_y, test_features
         else:
@@ -225,14 +253,23 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
         test_y = get_y(test_data)
         test_X = get_X(test_data, contrast, image_dim)
 
+        assert len(train_y) == len(train_X)
+        assert len(test_y) == len(test_X)
+
         if get_features or get_cov:
             train_features = get_f(train_data)
             test_features = get_f(test_data)
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
-                             train_features["saggital"]]
+                             train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
+                             train_features["date_of_ultrasound_1"], train_features['sample_us_date']]
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
-                            test_features["saggital"]]
+                            test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
+                            test_features["date_of_ultrasound_1"], test_features['sample_us_date']]
+                for item in train_cov:
+                    assert len(item) == len(train_y)
+                for item in test_cov:
+                    assert len(item) == len(test_y)
                 train_features = train_cov
                 test_features = test_cov
             return train_X, train_y, train_features, test_X, test_y, test_features
@@ -294,8 +331,8 @@ def view_images(imgs, num_images_to_view=20, views_to_get="siamese"):
             plt.imshow(img[0], cmap='gray')
             counter += 1
 
-#datafile = "preprocessed_images_20190315.pickle"
-#train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
+# datafile = "preprocessed_images_20190315.pickle"
+# train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
 
 # from sklearn.utils import shuffle
 # train_X_shuffled = shuffle(train_X, random_state=42)
