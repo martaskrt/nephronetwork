@@ -39,12 +39,32 @@ softmax = torch.nn.Softmax(dim=1)
 
 class KidneyDataset(torch.utils.data.Dataset):
 
-    def __init__(self, X, y):
+    def __init__(self, X, y, cov):
         self.X = torch.from_numpy(X).float()
         self.y = y
+        self.cov = cov
 
     def __getitem__(self, index):
-        imgs, target = self.X[index], self.y[index]
+        imgs, target, cov = self.X[index], self.y[index], self.cov[index]
+        # cov = []
+        # for i in range(len(self.cov)): # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: date_of_US_1
+        #     if i == 2:
+        #         if self.cov[i][index] == 0:
+        #             cov.append("M")
+        #         elif self.cov[i][index] == 0:
+        #             cov.append("F")
+        #     elif i == 3:
+        #         continue
+        #     elif i == 4:
+        #         cov.append(int(self.cov[i][index]))
+        #     else:
+        #         cov.append(self.cov[i][index])
+        #
+        # cov_id = ""
+        # for item in cov:
+        #     cov_id += str(item) + "_"
+        # cov_id = cov_id[:-1]
+
         #to_pil = transforms.ToPILImage()
         #to_tensor = transforms.ToTensor()
         #for n in range(2):
@@ -55,13 +75,13 @@ class KidneyDataset(torch.utils.data.Dataset):
            # temp_img = norm(to_tensor(to_pil(temp_img)))
            # imgs[n] = temp_img
         
-        return imgs, target
+        return imgs, target, cov
 
     def __len__(self):
         return len(self.X)
 
 
-def train(args, train_X, train_y, test_X, test_y, max_epochs):
+def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
                    'weight_decay': args.weight_decay
@@ -69,7 +89,8 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
-    test_set = KidneyDataset(test_X, test_y)
+
+    test_set = KidneyDataset(test_X, test_y, test_cov)
 
     test_generator = DataLoader(test_set, **params)
 
@@ -77,8 +98,13 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     n_splits = 5
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     train_y = np.array(train_y)
+    train_cov = np.array(train_cov)
 
-    train_X, train_y = shuffle(train_X, train_y, random_state=42)
+
+    train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=42)
+    # for i in range(len(train_cov)):
+    #     train_cov[i] = shuffle(train_cov[i], random_state=42)
+
     for train_index, test_index in skf.split(train_X, train_y):
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
@@ -111,13 +137,24 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
         train_X_CV = train_X[train_index]
         train_y_CV = train_y[train_index]
+        train_cov_CV = train_cov[train_index]
+        # for i in range(len(train_cov)):
+        #     print(i)
+        #     train_cov_CV.append([])
+        #     print(train_cov[i])
+        #     train_cov_CV.append(train_cov[i][train_index])
+
         val_X_CV = train_X[test_index]
         val_y_CV = train_y[test_index]
+        val_cov_CV = train_cov[test_index]
+        # for i in range(len(train_cov)):
+        #     val_cov_CV.append([])
+        #     val_cov_CV[i] = train_cov[i][test_index]
 
-        training_set = KidneyDataset(train_X_CV, train_y_CV)
+        training_set = KidneyDataset(train_X_CV, train_y_CV, train_cov_CV)
         training_generator = DataLoader(training_set, **params)
 
-        validation_set = KidneyDataset(val_X_CV, val_y_CV)
+        validation_set = KidneyDataset(val_X_CV, val_y_CV, val_cov_CV)
         validation_generator = DataLoader(validation_set, **params)
 
         for epoch in range(max_epochs):
@@ -141,12 +178,16 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_pred_prob_test = []
             all_pred_label_test = []
 
+            patient_ID_test = []
+            patient_ID_train = []
+            patient_ID_val = []
+
 
             counter_train = 0
             counter_val = 0
             counter_test = 0
             
-            for batch_idx, (data, target) in enumerate(training_generator):
+            for batch_idx, (data, target, cov) in enumerate(training_generator):
                 optimizer.zero_grad()
 
                 output = net(data.to(device))
@@ -168,12 +209,15 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                 assert len(pred_prob) == len(target)
                 assert len(pred_label) == len(target)
 
+
                 all_pred_prob_train.append(pred_prob)
                 all_targets_train.append(target)
                 all_pred_label_train.append(pred_label)
 
+                patient_ID_train.append(cov)
+
             with torch.set_grad_enabled(False):
-                for batch_idx, (data, target) in enumerate(validation_generator):
+                for batch_idx, (data, target, cov) in enumerate(validation_generator):
                     net.zero_grad()
                     optimizer.zero_grad()
                     output = net(data)
@@ -197,9 +241,11 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                     all_targets_val.append(target)
                     all_pred_label_val.append(pred_label)
 
+                    patient_ID_val.append(cov)
+
             with torch.set_grad_enabled(False):
 
-                for batch_idx, (data, target) in enumerate(test_generator):
+                for batch_idx, (data, target, cov) in enumerate(test_generator):
                     net.zero_grad()
                     optimizer.zero_grad()
                     output = net(data)
@@ -223,13 +269,18 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                     all_targets_test.append(target)
                     all_pred_label_test.append(pred_label)
 
+                    patient_ID_test.append(cov)
+
             all_pred_prob_train = torch.cat(all_pred_prob_train)
             all_targets_train = torch.cat(all_targets_train)
             all_pred_label_train = torch.cat(all_pred_label_train)
 
+            patient_ID_train = torch.cat(patient_ID_train)
+
             assert len(all_targets_train) == len(training_set)
             assert len(all_pred_prob_train) == len(training_set)
             assert len(all_pred_label_train) == len(training_set)
+            assert len(patient_ID_train) == len(training_set)
 
             results_train = process_results.get_metrics(y_score=all_pred_prob_train.cpu().detach().numpy(),
                                                   y_true=all_targets_train.cpu().detach().numpy(),
@@ -245,9 +296,12 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_targets_val = torch.cat(all_targets_val)
             all_pred_label_val = torch.cat(all_pred_label_val)
 
+            patient_ID_val = torch.cat(patient_ID_val)
+
             assert len(all_targets_val) == len(validation_set)
             assert len(all_pred_prob_val) == len(validation_set)
             assert len(all_pred_label_val) == len(validation_set)
+            assert len(patient_ID_val) == len(validation_set)
 
             results_val = process_results.get_metrics(y_score=all_pred_prob_val.cpu().detach().numpy(),
                                                       y_true=all_targets_val.cpu().detach().numpy(),
@@ -263,9 +317,12 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             all_targets_test = torch.cat(all_targets_test)
             all_pred_label_test = torch.cat(all_pred_label_test)
 
+            patient_ID_test = torch.cat(patient_ID_test)
+
             assert len(all_targets_test) == len(test_y)
             assert len(all_pred_label_test) == len(test_y)
             assert len(all_pred_prob_test) == len(test_y)
+            assert len(patient_ID_test) == len(test_y)
 
             results_test = process_results.get_metrics(y_score=all_pred_prob_test.cpu().detach().numpy(),
                                                       y_true=all_targets_test.cpu().detach().numpy(),
@@ -298,7 +355,10 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
                           'all_pred_prob_test': all_pred_prob_test,
                           'all_targets_train': all_targets_train,
                           'all_targets_val': all_targets_val,
-                          'all_targets_test': all_targets_test}
+                          'all_targets_test': all_targets_test,
+                          'patient_ID_train': patient_ID_train,
+                          'patient_ID_val': patient_ID_val,
+                          'patient_ID_test': patient_ID_test}
 
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
@@ -329,10 +389,59 @@ def main():
     args = parser.parse_args()
 
     max_epochs = args.epochs
+    train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args.view,
+                                                                                      sort_by_date=True,
+                                                                                      pickle_file=args.datafile,
+                                                                                      contrast=args.contrast,
+                                                                                      split=0.9, get_cov=True)
 
-    train_X, train_y, test_X, test_y = load_dataset.load_dataset(views_to_get=args.view, sort_by_date=True,
-                                                                 pickle_file=args.datafile, contrast=args.contrast,
-                                                                  split=0.9)
+    train_cov_id = []
+    num_samples = len(train_y)
+    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
+        curr_sample = []
+        for j in range(len(train_cov)):
+            if j == 2:
+                if train_cov[j][i] == 0:
+                    curr_sample.append("M")
+                elif train_cov[j][i] == 1:
+                    curr_sample.append("F")
+            elif j == 3:
+                continue
+            elif j == 4:
+                curr_sample.append(int(train_cov[j][i]))
+            else:
+                curr_sample.append(train_cov[j][i])
+
+        cov_id = ""
+        for item in curr_sample:
+            cov_id += str(item) + "_"
+        train_cov_id.append(cov_id[:-1])
+
+    test_cov_id = []
+    num_samples = len(test_y)
+    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
+        curr_sample = []
+        for j in range(len(test_cov)):
+            if j == 2:
+                if test_cov[j][i] == 0:
+                    curr_sample.append("M")
+                elif test_cov[j][i] == 0:
+                    curr_sample.append("F")
+            elif j == 3:
+                continue
+            elif j == 4:
+                curr_sample.append(int(test_cov[j][i]))
+            else:
+                curr_sample.append(test_cov[j][i])
+
+        cov_id = ""
+        for item in curr_sample:
+            cov_id += str(item) + "_"
+        test_cov_id.append(cov_id[:-1])
+
+
+    train(args, train_X, train_y, train_cov_id, test_X, test_y, test_cov_id, max_epochs)
+
 
     #n_splits = 5
     #fold = 4
@@ -350,7 +459,7 @@ def main():
         #val_X_CV = train_X[test_index]
 
         #load_dataset.view_images(val_X_CV, num_images_to_view=300)
-    train(args,  train_X, train_y, test_X, test_y, max_epochs)
+
 
 
 if __name__ == '__main__':
