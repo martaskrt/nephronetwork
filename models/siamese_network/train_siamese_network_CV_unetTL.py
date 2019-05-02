@@ -78,11 +78,9 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
     train_y = np.array(train_y)
 
     train_X, train_y = shuffle(train_X, train_y, random_state=42)
-    h = 1
+   
     for train_index, test_index in skf.split(train_X, train_y):
-        if h < 5:
-            h += 1
-            continue
+        
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
         else:
@@ -94,7 +92,6 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
 
             for k, v in model_dict.items():
                 unet_dict[k] = model_dict[k]
-
             unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
             unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
             unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
@@ -116,7 +113,6 @@ def train(args, train_X, train_y, test_X, test_y, max_epochs):
             # pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
 
             # 2. overwrite entries in the existing state dict
-            print(unet_dict)
             model_dict.update(unet_dict)
             # 3. load the new state dict
             net.load_state_dict(unet_dict)
