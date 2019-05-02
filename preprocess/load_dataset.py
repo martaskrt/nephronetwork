@@ -8,7 +8,7 @@ import numpy as np
 
 
 def open_file(file):
-    print(file)
+    #print(file)
     data = pd.read_pickle(file)
     #data = pd.read_pickle("preprocessed_images.pickle")
     return data
@@ -333,9 +333,10 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
 #             counter += 1
 # 
 # =============================================================================
-datafile = "preprocessed_images_20190402.pickle"
-train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
-print(f)
+#datafile = "/home/lauren/preprocessed_images_20190402.pickle"
+#train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
+
+#print(f)
 
 # from sklearn.utils import shuffle
 # train_X_shuffled = shuffle(train_X, random_state=42)
