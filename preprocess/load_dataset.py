@@ -122,7 +122,6 @@ def get_f(data, samples_to_exclude=None, siamese=False):
         for column in data.columns:
             if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view']:
                 features[column] = []
-    print(features)
     features["saggital"] = []
     features["male"] = []
     features["sample_us_date"] = []
