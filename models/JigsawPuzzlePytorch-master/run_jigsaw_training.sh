@@ -2,7 +2,7 @@ IMAGENET_FOLD="/home/marta/nephronetwork-github/nephronetwork/models/JigsawPuzzl
 
 GPU=${1} # gpu used
 CHECKPOINTS_FOLD=${2} #path_to_output_folder
-rootname="checkpoints_20190415_bs256_e70_lr0.01_50_c1_16p"
+rootname="checkpoints_20190415_bs256_e70_lr0.01_64_c1_unnorm"
 ext=".txt"
 #python JigsawTrain.py ${IMAGENET_FOLD} --checkpoint=${CHECKPOINTS_FOLD} \
 #                      --classes=1000 --batch 128 --lr=0.001 --gpu=${GPU} --cores=10
