@@ -363,7 +363,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
             path_to_checkpoint = args.dir + '/fold_' + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
-            #torch.save(checkpoint, path_to_checkpoint)
+            torch.save(checkpoint, path_to_checkpoint)
 
         fold += 1
 
