@@ -115,13 +115,14 @@ def get_f(data, samples_to_exclude=None, siamese=False):
     features = {}
     if siamese:
         for column in data[0]:
+
             if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view']:
                 features[column] = []
     else:
         for column in data.columns:
             if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view']:
                 features[column] = []
-
+    print(features)
     features["saggital"] = []
     features["male"] = []
     features["sample_us_date"] = []
@@ -149,14 +150,17 @@ def get_f(data, samples_to_exclude=None, siamese=False):
                         features[j].append(0)
                     elif data[i]['gender'].iloc[0] == "Female":
                         features[j].append(1)
+                elif j == "manufacturer":
+                    manu = data[i][j].iloc[0].lower().replace("_", " ")
+                    manu = manu.replace(".", " ")
+                    manu = manu.replace(",", " ")
+                    features[j].append('-'.join(manu.split()))
+
                 elif j == "sample_num":
                     sample_num = int(data[i][j].iloc[0])
                     features[j].append(sample_num)
                     us_num = "date_us" + str(sample_num)
                     study_id = data[i]['study_id'].iloc[0]
-                    # print(study_id, type(study_id))
-                    # print(study_id_date_map['study_id'].iloc[0], type(study_id_date_map['study_id'].iloc[0]))
-                    # print(study_id_date_map.loc[study_id_date_map['study_id'] == int(study_id)][us_num])
                     us_date = str(study_id_date_map.loc[study_id_date_map['study_id'] == int(study_id)][us_num]).split("\n")[0].split()[1]
 
                     features['sample_us_date'].append(us_date)
@@ -181,6 +185,11 @@ def get_f(data, samples_to_exclude=None, siamese=False):
                         features[j].append(0)
                     elif data.iloc[i]['gender'] == "Female":
                         features[j].append(1)
+                elif j == "manufacturer":
+                    manu = data.iloc[i][j].lower().replace("_", " ")
+                    manu = manu.replace(".", " ")
+                    manu = manu.replace(",", " ")
+                    features[j].append('-'.join(manu.split()))
                 elif j == "sample_num":
                     sample_num = int(data.iloc[i][j])
                     features[j].append(sample_num)
@@ -220,7 +229,7 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
-                             train_features["date_of_ultrasound_1"], train_features['sample_us_date']]
+                             train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer']]
                 for item in train_cov:
                     assert len(item) == len(train_y)
                 train_features = train_cov
@@ -237,7 +246,7 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
             if get_cov:
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
-                            test_features["date_of_ultrasound_1"], test_features['sample_us_date']]
+                            test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer']]
                 for item in test_cov:
                     assert len(item) == len(test_y)
                 test_features = test_cov
@@ -262,10 +271,10 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
-                             train_features["date_of_ultrasound_1"], train_features['sample_us_date']]
+                             train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer']]
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
-                            test_features["date_of_ultrasound_1"], test_features['sample_us_date']]
+                            test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer']]
                 for item in train_cov:
                     assert len(item) == len(train_y)
                 for item in test_cov:
