@@ -384,8 +384,9 @@ def main():
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
     # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
     #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
-                        help="File containing pandas dataframe with images stored as numpy array")
+    # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
+    #                     help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190402.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
     max_epochs = args.epochs
