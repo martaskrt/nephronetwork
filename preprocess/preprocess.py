@@ -14,12 +14,12 @@ import numpy as np
 IMAGE_PARAMS = {0: [2.1, 4, 4],
                 1: [2.5, 3.2, 3.2]}  # factor to crop images by: crop ratio, translate_x, translate_y
 
-rootdir = os.path.join(os.path.abspath(os.path.join('./', os.pardir)), 'all-images')
-print(rootdir)
+#rootdir = os.path.join(os.path.abspath(os.path.join('./', os.pardir)), 'all-images')
+#print(rootdir)
 #rootdir = '/home/martaskreta/Desktop/CSC2516/all-images/'
 
 # loads all image paths to array
-def load_file_names():
+def load_file_names(rootdir):
     dcm_files = []
     for subdir, dirs, files in os.walk(rootdir):
         for file in files:
@@ -98,7 +98,7 @@ def load_images(label_data, dcm_files, opt):
         tokens = image_path.split("/")
 
         # get mrn and sample number
-        sample_name = tokens[6][1:].split("_")
+        sample_name = tokens[9][1:].split("_")
         mrn = sample_name[0]
         try:
             sample_num = int(sample_name[1])
@@ -123,7 +123,9 @@ def load_images(label_data, dcm_files, opt):
         img = ds.pixel_array
         img = img_as_float(rgb2gray(img))
         manufacturer = ds.Manufacturer
-        img_acq_date = ds.AcquisitionDate
+        
+        print("Manufacturer: " + manufacturer)
+        #img_acq_date = ds.AcquisitionDate
 
         # number of cropped params to save
         num_image_crop_params = len(IMAGE_PARAMS)
@@ -134,7 +136,7 @@ def load_images(label_data, dcm_files, opt):
             data.iloc[data.shape[0] - 1, data.columns.get_loc('kidney_view')] = kidney_view
             data.iloc[data.shape[0] - 1, data.columns.get_loc('kidney_side')] = kidney_side
             data.iloc[data.shape[0] - 1, data.columns.get_loc('manufacturer')] = manufacturer
-            data.iloc[data.shape[0] - 1, data.columns.get_loc('img_acq_date')] = img_acq_date
+            #data.iloc[data.shape[0] - 1, data.columns.get_loc('img_acq_date')] = img_acq_date
             data.iloc[data.shape[0] - 1, data.columns.get_loc('crop_style')] = i
             cropped_image = crop_image(img, i)  # crop image with i-th params
             resized_image = transform.resize(cropped_image, output_shape=(opt.output_dim, opt.output_dim))  # reduce
@@ -174,13 +176,18 @@ def main():
                                                    "(see IMAGE_PARAMS_1 at top of file)")
     parser.add_argument('-view', default=0, help="number of images to visualize")
     parser.add_argument('-output_dim', default=256, help="dimension of output image")
+    parser.add_argument('-rootdir', default="/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/GANs/data/all-images", 
+                        help="Directory where the images are")
 
     opt = parser.parse_args()
     opt.view = int(opt.view)
     opt.output_dim = int(opt.output_dim)
 
-    dcm_files = load_file_names()
+    dcm_files = load_file_names(opt.rootdir)
+    print("DCM files generated")
+    print(dcm_files)
     data = load_labels()
+    print("Data loaded")
     load_images(data, dcm_files, opt)
 
 
