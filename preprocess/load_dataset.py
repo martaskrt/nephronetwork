@@ -2,13 +2,13 @@ import pandas as pd
 import math
 from skimage import exposure
 import numpy as np
-import ast
-from numpy import genfromtxt
-import matplotlib.pyplot as plt
+#import ast
+#from numpy import genfromtxt
+#import matplotlib.pyplot as plt
 
 
 def open_file(file):
-    print(file)
+    #print(file)
     data = pd.read_pickle(file)
     #data = pd.read_pickle("preprocessed_images.pickle")
     return data
@@ -318,30 +318,34 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
 
 
 
-def view_images(imgs, num_images_to_view=20, views_to_get="siamese"):
-    counter = 0
-    if views_to_get=="siamese":
-        for img in imgs:
-            if counter >= num_images_to_view:
-                break
-            plt.figure()
-            plt.subplot(1, 2, 1)
-            plt.imshow(img[0], cmap='gray')
-            plt.subplot(1, 2, 2)
-            plt.imshow(img[1], cmap='gray')
-            plt.show()
-            counter += 1
-    else:
-        for img in imgs:
-            if counter >= num_images_to_view:
-                break
-            plt.figure()
-            plt.subplot(1, 1, 1)
-            plt.imshow(img[0], cmap='gray')
-            counter += 1
+# =============================================================================
+# def view_images(imgs, num_images_to_view=20, views_to_get="siamese"):
+#     counter = 0
+#     if views_to_get=="siamese":
+#         for img in imgs:
+#             if counter >= num_images_to_view:
+#                 break
+#             plt.figure()
+#             plt.subplot(1, 2, 1)
+#             plt.imshow(img[0], cmap='gray')
+#             plt.subplot(1, 2, 2)
+#             plt.imshow(img[1], cmap='gray')
+#             plt.show()
+#             counter += 1
+#     else:
+#         for img in imgs:
+#             if counter >= num_images_to_view:
+#                 break
+#             plt.figure()
+#             plt.subplot(1, 1, 1)
+#             plt.imshow(img[0], cmap='gray')
+#             counter += 1
+# 
+# =============================================================================
+#datafile = "/home/lauren/preprocessed_images_20190402.pickle"
+#train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
 
-# datafile = "preprocessed_images_20190315.pickle"
-# train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
+#print(f)
 
 # from sklearn.utils import shuffle
 # train_X_shuffled = shuffle(train_X, random_state=42)
