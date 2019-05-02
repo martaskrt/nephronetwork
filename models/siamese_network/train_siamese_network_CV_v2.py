@@ -188,7 +188,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             counter_test = 0
             
             for batch_idx, (data, target, cov) in enumerate(training_generator):
-                print(cov)
                 optimizer.zero_grad()
 
                 output = net(data.to(device))
