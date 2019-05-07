@@ -213,7 +213,6 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
     train_ids, test_ids = train_test_split(patient_ids_sorted, split)
     train_data = data[data.study_id.isin(train_ids)]
     test_data = data[data.study_id.isin(test_ids)]
-
     if siamese:
         train_grouped = train_data.groupby(['study_id', 'sample_num', 'kidney_side'])
         train_groups = []
@@ -309,9 +308,9 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
     data = data[data.crop_style == float(crop)]
 
     if views_to_get == "sag":
-        return get_sag(data, sort_by_date, split, contrast, image_dim, get_features)
+        return get_sag(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
     elif views_to_get == "trans":
-        return get_trans(data, sort_by_date, split, contrast, image_dim, get_features)
+        return get_trans(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
     elif views_to_get == "siamese":
         return get_siamese(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
 
