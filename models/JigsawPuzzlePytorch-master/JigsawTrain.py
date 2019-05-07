@@ -126,7 +126,7 @@ def main():
         if (epoch%10)==0 and epoch>0:
             test(net,criterion,logger_test,val_loader,steps)
         lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=20, decay=0.1)
-        # lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=100, decay=0.75)
+        #lr = adjust_learning_rate(optimizer, epoch, init_lr=args.lr, step=100000000, decay=1)
         end = time()
         for i, (images, labels, original) in enumerate(train_loader):
             batch_time.append(time()-end)
