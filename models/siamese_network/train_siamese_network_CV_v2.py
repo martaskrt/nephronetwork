@@ -214,7 +214,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 all_targets_train.append(target)
                 all_pred_label_train.append(pred_label)
 
-                patient_ID_train.append(cov)
+                patient_ID_train.extend(cov)
 
             with torch.set_grad_enabled(False):
                 for batch_idx, (data, target, cov) in enumerate(validation_generator):
@@ -241,7 +241,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     all_targets_val.append(target)
                     all_pred_label_val.append(pred_label)
 
-                    patient_ID_val.append(cov)
+                    patient_ID_val.extend(cov)
 
             with torch.set_grad_enabled(False):
 
@@ -269,13 +269,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     all_targets_test.append(target)
                     all_pred_label_test.append(pred_label)
 
-                    patient_ID_test.append(cov)
+                    patient_ID_test.extend(cov)
 
             all_pred_prob_train = torch.cat(all_pred_prob_train)
             all_targets_train = torch.cat(all_targets_train)
             all_pred_label_train = torch.cat(all_pred_label_train)
 
-            patient_ID_train = torch.cat(patient_ID_train)
+           # patient_ID_train = torch.cat(patient_ID_train)
 
             assert len(all_targets_train) == len(training_set)
             assert len(all_pred_prob_train) == len(training_set)
@@ -296,7 +296,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             all_targets_val = torch.cat(all_targets_val)
             all_pred_label_val = torch.cat(all_pred_label_val)
 
-            patient_ID_val = torch.cat(patient_ID_val)
+            #patient_ID_val = torch.cat(patient_ID_val)
 
             assert len(all_targets_val) == len(validation_set)
             assert len(all_pred_prob_val) == len(validation_set)
@@ -317,7 +317,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             all_targets_test = torch.cat(all_targets_test)
             all_pred_label_test = torch.cat(all_pred_label_test)
 
-            patient_ID_test = torch.cat(patient_ID_test)
+            #patient_ID_test = torch.cat(patient_ID_test)
 
             assert len(all_targets_test) == len(test_y)
             assert len(all_pred_label_test) == len(test_y)
@@ -362,8 +362,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
-            path_to_checkpoint = args.dir + '/fold_' + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
-            #torch.save(checkpoint, path_to_checkpoint)
+            if not os.path.isdir(args.dir + "/" + str(fold)):
+                os.makedirs(args.dir + "/" + str(fold))
+            path_to_checkpoint = args.dir + "/" + str(fold) + '/fold_' + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
+            torch.save(checkpoint, path_to_checkpoint)
 
         fold += 1
 
@@ -384,8 +386,9 @@ def main():
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
     # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
     #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
-                        help="File containing pandas dataframe with images stored as numpy array")
+    # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
+    #                     help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190402.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
     max_epochs = args.epochs
