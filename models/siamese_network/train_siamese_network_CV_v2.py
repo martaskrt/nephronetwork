@@ -375,7 +375,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=128, type=int, help="Batch size")
-    parser.add_argument('--lr', default=0.005, type=float, help="Learning rate")
+    parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument('--adam', action="store_true", help="Use Adam optimizer instead of SGD")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")

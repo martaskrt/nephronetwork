@@ -103,7 +103,7 @@ def make_full_df(pth_folder):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint_folder', default=50, type=int, help="Number of epochs")
+    parser.add_argument('--checkpoint_folder', help="Number of epochs")
 
     args = parser.parse_args()
 
