@@ -8,6 +8,7 @@ setwd("C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/
 
 library("ggplot2")
 library("lubridate")
+library("pROC")
 
 ### USER-DEFINED FUCTIONS
 
@@ -27,9 +28,15 @@ fix_gender = function(df){
   return(df_out)
 }
 
+elapsed_months <- function(end_date, start_date) { ## from: https://stackoverflow.com/questions/1995933/number-of-months-between-two-dates/1996404
+  ed <- as.POSIXlt(end_date)
+  sd <- as.POSIXlt(start_date)
+  12 * (ed$year - sd$year) + (ed$mon - sd$mon)
+}
+
 ### PROCESSING THE DATA
 
-analysis_name = "unet_20190503_vanilla_CV_lr0.001_e35_bs256_c1_SGD_test20_pi"
+analysis_name = "unet_20190503_vanilla_CV_lr0.001_e35_bs256_c1_SGD_pi"
 
 train = read.csv(paste0(analysis_name,"_train.csv"),header=TRUE,as.is=TRUE)
 val = read.csv(paste0(analysis_name,"_val.csv"),header=TRUE,as.is=TRUE)
@@ -48,16 +55,20 @@ str(full_dat)
 full_dat$set = c(rep("train",nrow(data_triad[["train"]])),
                  rep("val",nrow(data_triad[["val"]])),
                  rep("test",nrow(data_triad[["test"]])))
-full_dat$Data_Split = factor(full_dat$set,levels = c("train","val","test"))
+full_dat$Data_Split = factor(full_dat$set,levels = c("train","val","test"),labels = c("Training","Validation","Test"))
 full_dat$Target.f = factor(full_dat$Target,levels = c(0,1),labels = c("No Surgery","Surgery"))
 full_dat$date_of_us1.date = as.Date(full_dat$date_of_us1)
 full_dat$date_of_current_us.date = as.Date(full_dat$date_of_current_us)
+full_dat$date_of_current_us.date[full_dat$date_of_current_us.date > "2020-01-01"] = NA
 full_dat$us_1_yr = year(full_dat$date_of_us1.date) ##  can extract year from lubridate function
 full_dat$us_yr = year(full_dat$date_of_current_us.date) ##  can extract year from lubridate function
 full_dat$us_yr[full_dat$us_yr > 2020] = NA
 table(full_dat$kidney_side)
 str(full_dat)
-full_dat$age_at_us[!is.na(full_dat$us_yr)] = full_dat$age_at_baseline[!is.na(full_dat$us_yr)] + (full_dat$us_yr[!is.na(full_dat$us_yr)] - full_dat$us_1_yr[!is.na(full_dat$us_yr)])
+full_dat$age_at_us <- NA
+full_dat$age_at_us = full_dat$age_at_baseline + elapsed_months(end_date = full_dat$date_of_current_us.date,start_date = full_dat$date_of_us1.date)
+
+full_dat.sorted = full_dat[order(full_dat$date_of_current_us.date),]
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,size = age_at_baseline)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = us_1_yr)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
@@ -68,6 +79,40 @@ ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = gender)) + geom_point() + ge
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = manu)) + geom_point() + geom_jitter() + facet_grid(manu~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(kidney_side~Data_Split)
 
-ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(.~study_id)
+ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = study_id)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
+
+### looking at sorted dataset 
+
+ggplot(full_dat.sorted,aes(x = age_at_us,y = Pred_val,group = study_id)) + geom_line() + facet_grid(Target.f ~ Data_Split)
+
+ggplot(full_dat.sorted,aes(x = date_of_current_us.date,y = Pred_val,group = study_id)) + geom_line() + facet_grid(Target.f ~ Data_Split)
+
+ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = gender)) + geom_point() + geom_jitter() + facet_grid(gender~Data_Split)
+ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = manu)) + geom_point() + geom_jitter() + facet_grid(manu~Data_Split)
+ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(kidney_side~Data_Split)
+
+
+
+###############################
+###############################
+#
+#   TESTING A MODEL TO CORRECT OUTPUT FROM UNet
+#
+###############################
+###############################
+
+pred_mod = glm(Target ~ Pred_val + kidney_side,data = data_triad[["val"]], family = binomial)
+summary(pred_mod)
+
+new_test_pred = predict(pred_mod,newdata = data_triad[["test"]],type = "response")
+
+new_test_out = data.frame(pred = new_test_pred,
+                          target = data_triad[["test"]]$Target)
+new_test_out$target.f = factor(new_test_out$target,levels = c(0,1),labels = c("No Surgery","Surgery"))
+
+auc(data_triad[["test"]]$Target,data_triad[["test"]]$Pred_val) ## 0.8346
+auc(new_test_out$target,new_test_out$pred) ## 0.804
+
+ggplot(new_test_out,aes(x = target.f,y = pred)) + geom_point() + geom_jitter()
 
 
