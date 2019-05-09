@@ -9,6 +9,7 @@ setwd("C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/
 library("ggplot2")
 library("lubridate")
 library("pROC")
+library("dismo")
 
 ### USER-DEFINED FUCTIONS
 
@@ -33,6 +34,21 @@ elapsed_months <- function(end_date, start_date) { ## from: https://stackoverflo
   sd <- as.POSIXlt(start_date)
   12 * (ed$year - sd$year) + (ed$mon - sd$mon)
 }
+
+get_cutpoint <- function(pos_class_vec,sensitivity = 0.95){
+  sorted_vec = sort(pos_class_vec)
+  cutpoint_thresh = quantile(sorted_vec,c(1-sensitivity))
+  return(cutpoint_thresh)
+}
+
+get_pred_class <- function(pred_vals,threshold = 0.5){
+  return(ifelse(pred_vals > threshold,yes = 1,no = 0))
+}
+
+
+### LOAD CLINICAL DATA
+load("revised-us-classifier-Feb72019.RData") ## add path to this
+  ## relevant dataframe = phn.raw ; want vcug1 (or all VCUG variables really)
 
 ### PROCESSING THE DATA
 
@@ -68,6 +84,15 @@ str(full_dat)
 full_dat$age_at_us <- NA
 full_dat$age_at_us = full_dat$age_at_baseline + elapsed_months(end_date = full_dat$date_of_current_us.date,start_date = full_dat$date_of_us1.date)
 
+if(exists("phn.raw")){
+  full_dat$vcug_yn = phn.raw$vcug1[match(full_dat$study_id,phn.raw$study_id)]
+  full_dat$vcug_yn_0 = full_dat$vcug_yn
+  full_dat$vcug_yn_0[is.na(full_dat$vcug_yn) == T] = 0
+  full_dat$vcug_yn.f = factor(full_dat$vcug_yn,levels = c(0,1),labels = c("no","yes"))
+  full_dat$vcug_yn_0.f = factor(full_dat$vcug_yn_0,levels = c(0,1),labels = c("no","yes"))
+}
+
+
 full_dat.sorted = full_dat[order(full_dat$date_of_current_us.date),]
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,size = age_at_baseline)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
@@ -78,6 +103,8 @@ ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = age_at_us)) + geom_point() +
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = gender)) + geom_point() + geom_jitter() + facet_grid(gender~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = manu)) + geom_point() + geom_jitter() + facet_grid(manu~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(kidney_side~Data_Split)
+
+ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = vcug_yn.f)) + geom_point() + geom_jitter() + facet_grid(vcug_yn.f~Data_Split)
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = study_id)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
 
@@ -92,11 +119,28 @@ ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = manu)) + geom_point()
 ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(kidney_side~Data_Split)
 
 
-
 ###############################
 ###############################
 #
 #   TESTING A MODEL TO CORRECT OUTPUT FROM UNet
+#
+###############################
+###############################
+
+pos_class_vec = data_triad[["val"]]$Pred_val[data_triad[["val"]]$Target == 1]
+
+thresh = get_cutpoint(pos_class_vec,sensitivity = 0.95)
+
+pred_new_thresh = get_pred_class(data_triad[["test"]]$Pred_val,threshold = thresh)
+
+table(pred_new_thresh,data_triad[["test"]]$Target)
+table(pred_new_thresh,full_dat$vcug_yn.f[full_dat$Data_Split == "Test"])
+
+
+###############################
+###############################
+#
+#   TESTING A MODEL TO CORRECT OUTPUT FROM UNet -- unsuccessful 
 #
 ###############################
 ###############################
@@ -111,6 +155,11 @@ new_test_out = data.frame(pred = new_test_pred,
 new_test_out$target.f = factor(new_test_out$target,levels = c(0,1),labels = c("No Surgery","Surgery"))
 
 auc(data_triad[["test"]]$Target,data_triad[["test"]]$Pred_val) ## 0.8346
+ci.sp(data_triad[["test"]]$Target,data_triad[["test"]]$Pred_val)
+
+e = evaluate(data_triad[["train"]]$Pred_val,data_triad[["train"]]$Target)
+threshold(e)
+
 auc(new_test_out$target,new_test_out$pred) ## 0.804
 
 ggplot(new_test_out,aes(x = target.f,y = pred)) + geom_point() + geom_jitter()
