@@ -66,6 +66,8 @@ str(data_triad)
 
 full_dat = Reduce(rbind,data_triad)
 str(full_dat)
+length(unique(full_dat$full_ID))
+
 ## IF NO M/F IN GENDER, SHIFT RIGHT, ADD "F"
 
 full_dat$set = c(rep("train",nrow(data_triad[["train"]])),
@@ -83,6 +85,8 @@ table(full_dat$kidney_side)
 str(full_dat)
 full_dat$age_at_us <- NA
 full_dat$age_at_us = full_dat$age_at_baseline + elapsed_months(end_date = full_dat$date_of_current_us.date,start_date = full_dat$date_of_us1.date)
+full_dat$us_num.f = factor(full_dat$us_num,levels = 1:10)
+str(full_dat$us_num.f)
 
 if(exists("phn.raw")){
   full_dat$vcug_yn = phn.raw$vcug1[match(full_dat$study_id,phn.raw$study_id)]
@@ -93,7 +97,16 @@ if(exists("phn.raw")){
 }
 
 
+full_dat_un_test = full_dat[!duplicated(paste0(full_dat$full_ID[full_dat$Data_Split == "Test"],":",full_dat$Fold[full_dat$Data_Split == "Test"])),]
+str(full_dat_un_test)
+length(unique(full_dat$full_ID[full_dat$Data_Split == "Test"]))
+length(full_dat$full_ID[full_dat$Data_Split == "Test"])
+length(full_dat_un_test$full_ID[full_dat_un_test$Data_Split == "Test"])
+
+full_dat[full_dat$study_id == 585,]
+
 full_dat.sorted = full_dat[order(full_dat$date_of_current_us.date),]
+
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,size = age_at_baseline)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = us_1_yr)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
@@ -104,9 +117,11 @@ ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = gender)) + geom_point() + ge
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = manu)) + geom_point() + geom_jitter() + facet_grid(manu~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(kidney_side~Data_Split)
 
-ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = vcug_yn.f)) + geom_point() + geom_jitter() + facet_grid(vcug_yn.f~Data_Split)
+ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(vcug_yn.f~Data_Split)
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = study_id)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
+
+ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = us_num.f)) + geom_point() + geom_jitter() + facet_grid(us_num.f~Data_Split)
 
 ### looking at sorted dataset 
 
@@ -117,7 +132,8 @@ ggplot(full_dat.sorted,aes(x = date_of_current_us.date,y = Pred_val,group = stud
 ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = gender)) + geom_point() + geom_jitter() + facet_grid(gender~Data_Split)
 ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = manu)) + geom_point() + geom_jitter() + facet_grid(manu~Data_Split)
 ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = kidney_side)) + geom_point() + geom_jitter() + facet_grid(kidney_side~Data_Split)
-
+ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = us_num)) + geom_point() + geom_jitter() + facet_grid(us_num~Data_Split)
+ggplot(full_dat.sorted,aes(x = Target.f,y = Pred_val,col = us_num.f)) + geom_point() + geom_jitter() + facet_grid(us_num.f~Data_Split)
 
 ###############################
 ###############################
@@ -135,7 +151,8 @@ pred_new_thresh = get_pred_class(data_triad[["test"]]$Pred_val,threshold = thres
 
 table(pred_new_thresh,data_triad[["test"]]$Target)
 table(pred_new_thresh,full_dat$vcug_yn.f[full_dat$Data_Split == "Test"])
-
+na.omit(full_dat$study_id[full_dat$vcug_yn == 1 & full_dat$Data_Split == "Test"])
+na.omit(full_dat$study_id[full_dat$vcug_yn == 0 & full_dat$Data_Split == "Test"])
 
 ###############################
 ###############################
