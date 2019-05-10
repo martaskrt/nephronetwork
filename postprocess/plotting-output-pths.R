@@ -57,7 +57,7 @@ full_dat$us_yr = year(full_dat$date_of_current_us.date) ##  can extract year fro
 full_dat$us_yr[full_dat$us_yr > 2020] = NA
 table(full_dat$kidney_side)
 str(full_dat)
-full_dat$age_at_us[!is.na(full_dat$us_yr)] = full_dat$age_at_baseline[!is.na(full_dat$us_yr)] + (full_dat$us_yr[!is.na(full_dat$us_yr)] - full_dat$us_1_yr[!is.na(full_dat$us_yr)])
+full_dat$age_at_us[!is.na(full_dat$us_yr)] = full_dat$age_at_baseline[!is.na(full_dat$us_yr)] + (full_dat$us_yr[!is.na(full_dat$us_yr)] - full_dat$us_1_yr[!is.na(full_dat$us_yr)])*12
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,size = age_at_baseline)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = us_1_yr)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
