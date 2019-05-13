@@ -111,7 +111,9 @@ def get_X(data, contrast, image_dim, siamese=False):
 
 '''
 def get_f(data, samples_to_exclude=None, siamese=False):
-    study_id_date_map = pd.read_csv("../../preprocess/samples_with_studyids_and_usdates.csv")
+    # study_id_date_map = pd.read_csv("../../preprocess/samples_with_studyids_and_usdates.csv")
+    "/Volumes/terminator/nephronetwork/preprocess/"
+    study_id_date_map = pd.read_csv("/Volumes/terminator/nephronetwork/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
     if siamese:
         for column in data[0]:
