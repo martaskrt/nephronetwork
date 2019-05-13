@@ -84,8 +84,9 @@ class KidneyDataset(torch.utils.data.Dataset):
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
-                   'weight_decay': args.weight_decay
-                   }
+                   'weight_decay': args.weight_decay,
+                   'train/test_split': args.split 
+                  }
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
@@ -111,21 +112,50 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
-            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
-            model_dict = net.state_dict()
+            if "jigsaw" in args.dir and "unet" in args.dir:
+                print("Loading Jigsaw into UNet")
+                pretrained_dict = torch.load(args.checkpoint)
+                model_dict = net.state_dict()
+                unet_dict = {}
 
-            # 1. filter out unnecessary keys
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+                for k, v in model_dict.items():
+                    unet_dict[k] = model_dict[k]
+
+                unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
+                unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
+                unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
+                unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
+                unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
+                unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
+                unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
+                unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
+                unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
+                unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
+
+                unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+                unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
+
+
+          
+                model_dict.update(unet_dict)
+                # 3. load the new state dict
+                net.load_state_dict(unet_dict)
+            else:
+                #pretrained_dict = torch.load(args.checkpoint)
+                pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+                model_dict = net.state_dict()
+
+                pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
            
             
-            # pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            # for k, v in model_dict.items():
-              #  if k not in pretrained_dict:
-               #     pretrained_dict[k] = model_dict[k]
-            # 2. overwrite entries in the existing state dict
-            model_dict.update(pretrained_dict)
-            # 3. load the new state dict
-            net.load_state_dict(pretrained_dict)
+                #pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+                #for k, v in model_dict.items():
+                 #   if k not in pretrained_dict:
+                  #      pretrained_dict[k] = model_dict[k]
+                # 2. overwrite entries in the existing state dict
+                model_dict.update(pretrained_dict)
+                # 3. load the new state dict
+                net.load_state_dict(pretrained_dict)
 
         if args.adam:
             optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
@@ -384,19 +414,23 @@ def main():
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
     parser.add_argument("--view", default = "siamese", help="siamese, sag, trans")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
+    parser.add_argument("--split", default=0.9, type=float, help="proportion of dataset to use as training")
+    parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
     # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
     #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
     # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
     #                     help="File containing pandas dataframe with images stored as numpy array")
     parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190402.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
-
+    print("train/test split: " + str(args.split))
+    print("bottom cut: " + str(args.bottom_cut))
     max_epochs = args.epochs
     train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args.view,
                                                                                       sort_by_date=True,
                                                                                       pickle_file=args.datafile,
                                                                                       contrast=args.contrast,
-                                                                                      split=0.9, get_cov=True)
+                                                                                      split=args.split, get_cov=True,
+                                                                                      bottom_cut=args.bottom_cut)
 
     train_cov_id = []
     num_samples = len(train_y)

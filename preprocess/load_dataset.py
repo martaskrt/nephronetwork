@@ -14,9 +14,10 @@ def open_file(file):
     return data
 
 
-def train_test_split(patient_ids_sorted, split):
+def train_test_split(patient_ids_sorted, split, bottom_cut):
     train_split = math.floor(len(patient_ids_sorted)*split)
-    train_ids = list(map(lambda x: x[0], patient_ids_sorted[:train_split]))
+    data_bottom_cut = math.floor(len(patient_ids_sorted)*bottom_cut)
+    train_ids = list(map(lambda x: x[0], patient_ids_sorted[data_bottom_cut:train_split]))
     test_ids = list(map(lambda x: x[0], patient_ids_sorted[train_split:]))
     return train_ids, test_ids
 
@@ -204,13 +205,13 @@ def get_f(data, samples_to_exclude=None, siamese=False):
     return features
 
 
-def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=False, siamese=False):
+def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_dim, get_features, get_cov=False, siamese=False):
     patient_ids_and_ultrasound_dates = list(set(zip(data.study_id, data.date_of_ultrasound_1)))
     if sort_by_date:
         patient_ids_sorted = sorted(patient_ids_and_ultrasound_dates, key=lambda x: x[1])
     else:
         patient_ids_sorted = sorted(patient_ids_and_ultrasound_dates)
-    train_ids, test_ids = train_test_split(patient_ids_sorted, split)
+    train_ids, test_ids = train_test_split(patient_ids_sorted, split, bottom_cut)
     train_data = data[data.study_id.isin(train_ids)]
     test_data = data[data.study_id.isin(test_ids)]
     if siamese:
@@ -285,20 +286,20 @@ def load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_fea
             return train_X, train_y, test_X, test_y
 
 
-def get_sag(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=False):
+def get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
     data = data[data.kidney_view == "Sag"]
-    return load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=get_cov,)
+    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,)
 
 
-def get_trans(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=False):
+def get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
     data = data[data.kidney_view == "Trans"]
-    return load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=get_cov,)
+    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,)
 
-def get_siamese(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=False):
-    return load_train_test_sets(data, sort_by_date, split, contrast, image_dim, get_features, get_cov=get_cov, siamese=True)
+def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
+    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov, siamese=True)
 
 def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
-                         crop=0, get_features=False, image_dim=256, views_to_get="all", get_cov=False, pickle_file=""):
+                         crop=0, get_features=False, image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0):
 
     data = open_file(pickle_file)
 
@@ -308,11 +309,11 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
     data = data[data.crop_style == float(crop)]
 
     if views_to_get == "sag":
-        return get_sag(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
+        return get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
     elif views_to_get == "trans":
-        return get_trans(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
+        return get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
     elif views_to_get == "siamese":
-        return get_siamese(data, sort_by_date, split, contrast, image_dim, get_features, get_cov)
+        return get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
 
 
 
