@@ -400,7 +400,7 @@ def main():
 
     train_cov_id = []
     num_samples = len(train_y)
-    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
+    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
         curr_sample = []
         for j in range(len(train_cov)):
             if j == 2:
@@ -422,13 +422,13 @@ def main():
 
     test_cov_id = []
     num_samples = len(test_y)
-    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
+    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
         curr_sample = []
         for j in range(len(test_cov)):
             if j == 2:
                 if test_cov[j][i] == 0:
                     curr_sample.append("M")
-                elif test_cov[j][i] == 0:
+                elif test_cov[j][i] == 1:
                     curr_sample.append("F")
             elif j == 3:
                 continue
