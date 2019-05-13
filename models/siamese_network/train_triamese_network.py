@@ -98,7 +98,7 @@ class TriadDataset(torch.utils.data.Dataset):
         return (imgs,target)
 
 def train(args, training_generator, validation_generator, max_epochs,SiamNet,process_results):
-    net = SiamNet(dropout_rate=args.dropout_rate).to(device)
+    net = SiamNet(dropout_rate=args.dropout_rate,num_inputs=3).to(device)
     if args.checkpoint != "":
         pretrained_dict = torch.load(args.checkpoint)
         model_dict = net.state_dict()
@@ -264,7 +264,7 @@ def train(args, training_generator, validation_generator, max_epochs,SiamNet,pro
             # if epoch > 50:
             #     path_to_prev_checkpoint = args.git_dir + '/models/siamese_networks/' + "triamese_checkpoint_" + str(epoch-50) + '.pth'
             #     os.remove(path_to_prev_checkpoint)
-            path_to_checkpoint = args.git_dir + '/models/siamese_network/' + "triamese25k_checkpoint_" + str(epoch) + '.pth'
+            path_to_checkpoint = args.git_dir + '/models/siamese_network/' + "triamese15k_3in_CNN_checkpoint_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
 
 
@@ -274,7 +274,7 @@ def main():
     parser.add_argument('--train_dir', default='/storage/ind_train_us_seq/',help="Number of epochs")
     parser.add_argument('--valid_dir', default='/storage/ind_val_us_seq/', help="Number of epochs")
     parser.add_argument('--epochs', default=100, type=int, help="Number of epochs")
-    parser.add_argument('--batch_size', default=256, type=int, help="Batch size")
+    parser.add_argument('--batch_size', default=128, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.01, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
