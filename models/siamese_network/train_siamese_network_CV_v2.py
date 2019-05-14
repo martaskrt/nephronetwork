@@ -20,8 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-#from SiameseNetwork import SiamNet
-from SiameseNetworkUNet import SiamNet
+
 # from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
@@ -82,6 +81,11 @@ class KidneyDataset(torch.utils.data.Dataset):
 
 
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
+    if args.unet:
+        from SiameseNetworkUNet import SiamNet
+    else:
+        from SiameseNetwork import SiamNet
+
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
                    'weight_decay': args.weight_decay,
@@ -135,8 +139,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
                 unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
 
-
-          
                 model_dict.update(unet_dict)
                 # 3. load the new state dict
                 net.load_state_dict(unet_dict)
@@ -412,69 +414,70 @@ def main():
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
     parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
-    parser.add_argument("--view", default = "siamese", help="siamese, sag, trans")
+    parser.add_argument("--view", default="siamese", help="siamese, sag, trans")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    parser.add_argument("--split", default=0.9, type=float, help="proportion of dataset to use as training")
+    parser.add_argument("--split", default=0.7, type=float, help="proportion of dataset to use as training")
     parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
-    # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
-    #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
-    #                     help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190402.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
+    parser.add_argument('--unet', action="store_true", help="UNet architecthure")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190513.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
-    print("train/test split: " + str(args.split))
-    print("bottom cut: " + str(args.bottom_cut))
+
+    print("ARGS" + '\t' + str(args))
+
     max_epochs = args.epochs
     train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args.view,
                                                                                       sort_by_date=True,
                                                                                       pickle_file=args.datafile,
                                                                                       contrast=args.contrast,
-                                                                                      split=args.split, get_cov=True,
-                                                                                      bottom_cut=args.bottom_cut)
+                                                                                      split=args.split,
+                                                                                      get_cov=True,
+                                                                                      bottom_cut=args.bottom_cut,
+                                                                                      etiology=args.etiology)
 
-    train_cov_id = []
-    num_samples = len(train_y)
-    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
-        curr_sample = []
-        for j in range(len(train_cov)):
-            if j == 2:
-                if train_cov[j][i] == 0:
-                    curr_sample.append("M")
-                elif train_cov[j][i] == 1:
-                    curr_sample.append("F")
-            elif j == 3:
-                continue
-            elif j == 4:
-                curr_sample.append(int(train_cov[j][i]))
-            else:
-                curr_sample.append(train_cov[j][i])
-
-        cov_id = ""
-        for item in curr_sample:
-            cov_id += str(item) + "_"
-        train_cov_id.append(cov_id[:-1])
-
-    test_cov_id = []
-    num_samples = len(test_y)
-    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
-        curr_sample = []
-        for j in range(len(test_cov)):
-            if j == 2:
-                if test_cov[j][i] == 0:
-                    curr_sample.append("M")
-                elif test_cov[j][i] == 0:
-                    curr_sample.append("F")
-            elif j == 3:
-                continue
-            elif j == 4:
-                curr_sample.append(int(test_cov[j][i]))
-            else:
-                curr_sample.append(test_cov[j][i])
-
-        cov_id = ""
-        for item in curr_sample:
-            cov_id += str(item) + "_"
-        test_cov_id.append(cov_id[:-1])
+    # train_cov_id = []
+    # num_samples = len(train_y)
+    # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
+    #     curr_sample = []
+    #     for j in range(len(train_cov)):
+    #         if j == 2:
+    #             if train_cov[j][i] == 0:
+    #                 curr_sample.append("M")
+    #             elif train_cov[j][i] == 1:
+    #                 curr_sample.append("F")
+    #         elif j == 3:
+    #             continue
+    #         elif j == 4:
+    #             curr_sample.append(int(train_cov[j][i]))
+    #         else:
+    #             curr_sample.append(train_cov[j][i])
+    #
+    #     cov_id = ""
+    #     for item in curr_sample:
+    #         cov_id += str(item) + "_"
+    #     train_cov_id.append(cov_id[:-1])
+    #
+    # test_cov_id = []
+    # num_samples = len(test_y)
+    # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
+    #     curr_sample = []
+    #     for j in range(len(test_cov)):
+    #         if j == 2:
+    #             if test_cov[j][i] == 0:
+    #                 curr_sample.append("M")
+    #             elif test_cov[j][i] == 1:
+    #                 curr_sample.append("F")
+    #         elif j == 3:
+    #             continue
+    #         elif j == 4:
+    #             curr_sample.append(int(test_cov[j][i]))
+    #         else:
+    #             curr_sample.append(test_cov[j][i])
+    #
+    #     cov_id = ""
+    #     for item in curr_sample:
+    #         cov_id += str(item) + "_"
+    #     test_cov_id.append(cov_id[:-1])
 
 
     train(args, train_X, train_y, train_cov_id, test_X, test_y, test_cov_id, max_epochs)
