@@ -98,8 +98,8 @@ def load_images(label_data, dcm_files, opt):
         tokens = image_path.split("/")
 
         # get mrn and sample number
-        # sample_name = tokens[9][1:].split("_")
-        sample_name = tokens[2][1:].split("_")
+        sample_name = tokens[9][1:].split("_")
+        # sample_name = tokens[2][1:].split("_")
         mrn = sample_name[0]
         try:
             sample_num = int(sample_name[1])
