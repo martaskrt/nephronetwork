@@ -4,8 +4,9 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, classes=2,dropout_rate=0.5):
+    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5):
         super(SiamNet, self).__init__()
+        self.num_inputs = num_inputs
         self.conv1 = nn.Sequential()
         self.conv1.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
         self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
@@ -113,7 +114,7 @@ class SiamNet(nn.Module):
         self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear(2 * 512, 4096))
+        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 4096))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
         self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
 
@@ -132,11 +133,13 @@ class SiamNet(nn.Module):
         torch.save(self.state_dict(), checkpoint)
 
     def forward(self, x):
+        if self.num_inputs == 1:
+            x = x.unsqueeze(1)
         B, T, C, H = x.size()
         x = x.transpose(0, 1)
         x_list = []
 
-        for i in range(2):
+        for i in range(self.num_inputs):
             curr_x = torch.unsqueeze(x[i], 1)
             curr_x = curr_x.expand(-1, 3, -1, -1)
             if torch.cuda.is_available():
