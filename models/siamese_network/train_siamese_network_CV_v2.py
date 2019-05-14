@@ -413,7 +413,7 @@ def main():
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
-    parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
+    parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
     parser.add_argument("--view", default="siamese", help="siamese, sag, trans")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
     parser.add_argument("--split", default=0.7, type=float, help="proportion of dataset to use as training")
