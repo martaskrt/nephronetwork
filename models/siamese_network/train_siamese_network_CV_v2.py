@@ -420,6 +420,7 @@ def main():
     parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
+    parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190513.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
@@ -433,7 +434,8 @@ def main():
                                                                                       split=args.split,
                                                                                       get_cov=True,
                                                                                       bottom_cut=args.bottom_cut,
-                                                                                      etiology=args.etiology)
+                                                                                      etiology=args.etiology,
+                                                                                      crop=args.crop)
 
     # train_cov_id = []
     # num_samples = len(train_y)
