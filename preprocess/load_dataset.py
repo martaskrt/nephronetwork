@@ -6,6 +6,36 @@ import numpy as np
 #from numpy import genfromtxt
 #import matplotlib.pyplot as plt
 
+def make_cov_labels(cov):
+    cov_id_str = []
+    num_samples = len(cov[0])
+    # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num,
+    # 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer, 9: etiology
+    for i in range(num_samples):
+        curr_sample = []
+        for j in range(len(cov)):
+            if j == 2:
+                if cov[j][i] == 0:
+                    curr_sample.append("M")
+                elif cov[j][i] == 1:
+                    curr_sample.append("F")
+            elif j == 3:
+                continue
+            elif j == 4:
+                curr_sample.append(int(cov[j][i]))
+            elif j == 9:
+                if cov[j][i] == 0:
+                    curr_sample.append("R")
+                elif cov[j][i] == 1:
+                    curr_sample.append("O")
+            else:
+                curr_sample.append(cov[j][i])
+
+        cov_id = ""
+        for item in curr_sample:
+            cov_id += str(item) + "_"
+        cov_id_str.append(cov_id[:-1])
+    return cov_id_str
 
 def open_file(file):
     #print(file)
@@ -112,7 +142,13 @@ def get_X(data, contrast, image_dim, siamese=False):
 
 '''
 def get_f(data, samples_to_exclude=None, siamese=False):
-    study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
+
+    study_id_date_map = pd.read_csv("../../preprocess/samples_with_studyids_and_usdates.csv")
+    # "/Volumes/terminator/nephronetwork/preprocess/"
+
+    # study_id_date_map = pd.read_csv("/Volumes/terminator/nephronetwork/preprocess/samples_with_studyids_and_usdates.csv")
+
+    # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
     if siamese:
         for column in data[0]:
@@ -228,10 +264,11 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
-                             train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer']]
+                             train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer'],
+                             train_features['etiology']]
                 for item in train_cov:
                     assert len(item) == len(train_y)
-                train_features = train_cov
+                train_features = make_cov_labels(train_cov)
         test_grouped = test_data.groupby(['study_id', 'sample_num', 'kidney_side'])
         test_groups = []
         for name, group in test_grouped:
@@ -245,10 +282,13 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
             if get_cov:
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
-                            test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer']]
+                            test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer'],
+                            test_features['etiology']]
+
                 for item in test_cov:
                     assert len(item) == len(test_y)
-                test_features = test_cov
+
+                test_features = make_cov_labels(test_cov)
             return train_X, train_y, train_features, test_X, test_y, test_features
         else:
             return train_X, train_y, test_X, test_y
@@ -270,16 +310,18 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
-                             train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer']]
+                             train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer'],
+                             train_features['etiology']]
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
-                            test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer']]
+                            test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer'],
+                            test_features['etiology']]
                 for item in train_cov:
                     assert len(item) == len(train_y)
                 for item in test_cov:
                     assert len(item) == len(test_y)
-                train_features = train_cov
-                test_features = test_cov
+                train_features = make_cov_labels(train_cov)
+                test_features = make_cov_labels(test_cov)
             return train_X, train_y, train_features, test_X, test_y, test_features
 
         else:
@@ -299,7 +341,8 @@ def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_
     return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov, siamese=True)
 
 def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
-                         crop=0, get_features=False, image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0):
+                crop=0, get_features=False, image_dim=256, views_to_get="all", get_cov=False, pickle_file="",
+                 bottom_cut=0, etiology="B"):
 
     data = open_file(pickle_file)
 
@@ -307,6 +350,11 @@ def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
         data = data[((data['hydro_kidney'] == data['kidney_side']) & (data['laterality'] == "Bilateral"))
                     | (data['laterality'] != "Bilateral")]
     data = data[data.crop_style == float(crop)]
+
+    if etiology == 'O':
+        data = data[data.etiology == int(1)]
+    elif etiology == 'R':
+        data = data[data.etiology == int(0)]
 
     if views_to_get == "sag":
         return get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
