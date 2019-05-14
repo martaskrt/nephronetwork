@@ -137,6 +137,7 @@ class SiamNet(nn.Module):
         x_list = []
 
         for i in range(2):
+
             curr_x = torch.unsqueeze(x[i], 1)
             curr_x = curr_x.expand(-1, 3, -1, -1)
             if torch.cuda.is_available():
