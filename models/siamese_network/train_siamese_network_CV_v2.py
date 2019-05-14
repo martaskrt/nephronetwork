@@ -82,8 +82,10 @@ class KidneyDataset(torch.utils.data.Dataset):
 
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     if args.unet:
+        print("importing UNET")
         from SiameseNetworkUNet import SiamNet
     else:
+        print("importing SIAMNET")
         from SiameseNetwork import SiamNet
 
     hyperparams = {'lr': args.lr,
@@ -371,6 +373,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             checkpoint = {'epoch': epoch,
                           'loss': loss,
                           'hyperparams': hyperparams,
+                          'args': args,
                           'model_state_dict': net.state_dict(),
                           'optimizer': optimizer.state_dict(),
                           'loss_train': loss_accum_train / counter_train,
