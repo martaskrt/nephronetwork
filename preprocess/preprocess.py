@@ -33,7 +33,7 @@ def load_labels():
     columns_to_extract = ['study_id', "MRN", 'Surgery','Laterality',"If bilateral, which is the most severe kidney?",
                           'Age at Baseline', 'Gender', 'Date of Ultrasound 1']
     data = extract_labels.load_data("kidney_sample_labels.csv", "samples_with_studyids_and_mrns.csv",
-                                    columns_to_extract)
+                                    columns_to_extract, etiology=True)
     return data
 
 # CROP IMAGES #
@@ -158,13 +158,8 @@ def load_images(label_data, dcm_files, opt):
         data = data.sort_values(by=['Date of Ultrasound 1', 'study_id', 'sample_num'])
     data.columns = data.columns.str.strip().str.lower().str.replace(" ","_")
     print(data.columns)
-    #h5f = h5py.File("preprocessed_images_20190315.csv", 'w')
-    #h5f.create_dataset('all_images', data=data)
-    #h5f.close()
-    #data.to_csv("preprocessed_images_20190315.csv", sep=',')
-    #data.to_pickle("preprocessed_images_20190315.pickle")
-    data.to_csv("preprocessed_images_20190402.csv", sep=',')
-    data.to_pickle("preprocessed_images_20190402.pickle")
+    data.to_csv("preprocessed_images_20190513.csv", sep=',')
+    data.to_pickle("preprocessed_images_20190513.pickle")
 
     print('\U00001F4A5')
 
