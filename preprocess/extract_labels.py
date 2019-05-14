@@ -32,24 +32,32 @@ def binarize_surgery(data):
     data.loc[data['Surgery'] == "No", ['Surgery']] = 0
     return data
 
+
+def sjoin(x):
+    return ';'.join(x[x.notnull()].astype(str))
+
 def group_etiology(data):
     obstr_data = pd.read_csv(obstr_etiology_labels)
-    obstr_data.rename(columns=RenameDupCols())
-    obstr_data = obstr_data[['study_id', 'etiology', 'Surgery', 'Type']]
+    obstr_data.columns = obstr_data.columns.str.strip().str.lower().str.replace(" ", "_")
+    #obstr_data.rename(columns=RenameDupCols())
+    obstr_data = obstr_data[['study_id', 'etiology', 'surgery', 'type']]
     obstr_data['etiology'] = 1
 
     reflux_data = pd.read_csv(reflux_etiology_labels)
-    reflux_data.rename(columns=RenameDupCols())
-    reflux_data = reflux_data[['study_id', 'etiology', 'Surgery', 'Type']]
+    reflux_data.columns = reflux_data.columns.str.strip().str.lower().str.replace(" ", "_")
+    #reflux_data.rename(columns=RenameDupCols())
+    reflux_data = reflux_data[['study_id', 'etiology', 'surgery', 'type']]
     reflux_data['etiology'] = 0
 
-    merged_data = pd.merge(data, obstr_data, on=['study_id'])
-    merged_data = pd.merge(merged_data, reflux_data, on=['study_id'])
+    merged_data_1 = pd.merge(data, obstr_data, on=['study_id'])
+    merged_data_2 = pd.merge(data, reflux_data, on=['study_id'])
 
-    merged_data.loc[merged_data['Surgery'] == "Yes" and merged_data['Type'] != "Circumcision", ['Surgery']] = 1
-    merged_data.loc[merged_data['Surgery'] == "Yes" and merged_data['Type'] == "Circumcision", ['Surgery']] = 0
-    merged_data.loc[merged_data['Surgery'] == "No", ['Surgery']] = 0
+    merged_data = pd.concat([merged_data_1, merged_data_2])
 
+    merged_data.loc[(merged_data['surgery'] == "Yes") & (merged_data['type'] != "Circumcision"), ['surgery']] = 1
+    merged_data.loc[(merged_data['surgery'] == "Yes") & (merged_data['type'] == "Circumcision"), ['surgery']] = 0
+    merged_data.loc[merged_data['surgery'] == "No", ['surgery']] = 0
+    print(merged_data)
     return merged_data
 
 def select_columns(data, list_of_columns, etiology):
