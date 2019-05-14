@@ -416,6 +416,7 @@ def main():
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
     parser.add_argument("--split", default=0.9, type=float, help="proportion of dataset to use as training")
     parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
+    parser.add_argument("--etiology", default="O", help="O (obstruction), R (reflux), B (both)")
     # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
     #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
     # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
