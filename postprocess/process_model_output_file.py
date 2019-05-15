@@ -39,11 +39,11 @@ def load_data(inputfile):
     return data
 
 
-def get_metric_results(data, metric, early_stop_epoch):
+def get_metric_results(data, early_stop_epoch):
 
-    avg_of_val_epochs = np.array(data[1]['val'][metric])
+    avg_of_val_epochs = np.array(data[1]['val']['AUC'])
     for fold in range(2, 6):
-        avg_of_val_epochs = np.sum((avg_of_val_epochs, np.array(data[fold]['val'][metric])), axis=0)
+        avg_of_val_epochs = np.sum((avg_of_val_epochs, np.array(data[fold]['val']['AUC'])), axis=0)
     avg_of_val_epochs /= 5
     avg_of_val_epochs = np.array(avg_of_val_epochs)[:early_stop_epoch+1]
 
@@ -73,7 +73,7 @@ def get_metric_results(data, metric, early_stop_epoch):
 def compute_results(filename, data, early_stop_epoch):
     print("FILE NAME......................................" + str(filename))
     print("early_stop_epoch\t{}".format(early_stop_epoch))
-    metrics = get_metric_results(data, 'AUC', early_stop_epoch)
+    metrics = get_metric_results(data, early_stop_epoch)
     # auprc = get_metric_results(data, 'AUPRC', early_stop_epoch)
     print('{:.3f}/{:.3f}\t{:.3f}/{:.3f}\t{:.3f}/{:.3f}'.format(metrics['train']["AUC"], metrics['train']["AUPRC"],
                                                                metrics['val']["AUC"], metrics['val']["AUPRC"],
