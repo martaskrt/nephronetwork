@@ -485,7 +485,7 @@ def main():
     #     test_cov_id.append(cov_id[:-1])
 
 
-    train(args, train_X, train_y, train_cov_id, test_X, test_y, test_cov_id, max_epochs)
+    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 
 
     #n_splits = 5
