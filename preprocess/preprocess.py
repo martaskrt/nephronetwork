@@ -31,9 +31,12 @@ def load_file_names(rootdir):
 # load labels and study ids into pandas dataframe
 def load_labels():
     columns_to_extract = ['study_id', "MRN", 'Laterality',"If bilateral, which is the most severe kidney?",
-                          'Age at Baseline', 'Gender', 'Date of Ultrasound 1'] # Other cols that can be added: 'Surgery'
-    data = extract_labels.load_data("kidney_sample_labels.csv", "samples_with_studyids_and_mrns.csv",
-                                    columns_to_extract, etiology=True)
+                          'Age at Baseline', 'Gender', 'Date of Ultrasound 1', 'Surgery'] # Other cols that can be added: 'Surgery'
+    # data = extract_labels.load_data("kidney_sample_labels.csv", "samples_with_studyids_and_mrns.csv",
+    #                                 columns_to_extract, etiology=True)
+    data = extract_labels.load_data("20190517_combinedObstRef.csv", "samples_with_studyids_and_mrns.csv",
+                                    columns_to_extract, etiology=False)
+
     return data
 
 # CROP IMAGES #
@@ -159,8 +162,8 @@ def load_images(label_data, dcm_files, opt):
         data = data.sort_values(by=['Date of Ultrasound 1', 'study_id', 'sample_num'])
     data.columns = data.columns.str.strip().str.lower().str.replace(" ","_")
     print(data.columns)
-    data.to_csv("preprocessed_images_20190513.csv", sep=',')
-    data.to_pickle("preprocessed_images_20190513.pickle")
+    data.to_csv("preprocessed_images_20190517.csv", sep=',')
+    data.to_pickle("preprocessed_images_20190517.pickle")
 
     print('\U0001F4A5')
 
