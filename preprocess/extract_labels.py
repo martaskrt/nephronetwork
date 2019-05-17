@@ -1,7 +1,6 @@
 import pandas as pd
 
-obstr_etiology_labels = "PHN-ObstructiveEtiologie_Labels.csv"
-reflux_etiology_labels = 'PHN-RefluxEtiologiesML_Labels.csv'
+
 
 
 class RenameDupCols():
@@ -37,6 +36,9 @@ def sjoin(x):
     return ';'.join(x[x.notnull()].astype(str))
 
 def group_etiology(data):
+    obstr_etiology_labels = "PHN-ObstructiveEtiologie_Labels.csv"
+    reflux_etiology_labels = 'PHN-RefluxEtiologiesML_Labels.csv'
+
     obstr_data = pd.read_csv(obstr_etiology_labels)
     obstr_data.columns = obstr_data.columns.str.strip().str.lower().str.replace(" ", "_")
     #obstr_data.rename(columns=RenameDupCols())
