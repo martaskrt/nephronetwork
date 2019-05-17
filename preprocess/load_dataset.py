@@ -143,10 +143,10 @@ def get_X(data, contrast, image_dim, siamese=False):
 '''
 def get_f(data, samples_to_exclude=None, siamese=False):
 
-    study_id_date_map = pd.read_csv("../../preprocess/samples_with_studyids_and_usdates.csv")
+    # study_id_date_map = pd.read_csv("../../preprocess/samples_with_studyids_and_usdates.csv")
     # "/Volumes/terminator/nephronetwork/preprocess/"
 
-    # study_id_date_map = pd.read_csv("/Volumes/terminator/nephronetwork/preprocess/samples_with_studyids_and_usdates.csv")
+    study_id_date_map = pd.read_csv("/Volumes/terminator/nephronetwork/preprocess/samples_with_studyids_and_usdates.csv")
 
     # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
@@ -265,7 +265,7 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
                              train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer'],
-                             train_features['etiology']]
+                             ]
                 for item in train_cov:
                     assert len(item) == len(train_y)
                 train_features = make_cov_labels(train_cov)
@@ -283,7 +283,7 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
                             test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer'],
-                            test_features['etiology']]
+                            ]
 
                 for item in test_cov:
                     assert len(item) == len(test_y)
@@ -311,11 +311,11 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
                              train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer'],
-                             train_features['etiology']]
+                             ]
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
                             test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer'],
-                            test_features['etiology']]
+                            ]
                 for item in train_cov:
                     assert len(item) == len(train_y)
                 for item in test_cov:
@@ -337,12 +337,13 @@ def get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_fe
     data = data[data.kidney_view == "Trans"]
     return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,)
 
+
 def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
     return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov, siamese=True)
 
-def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True,
-                crop=0, get_features=False, image_dim=256, views_to_get="all", get_cov=False, pickle_file="",
-                 bottom_cut=0, etiology="B"):
+
+def load_dataset(split=0.8, sort_by_date=True, contrast=0, drop_bilateral=True, crop=0, get_features=False,
+                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B"):
 
     data = open_file(pickle_file)
 
