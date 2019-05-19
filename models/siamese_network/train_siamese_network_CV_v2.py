@@ -424,7 +424,7 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190513.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
@@ -440,6 +440,37 @@ def main():
                                                                                       etiology=args.etiology,
                                                                                       crop=args.crop)
 
+    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
+    train_X2=[]
+    train_y2=[]
+    train_cov2=[]
+    test_X2=[]
+    test_y2=[]
+    test_cov2=[]
+    for i in range(len(train_y)):
+        p_id = train_cov[i].split("_")[0]
+        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
+            train_y2.append(0)
+        else:
+            train_y2.append(train_y[i])
+        train_X2.append(train_X[i])
+        train_cov2.append(train_cov[i])
+    for i in range(len(test_y)):
+        p_id = test_cov[i].split("_")[0]
+        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
+            test_y2.append(0)
+        else:
+            test_y2.append(test_y[i])
+        test_X2.append(test_X[i])
+        test_cov2.append(test_cov[i])
+    train_X2=np.array(train_X2)
+    train_y2=np.array(train_y2)
+    #train_cov2=np.array(train_cov2)
+    test_X2=np.array(test_X2)
+    test_y2=np.array(test_y2)
+    #test_cov2=np.array(test_cov2)
+    print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
+    train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs)
     # train_cov_id = []
     # num_samples = len(train_y)
     # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
@@ -485,7 +516,7 @@ def main():
     #     test_cov_id.append(cov_id[:-1])
 
 
-    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
+    #train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 
 
     #n_splits = 5
