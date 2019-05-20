@@ -20,6 +20,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
+from sklearn.utils import class_weight
 
 # from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
@@ -80,7 +81,7 @@ class KidneyDataset(torch.utils.data.Dataset):
         return len(self.X)
 
 
-def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
+def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs, num_1, num_0):
     if args.unet:
         print("importing UNET")
         from SiameseNetworkUNet import SiamNet
@@ -111,15 +112,24 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=42)
     # for i in range(len(train_cov)):
     #     train_cov[i] = shuffle(train_cov[i], random_state=42)
-
+    #class_weights = class_weight.compute_class_weight('balanced',
+     #                                            np.unique(train_y),
+      #                                          train_y)
+    #print(class_weights)
     for train_index, test_index in skf.split(train_X, train_y):
+      #  class_weights=torch.tensor([1/num_0, 1/num_1]).to(device)
+        #class_weights=torch.tensor([0.5, 2.0]).to(device)
+        #cw=torch.from_numpy(class_weights).float().to(device)
+        #print("CLASS WEIGHTS: " + str(cw))
+        #cross_entropy = nn.CrossEntropyLoss(weight=cw)
+        cross_entropy = nn.CrossEntropyLoss()
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
             if "jigsaw" in args.dir and "unet" in args.dir:
-                print("Loading Jigsaw into UNet")
+                irint("Loading Jigsaw into UNet")
                 pretrained_dict = torch.load(args.checkpoint)
                 model_dict = net.state_dict()
                 unet_dict = {}
@@ -226,8 +236,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
                 output = net(data.to(device))
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
-
-                loss = F.cross_entropy(output, target)
+                #print(output)
+                #print(target)
+                #loss = F.cross_entropy(output, target)
+                loss = cross_entropy(output, target)
+                #print(loss)
                 loss_accum_train += loss.item() * len(target)
 
                 loss.backward()
@@ -237,9 +250,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 counter_train += len(target)
 
                 output_softmax = softmax(output)
+                #output_softmax = output
                 pred_prob = output_softmax[:, 1]
                 pred_label = torch.argmax(output_softmax, dim=1)
-
+                #print(pred_prob)
+                #print(pred_label)
                 assert len(pred_prob) == len(target)
                 assert len(pred_label) == len(target)
 
@@ -257,9 +272,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     output = net(data)
                     target = target.type(torch.LongTensor).to(device)
 
-                    loss = F.cross_entropy(output, target)
+                    #loss = F.cross_entropy(output, target)
+                    loss = cross_entropy(output, target)
                     loss_accum_val += loss.item() * len(target)
                     counter_val += len(target)
+                    #output_softmax = output
                     output_softmax = softmax(output)
 
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
@@ -285,11 +302,12 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     output = net(data)
                     target = target.type(torch.LongTensor).to(device)
 
-                    loss = F.cross_entropy(output, target)
+                    #loss = F.cross_entropy(output, target)
+                    loss = cross_entropy(output, target)
                     loss_accum_test += loss.item() * len(target)
                     counter_test += len(target)
                     output_softmax = softmax(output)
-
+                    #output_softmax = output
                     accurate_labels_test += torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
                     pred_prob = output_softmax[:, 1]
@@ -463,6 +481,10 @@ def main():
             test_y2.append(test_y[i])
         test_X2.append(test_X[i])
         test_cov2.append(test_cov[i])
+
+    num_1 = train_y2.count(1)
+    num_0 = train_y2.count(0)
+
     train_X2=np.array(train_X2)
     train_y2=np.array(train_y2)
     #train_cov2=np.array(train_cov2)
@@ -470,7 +492,7 @@ def main():
     test_y2=np.array(test_y2)
     #test_cov2=np.array(test_cov2)
     print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
-    train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs)
+    train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
     # train_cov_id = []
     # num_samples = len(train_y)
     # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
