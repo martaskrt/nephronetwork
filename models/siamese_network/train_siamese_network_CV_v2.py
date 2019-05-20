@@ -122,7 +122,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         #cw=torch.from_numpy(class_weights).float().to(device)
         #print("CLASS WEIGHTS: " + str(cw))
         #cross_entropy = nn.CrossEntropyLoss(weight=cw)
-        cross_entropy = nn.CrossEntropyLoss()
+        #cross_entropy = nn.CrossEntropyLoss()
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
         else:
@@ -238,8 +238,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
                 #print(output)
                 #print(target)
-                #loss = F.cross_entropy(output, target)
-                loss = cross_entropy(output, target)
+                loss = F.cross_entropy(output, target)
+                #loss = cross_entropy(output, target)
                 #print(loss)
                 loss_accum_train += loss.item() * len(target)
 
@@ -272,8 +272,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     output = net(data)
                     target = target.type(torch.LongTensor).to(device)
 
-                    #loss = F.cross_entropy(output, target)
-                    loss = cross_entropy(output, target)
+                    loss = F.cross_entropy(output, target)
+                    #loss = cross_entropy(output, target)
                     loss_accum_val += loss.item() * len(target)
                     counter_val += len(target)
                     #output_softmax = output
@@ -302,8 +302,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     output = net(data)
                     target = target.type(torch.LongTensor).to(device)
 
-                    #loss = F.cross_entropy(output, target)
-                    loss = cross_entropy(output, target)
+                    loss = F.cross_entropy(output, target)
+                    #loss = cross_entropy(output, target)
                     loss_accum_test += loss.item() * len(target)
                     counter_test += len(target)
                     output_softmax = softmax(output)
