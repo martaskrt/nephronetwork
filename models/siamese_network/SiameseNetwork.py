@@ -57,7 +57,7 @@ class SiamNet(nn.Module):
         #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear((self.num_inputs-1) * 512, 4096))
+        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 4096))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
         #self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
 
@@ -106,7 +106,7 @@ class SiamNet(nn.Module):
             x_list.append(z)
 
         x = torch.cat(x_list, 1)
-        x = torch.sum(x, 1)
+        #x = torch.sum(x, 1)
         x = self.fc7_new(x.view(B, -1))
         pred = self.classifier_new(x)
 
