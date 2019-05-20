@@ -42,10 +42,11 @@ class SiamNet(nn.Module):
         self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=2, stride=1, padding=1))
         # self.fc6.add_module('fc6_s1', nn.Conv2d(256, 1024, kernel_size=1, stride=1, padding=1))
         self.fc6.add_module('batch6_s1', nn.BatchNorm2d(1024))        
+        self.fc6.add_module('relu6_s1', nn.ReLU(inplace=True))
 
         self.fc6b = nn.Sequential()
         self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
-        # self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(256))
+        self.fc6b.add_module('batch6b_s1', nn.BatchNorm2d(256))
         self.fc6b.add_module('relu6_s1', nn.ReLU(inplace=True))
         self.fc6b.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
 
@@ -53,12 +54,12 @@ class SiamNet(nn.Module):
         # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
         self.fc6c.add_module('fc7', nn.Linear(256*3*3, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
+        #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 4096))
+        self.fc7_new.add_module('fc7', nn.Linear((self.num_inputs-1) * 512, 4096))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
-        self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
+        #self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.classifier_new = nn.Sequential()
         self.classifier_new.add_module('fc8', nn.Linear(4096, classes))
@@ -105,6 +106,7 @@ class SiamNet(nn.Module):
             x_list.append(z)
 
         x = torch.cat(x_list, 1)
+        x = torch.sum(x, 1)
         x = self.fc7_new(x.view(B, -1))
         pred = self.classifier_new(x)
 
