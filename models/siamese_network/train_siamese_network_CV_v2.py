@@ -448,7 +448,7 @@ def main():
     print("ARGS" + '\t' + str(args))
 
     max_epochs = args.epochs
-    train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args.view,
+    train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get="siamese",
                                                                                       sort_by_date=True,
                                                                                       pickle_file=args.datafile,
                                                                                       contrast=args.contrast,
@@ -457,6 +457,24 @@ def main():
                                                                                       bottom_cut=args.bottom_cut,
                                                                                       etiology=args.etiology,
                                                                                       crop=args.crop)
+
+    if args.view == "sag" or args.view == "trans":
+        train_X_single=[]
+        test_X_single=[]
+
+        for item in train_X:
+            if args.view == "sag":
+                train_X_single.append(item[0])
+            elif args.view == "trans":
+                train_X_single.append(item[1])
+        for item in test_X:
+            if args.view == "sag":
+                test_X_single.append(item[0])
+            elif args.view == "trans":
+                test_X_single.append(item[1])
+
+        train_X=train_X_single
+        test_X=test_X_single
 
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
     train_X2=[]
