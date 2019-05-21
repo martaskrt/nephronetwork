@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def load_data(inputfile):
+def load_data(inputfile, stop=50):
     file_names = inputfile.split(",")
     data = {}
 
@@ -30,17 +30,17 @@ def load_data(inputfile):
                 for item in range(5, len(content), 2):
                     label = item - 1
                     val = float(content[item])
-                    if "Train" in content[2]:
+                    if "Train" in content[2] and len(data[fold]["train"][content[label]]) < stop:
                         data[fold]["train"][content[label]].append(val)
-                    elif "Val" in content[2]:
+                    elif "Val" in content[2] and len(data[fold]["val"][content[label]]) < stop:
                         data[fold]["val"][content[label]].append(val)
-                    elif "Test" in content[2]:
+                    elif "Test" in content[2] and len(data[fold]["test"][content[label]]) < stop:
                         data[fold]["test"][content[label]].append(val)
     return data
 
 
 def get_metric_results(data, early_stop_epoch):
-
+    #print(early_stop_epoch)
     avg_of_val_epochs = np.array(data[1]['val']['AUC'])
     for fold in range(2, 6):
         avg_of_val_epochs = np.sum((avg_of_val_epochs, np.array(data[fold]['val']['AUC'])), axis=0)
@@ -71,7 +71,7 @@ def get_metric_results(data, early_stop_epoch):
 
 
 def compute_results(filename, data, early_stop_epoch):
-    print("FILE NAME......................................" + str(filename))
+    print("FILE NAME.........................." + str(filename))
     print("early_stop_epoch\t{}".format(early_stop_epoch))
     metrics = get_metric_results(data, early_stop_epoch)
     # auprc = get_metric_results(data, 'AUPRC', early_stop_epoch)
