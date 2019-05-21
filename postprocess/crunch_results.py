@@ -2,6 +2,7 @@
 import numpy as np
 import process_model_output_file
 import argparse
+import os
 
 def get_fold_avg(data_dict):
     epoch_avg_per_fold = {'train': [],
@@ -22,7 +23,7 @@ def get_best_epoch(valloss, run=5):
         found_it = True
         curr_min = valloss[i]
         for j in range(i+1, i+run):
-            if valloss[j] <= curr_min:
+            if valloss[j]-0.000 <= curr_min:
                 found_it = False
         if found_it:
             min_loss = curr_min
@@ -52,20 +53,46 @@ def get_best_epoch(valloss, run=5):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--fname', required=True, help='file to process. If multiple, comma separated '
-                                                       'format for each line in file: TrainEpoch\tNUM\tACC\tNUM%\tLoss'
-                                                       '\tNUM\tAUC\tNUM\tAUPRC\tNUM\tTN\tNUM\tFP\tNUM\tFN\tNUM\tTP\tNUM')
-    # parser.add_argument('--dir', help='path/to/dir/with/models')
+    # parser.add_argument('--fname', required=True, help='file to process. If multiple, comma separated '
+    #                                                    'format for each line in file: TrainEpoch\tNUM\tACC\tNUM%\tLoss'
+    #                                                    '\tNUM\tAUC\tNUM\tAUPRC\tNUM\tTN\tNUM\tFP\tNUM\tFN\tNUM\tTP\tNUM')
+    parser.add_argument('--dir', help='path/to/dir/with/results')
     args = parser.parse_args()
-    data = process_model_output_file.load_data(args.fname)
 
-    metric='Loss'
-    valloss = np.array(data[1]['val'][metric])
-    for fold in range(2, 6):
-        valloss = np.sum((valloss, np.array(data[fold]['val'][metric])), axis=0)
+    results_files = []
+    for subdir, dirs, files in os.walk(args.dir):
+        for file in files:
+            if file.lower()[-4:] == ".txt":
+                results_files.append(os.path.join(subdir, file))
 
-    early_stop_epoch = get_best_epoch(valloss, run=5)
-    process_model_output_file.compute_results(args.fname, data, early_stop_epoch)
+    for file in results_files:
+        # try:
+        print(file)
+        data = process_model_output_file.load_data(file)
+        metric = 'Loss'
+
+        #for fold in range(1,6):
+         #   print(len(np.array(data[fold]['val'][metric])))
+        valloss = np.array(data[1]['val'][metric])
+        for fold in range(2, 6):
+            valloss = np.sum((valloss, np.array(data[fold]['val'][metric])), axis=0)
+        #print(valloss)
+        early_stop_epoch = get_best_epoch(valloss, run=10)
+        # early_stop_epoch = 17
+        process_model_output_file.compute_results(file, data, early_stop_epoch)
+        # except:
+        #     data = process_model_output_file.load_data(file, stop=9)
+        #
+        #     metric='Loss'
+        #     valloss = np.array(data[1]['val'][metric])
+        #
+        #     for fold in range(2, 6):
+        #         valloss = np.sum((valloss, np.array(data[fold]['val'][metric])), axis=0)
+        #
+        #     early_stop_epoch = get_best_epoch(valloss, run=10)
+        #     # early_stop_epoch=17
+        #     process_model_output_file.compute_results(file, data, early_stop_epoch)
+
 
     # results_files = []
     # for subdir, dirs, files in os.walk(rootdir):
