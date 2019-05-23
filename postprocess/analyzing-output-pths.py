@@ -170,7 +170,7 @@ def make_full_df(pth_folder,cv):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint_folder', help="Number of epochs")
-    parser.add_argument('--cv', action=store_true, help="Read in CV")
+    parser.add_argument('--cv', action='store_true', help="Read in CV")
 
     args = parser.parse_args()
     
