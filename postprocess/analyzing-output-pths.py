@@ -25,7 +25,7 @@ def load_pth_files_names(pth_folder):
         for file in files:            
             if file.lower()[-4:] == '.pth':
                 pth_files.append(os.path.join(subdir,file))
-    # print(pth_files)
+    print(pth_files)
     return pth_files
 
 
