@@ -20,8 +20,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchsummary import summary
 import argparse
 from torch.autograd import Variable
-#from SiameseNetwork import SiamNet
-from SiameseNetworkUNet import SiamNet
+from sklearn.utils import class_weight
+
 # from FraternalSiameseNetwork import SiamNet
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
@@ -81,11 +81,19 @@ class KidneyDataset(torch.utils.data.Dataset):
         return len(self.X)
 
 
-def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
+def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs, num_1, num_0):
+    if args.unet:
+        print("importing UNET")
+        from SiameseNetworkUNet import SiamNet
+    else:
+        print("importing SIAMNET")
+        from SiameseNetwork import SiamNet
+
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
-                   'weight_decay': args.weight_decay
-                   }
+                   'weight_decay': args.weight_decay,
+                   'train/test_split': args.split 
+                  }
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
@@ -104,28 +112,64 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=42)
     # for i in range(len(train_cov)):
     #     train_cov[i] = shuffle(train_cov[i], random_state=42)
-
+    #class_weights = class_weight.compute_class_weight('balanced',
+     #                                            np.unique(train_y),
+      #                                          train_y)
+    #print(class_weights)
     for train_index, test_index in skf.split(train_X, train_y):
+      #  class_weights=torch.tensor([1/num_0, 1/num_1]).to(device)
+        #class_weights=torch.tensor([0.5, 2.0]).to(device)
+        #cw=torch.from_numpy(class_weights).float().to(device)
+        #print("CLASS WEIGHTS: " + str(cw))
+        #cross_entropy = nn.CrossEntropyLoss(weight=cw)
+        #cross_entropy = nn.CrossEntropyLoss()
         if args.view != "siamese":
             net = SiamNet(num_inputs=1).to(device)
         else:
             net = SiamNet().to(device)
         if args.checkpoint != "":
-            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
-            model_dict = net.state_dict()
+            if "jigsaw" in args.dir and "unet" in args.dir:
+                print("Loading Jigsaw into UNet")
+                pretrained_dict = torch.load(args.checkpoint)
+                model_dict = net.state_dict()
+                unet_dict = {}
 
-            # 1. filter out unnecessary keys
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+                for k, v in model_dict.items():
+                    unet_dict[k] = model_dict[k]
+
+                unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
+                unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
+                unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
+                unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
+                unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
+                unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
+                unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
+                unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
+                unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
+                unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
+
+                unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+                unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
+
+                model_dict.update(unet_dict)
+                # 3. load the new state dict
+                net.load_state_dict(unet_dict)
+            else:
+                pretrained_dict = torch.load(args.checkpoint)
+                #pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+                model_dict = net.state_dict()
+
+                pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
            
             
-            # pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            # for k, v in model_dict.items():
-              #  if k not in pretrained_dict:
-               #     pretrained_dict[k] = model_dict[k]
-            # 2. overwrite entries in the existing state dict
-            model_dict.update(pretrained_dict)
-            # 3. load the new state dict
-            net.load_state_dict(pretrained_dict)
+                pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+                for k, v in model_dict.items():
+                    if k not in pretrained_dict:
+                        pretrained_dict[k] = model_dict[k]
+                # 2. overwrite entries in the existing state dict
+                model_dict.update(pretrained_dict)
+                # 3. load the new state dict
+                net.load_state_dict(pretrained_dict)
 
         if args.adam:
             optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
@@ -192,8 +236,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
                 output = net(data.to(device))
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
-
+                #print(output)
+                #print(target)
                 loss = F.cross_entropy(output, target)
+                #loss = cross_entropy(output, target)
+                #print(loss)
                 loss_accum_train += loss.item() * len(target)
 
                 loss.backward()
@@ -203,9 +250,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 counter_train += len(target)
 
                 output_softmax = softmax(output)
+                #output_softmax = output
                 pred_prob = output_softmax[:, 1]
                 pred_label = torch.argmax(output_softmax, dim=1)
-
+                #print(pred_prob)
+                #print(pred_label)
                 assert len(pred_prob) == len(target)
                 assert len(pred_label) == len(target)
 
@@ -224,8 +273,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     target = target.type(torch.LongTensor).to(device)
 
                     loss = F.cross_entropy(output, target)
+                    #loss = cross_entropy(output, target)
                     loss_accum_val += loss.item() * len(target)
                     counter_val += len(target)
+                    #output_softmax = output
                     output_softmax = softmax(output)
 
                     accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
@@ -252,10 +303,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     target = target.type(torch.LongTensor).to(device)
 
                     loss = F.cross_entropy(output, target)
+                    #loss = cross_entropy(output, target)
                     loss_accum_test += loss.item() * len(target)
                     counter_test += len(target)
                     output_softmax = softmax(output)
-
+                    #output_softmax = output
                     accurate_labels_test += torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
                     pred_prob = output_softmax[:, 1]
@@ -339,6 +391,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             checkpoint = {'epoch': epoch,
                           'loss': loss,
                           'hyperparams': hyperparams,
+                          'args': args,
                           'model_state_dict': net.state_dict(),
                           'optimizer': optimizer.state_dict(),
                           'loss_train': loss_accum_train / counter_train,
@@ -362,9 +415,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
-            if not os.path.isdir(args.dir + "/" + str(fold)):
-                os.makedirs(args.dir + "/" + str(fold))
-            path_to_checkpoint = args.dir + "/" + str(fold) + '/fold_' + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
+            #if not os.path.isdir(args.dir + "/" + str(fold)):
+                #os.makedirs(args.dir + "/" + str(fold))
+            path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
 
         fold += 1
@@ -381,69 +434,129 @@ def main():
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
     parser.add_argument("--num_workers", default=1, type=int, help="Number of CPU workers")
     parser.add_argument("--dir", default="./", help="Directory to save model checkpoints to")
-    parser.add_argument("--contrast", default=0, type=int, help="Image contrast to train on")
-    parser.add_argument("--view", default = "siamese", help="siamese, sag, trans")
+    parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
+    parser.add_argument("--view", default="siamese", help="siamese, sag, trans")
     parser.add_argument("--checkpoint", default="", help="Path to load pretrained model checkpoint from")
-    # parser.add_argument("--datafile", default="~/nephronetwork-github/nephronetwork/preprocess/"
-    #                                           "preprocessed_images_20190315.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190315.pickle",
-    #                     help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190402.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--split", default=0.7, type=float, help="proportion of dataset to use as training")
+    parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
+    parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
+    parser.add_argument('--unet', action="store_true", help="UNet architecthure")
+    parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
     args = parser.parse_args()
 
+    print("ARGS" + '\t' + str(args))
+
     max_epochs = args.epochs
-    train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args.view,
+    train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get="siamese",
                                                                                       sort_by_date=True,
                                                                                       pickle_file=args.datafile,
                                                                                       contrast=args.contrast,
-                                                                                      split=0.9, get_cov=True)
+                                                                                      split=args.split,
+                                                                                      get_cov=True,
+                                                                                      bottom_cut=args.bottom_cut,
+                                                                                      etiology=args.etiology,
+                                                                                      crop=args.crop)
 
-    train_cov_id = []
-    num_samples = len(train_y)
-    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
-        curr_sample = []
-        for j in range(len(train_cov)):
-            if j == 2:
-                if train_cov[j][i] == 0:
-                    curr_sample.append("M")
-                elif train_cov[j][i] == 1:
-                    curr_sample.append("F")
-            elif j == 3:
-                continue
-            elif j == 4:
-                curr_sample.append(int(train_cov[j][i]))
-            else:
-                curr_sample.append(train_cov[j][i])
+    if args.view == "sag" or args.view == "trans":
+        train_X_single=[]
+        test_X_single=[]
 
-        cov_id = ""
-        for item in curr_sample:
-            cov_id += str(item) + "_"
-        train_cov_id.append(cov_id[:-1])
+        for item in train_X:
+            if args.view == "sag":
+                train_X_single.append(item[0])
+            elif args.view == "trans":
+                train_X_single.append(item[1])
+        for item in test_X:
+            if args.view == "sag":
+                test_X_single.append(item[0])
+            elif args.view == "trans":
+                test_X_single.append(item[1])
 
-    test_cov_id = []
-    num_samples = len(test_y)
-    for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US
-        curr_sample = []
-        for j in range(len(test_cov)):
-            if j == 2:
-                if test_cov[j][i] == 0:
-                    curr_sample.append("M")
-                elif test_cov[j][i] == 0:
-                    curr_sample.append("F")
-            elif j == 3:
-                continue
-            elif j == 4:
-                curr_sample.append(int(test_cov[j][i]))
-            else:
-                curr_sample.append(test_cov[j][i])
+        train_X=train_X_single
+        test_X=test_X_single
 
-        cov_id = ""
-        for item in curr_sample:
-            cov_id += str(item) + "_"
-        test_cov_id.append(cov_id[:-1])
+    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
+    train_X2=[]
+    train_y2=[]
+    train_cov2=[]
+    test_X2=[]
+    test_y2=[]
+    test_cov2=[]
+    for i in range(len(train_y)):
+        p_id = train_cov[i].split("_")[0]
+        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
+            train_y2.append(0)
+        else:
+            train_y2.append(train_y[i])
+        train_X2.append(train_X[i])
+        train_cov2.append(train_cov[i])
+    for i in range(len(test_y)):
+        p_id = test_cov[i].split("_")[0]
+        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
+            test_y2.append(0)
+        else:
+            test_y2.append(test_y[i])
+        test_X2.append(test_X[i])
+        test_cov2.append(test_cov[i])
+
+    num_1 = train_y2.count(1)
+    num_0 = train_y2.count(0)
+
+    train_X2=np.array(train_X2)
+    train_y2=np.array(train_y2)
+    #train_cov2=np.array(train_cov2)
+    test_X2=np.array(test_X2)
+    test_y2=np.array(test_y2)
+    #test_cov2=np.array(test_cov2)
+    print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
+    train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
+    # train_cov_id = []
+    # num_samples = len(train_y)
+    # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
+    #     curr_sample = []
+    #     for j in range(len(train_cov)):
+    #         if j == 2:
+    #             if train_cov[j][i] == 0:
+    #                 curr_sample.append("M")
+    #             elif train_cov[j][i] == 1:
+    #                 curr_sample.append("F")
+    #         elif j == 3:
+    #             continue
+    #         elif j == 4:
+    #             curr_sample.append(int(train_cov[j][i]))
+    #         else:
+    #             curr_sample.append(train_cov[j][i])
+    #
+    #     cov_id = ""
+    #     for item in curr_sample:
+    #         cov_id += str(item) + "_"
+    #     train_cov_id.append(cov_id[:-1])
+    #
+    # test_cov_id = []
+    # num_samples = len(test_y)
+    # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
+    #     curr_sample = []
+    #     for j in range(len(test_cov)):
+    #         if j == 2:
+    #             if test_cov[j][i] == 0:
+    #                 curr_sample.append("M")
+    #             elif test_cov[j][i] == 1:
+    #                 curr_sample.append("F")
+    #         elif j == 3:
+    #             continue
+    #         elif j == 4:
+    #             curr_sample.append(int(test_cov[j][i]))
+    #         else:
+    #             curr_sample.append(test_cov[j][i])
+    #
+    #     cov_id = ""
+    #     for item in curr_sample:
+    #         cov_id += str(item) + "_"
+    #     test_cov_id.append(cov_id[:-1])
 
 
-    train(args, train_X, train_y, train_cov_id, test_X, test_y, test_cov_id, max_epochs)
+    #train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 
 
     #n_splits = 5
