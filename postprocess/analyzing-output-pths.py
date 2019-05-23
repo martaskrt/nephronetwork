@@ -131,10 +131,9 @@ def make_subset_nofold_df(my_fold_data):
                 #'us_man': [x.split("_")[7] for x in my_fold_data['patient_ID_test']]}
 
     train_df = pd.DataFrame.from_dict(train_dict)
-    val_df = pd.DataFrame.from_dict(val_dict)
     test_df = pd.DataFrame.from_dict(test_dict)
 
-    return train_df,val_df,test_df
+    return train_df,test_df
 
     
 def make_full_df(pth_folder,cv):
@@ -155,15 +154,17 @@ def make_full_df(pth_folder,cv):
                 my_train_df = my_train_df.append(new_train)
                 my_val_df = my_val_df.append(new_val)
                 my_test_df = my_test_df.append(new_test)
+        print("Final training dataframe shape: \n")
+        return my_train_df, my_val_df, my_test_df
     else: 
         assert len(my_pth_files) == 1
         mydata = open_file(my_pth_files)
-        my_train_df, my_val_df, my_test_df = make_subset_nofold_df(fold_data)
+        my_train_df, my_test_df = make_subset_nofold_df(fold_data)
         print(file_name + " pandas dataframes created.")
                 
-    print("Final training dataframe shape: \n")
+        print("Final training dataframe shape: \n")
     # print(my_train_df.shape)            
-    return my_train_df, my_val_df, my_test_df
+        return my_train_df, my_test_df
 
 
 def main():
@@ -172,13 +173,17 @@ def main():
     parser.add_argument('--cv', help="Number of epochs")
 
     args = parser.parse_args()
-
-    train,val,test = make_full_df(args.checkpoint_folder,args.cv)
+    
+    if cv: 
+        train,val,test = make_full_df(args.checkpoint_folder,args.cv)
+    else:
+        train,test = make_full_df(args.checkpoint_folder,args.cv)    
 
     file_root = args.checkpoint_folder.split("/")[len(args.checkpoint_folder.split("/")) - 1]
     
     train.to_csv(args.checkpoint_folder+ "/" + file_root + "_train.csv")
-    val.to_csv(args.checkpoint_folder + "/" + file_root + "_val.csv")
+    if args.cv: 
+        val.to_csv(args.checkpoint_folder + "/" + file_root + "_val.csv")        
     test.to_csv(args.checkpoint_folder + "/" + file_root + "_test.csv")
 
     print(file_root + "{_train,_val,_test}.csv written to : " + args.checkpoint_folder)   
