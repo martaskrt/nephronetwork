@@ -171,6 +171,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--checkpoint_folder', help="Number of epochs")
     parser.add_argument('--cv', action='store_true',default=False, help="Read in CV")
+    parser.add_argument('--output_file', type=str, default='', help="Output file name")
 
     args = parser.parse_args()
     
@@ -179,7 +180,10 @@ def main():
     else:
         train,test = make_full_df(args.checkpoint_folder,args.cv)    
 
-    file_root = args.checkpoint_folder.split("/")[len(args.checkpoint_folder.split("/")) - 1]
+    if args.output_file == '':
+        file_root = args.checkpoint_folder.split("/")[len(args.checkpoint_folder.split("/")) - 1]
+    else:
+        file_root = args.output_file
     
     train.to_csv(args.checkpoint_folder+ "/" + file_root + "_train.csv")
     if args.cv: 
