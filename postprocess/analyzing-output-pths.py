@@ -174,7 +174,7 @@ def main():
 
     args = parser.parse_args()
     
-    if cv: 
+    if args.cv: 
         train,val,test = make_full_df(args.checkpoint_folder,args.cv)
     else:
         train,test = make_full_df(args.checkpoint_folder,args.cv)    
