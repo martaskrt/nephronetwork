@@ -158,7 +158,7 @@ def make_full_df(pth_folder,cv):
         return my_train_df, my_val_df, my_test_df
     else: 
         assert len(my_pth_files) == 1
-        mydata = open_file(my_pth_files)[0]
+        mydata = open_file(my_pth_files[0])
         my_train_df, my_test_df = make_subset_nofold_df(fold_data)
         print(file_name + " pandas dataframes created.")
                 
