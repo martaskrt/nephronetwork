@@ -442,7 +442,9 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle", help="File containing pandas dataframe with images stored as numpy array")
+
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
