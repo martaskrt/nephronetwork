@@ -81,7 +81,7 @@ class KidneyDataset(torch.utils.data.Dataset):
         return len(self.X)
 
 
-def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs, num_1, num_0):
+def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     if args.unet:
         print("importing UNET")
         from SiameseNetworkUNet import SiamNet
@@ -476,106 +476,42 @@ def main():
         train_X=train_X_single
         test_X=test_X_single
 
-    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
-    train_X2=[]
-    train_y2=[]
-    train_cov2=[]
-    test_X2=[]
-    test_y2=[]
-    test_cov2=[]
-    for i in range(len(train_y)):
-        p_id = train_cov[i].split("_")[0]
-        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-            train_y2.append(0)
-        else:
-            train_y2.append(train_y[i])
-        train_X2.append(train_X[i])
-        train_cov2.append(train_cov[i])
-    for i in range(len(test_y)):
-        p_id = test_cov[i].split("_")[0]
-        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-            test_y2.append(0)
-        else:
-            test_y2.append(test_y[i])
-        test_X2.append(test_X[i])
-        test_cov2.append(test_cov[i])
+    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
+    # print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
+    # train_X2=[]
+    # train_y2=[]
+    # train_cov2=[]
+    # test_X2=[]
+    # test_y2=[]
+    # test_cov2=[]
+    # for i in range(len(train_y)):
+    #     p_id = train_cov[i].split("_")[0]
+    #     if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
+    #         train_y2.append(0)
+    #     else:
+    #         train_y2.append(train_y[i])
+    #     train_X2.append(train_X[i])
+    #     train_cov2.append(train_cov[i])
+    # for i in range(len(test_y)):
+    #     p_id = test_cov[i].split("_")[0]
+    #     if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
+    #         test_y2.append(0)
+    #     else:
+    #         test_y2.append(test_y[i])
+    #     test_X2.append(test_X[i])
+    #     test_cov2.append(test_cov[i])
 
-    num_1 = train_y2.count(1)
-    num_0 = train_y2.count(0)
-
-    train_X2=np.array(train_X2)
-    train_y2=np.array(train_y2)
-    #train_cov2=np.array(train_cov2)
-    test_X2=np.array(test_X2)
-    test_y2=np.array(test_y2)
-    #test_cov2=np.array(test_cov2)
-    print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
-    train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
-    # train_cov_id = []
-    # num_samples = len(train_y)
-    # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
-    #     curr_sample = []
-    #     for j in range(len(train_cov)):
-    #         if j == 2:
-    #             if train_cov[j][i] == 0:
-    #                 curr_sample.append("M")
-    #             elif train_cov[j][i] == 1:
-    #                 curr_sample.append("F")
-    #         elif j == 3:
-    #             continue
-    #         elif j == 4:
-    #             curr_sample.append(int(train_cov[j][i]))
-    #         else:
-    #             curr_sample.append(train_cov[j][i])
+    # num_1 = train_y2.count(1)
+    # num_0 = train_y2.count(0)
     #
-    #     cov_id = ""
-    #     for item in curr_sample:
-    #         cov_id += str(item) + "_"
-    #     train_cov_id.append(cov_id[:-1])
-    #
-    # test_cov_id = []
-    # num_samples = len(test_y)
-    # for i in range(num_samples):  # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer
-    #     curr_sample = []
-    #     for j in range(len(test_cov)):
-    #         if j == 2:
-    #             if test_cov[j][i] == 0:
-    #                 curr_sample.append("M")
-    #             elif test_cov[j][i] == 1:
-    #                 curr_sample.append("F")
-    #         elif j == 3:
-    #             continue
-    #         elif j == 4:
-    #             curr_sample.append(int(test_cov[j][i]))
-    #         else:
-    #             curr_sample.append(test_cov[j][i])
-    #
-    #     cov_id = ""
-    #     for item in curr_sample:
-    #         cov_id += str(item) + "_"
-    #     test_cov_id.append(cov_id[:-1])
-
-
-    #train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
-
-
-    #n_splits = 5
-    #fold = 4
-    #counter =1
-    #skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-    #train_y = np.array(train_y)
-
-    #train_X, train_y = shuffle(train_X, train_y, random_state=42)
-
-    #for train_index, test_index in skf.split(train_X, train_y):
-     #   if counter != fold:
-      #      counter += 1
-       #     continue
-        #counter += 1
-        #val_X_CV = train_X[test_index]
-
-        #load_dataset.view_images(val_X_CV, num_images_to_view=300)
-
+    # train_X2=np.array(train_X2)
+    # train_y2=np.array(train_y2)
+    # #train_cov2=np.array(train_cov2)
+    # test_X2=np.array(test_X2)
+    # test_y2=np.array(test_y2)
+    # #test_cov2=np.array(test_cov2)
+    # print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
+    # train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
 
 
 if __name__ == '__main__':
