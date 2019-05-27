@@ -83,6 +83,9 @@ full_dat$us_yr = year(full_dat$date_of_current_us.date) ##  can extract year fro
 full_dat$us_yr[full_dat$us_yr > 2020] = NA
 table(full_dat$kidney_side)
 str(full_dat)
+<<<<<<< HEAD
+full_dat$age_at_us[!is.na(full_dat$us_yr)] = full_dat$age_at_baseline[!is.na(full_dat$us_yr)] + (full_dat$us_yr[!is.na(full_dat$us_yr)] - full_dat$us_1_yr[!is.na(full_dat$us_yr)])*12
+=======
 full_dat$age_at_us <- NA
 full_dat$age_at_us = full_dat$age_at_baseline + elapsed_months(end_date = full_dat$date_of_current_us.date,start_date = full_dat$date_of_us1.date)
 full_dat$us_num.f = factor(full_dat$us_num,levels = 1:10)
@@ -107,6 +110,7 @@ full_dat[full_dat$study_id == 585,]
 
 full_dat.sorted = full_dat[order(full_dat$date_of_current_us.date),]
 
+>>>>>>> 7befd6f25ee750f5a0e5a3e28dc19993e03419b9
 
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,size = age_at_baseline)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
 ggplot(full_dat,aes(x = Target.f,y = Pred_val,col = us_1_yr)) + geom_point() + geom_jitter() + facet_grid(.~Data_Split)
