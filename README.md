@@ -30,11 +30,11 @@ Ask Carson
 
 ### 3. Model development
 
-####3.1 Traditional computer vision
+#### 3.1 Traditional computer vision
 * SVM
  
 
-####3.2 Neural Networks
+#### 3.2 Neural Networks
 * Siamese
 * UNet 
 
