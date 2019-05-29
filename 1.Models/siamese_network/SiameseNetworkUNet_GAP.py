@@ -173,9 +173,7 @@ class SiamNet(nn.Module):
             x_list.append(unet5)  # remove linear layers, output is 256x14x14
 
         x = torch.cat(x_list, dim=1)  # 512x14x14 for dual view
-        print(x.shape)
         gap =self.gap(x).squeeze()
-        print(gap.shape)
         pred = self.classifier_new(gap)
 
         return pred
