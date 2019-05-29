@@ -126,7 +126,8 @@ class SiamNet(nn.Module):
 
         self.gap=nn.Sequential()
         self.gap.add_module('gap', nn.Sequential(nn.AvgPool2d(kernel_size=14)))
-
+        
+        self.classifier_new = nn.Sequential()
         self.classifier_new.add_module('fc8', nn.Linear(self.num_inputs * 256, classes))
 
 
@@ -169,9 +170,9 @@ class SiamNet(nn.Module):
             unet4 = self.uconnect4(torch.cat((out2, unet3), dim=1))
             unet5 = self.uconnect5(torch.cat((out1, unet4), dim=1))
 
-            x_list.append(unet5) # remove linear layers, output is 256x14x14
+            x_list.append(unet5)  # remove linear layers, output is 256x14x14
 
-        x = torch.cat(x_list, dim=1) # 512x14x14 for dual view
+        x = torch.cat(x_list, dim=1)  # 512x14x14 for dual view
         gap =self.gap(x)
         print(gap.shape)
         pred = self.classifier_new(x)
