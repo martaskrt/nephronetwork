@@ -5,9 +5,11 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5):
+    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5,output_dim=128):
         super(SiamNet, self).__init__()
         self.num_inputs = num_inputs
+        self.output_dim=output_dim
+        print("LL DIM: " + str(self.output_dim))
         self.conv1 = nn.Sequential()
         self.conv1.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
         self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
@@ -25,7 +27,7 @@ class SiamNet(nn.Module):
         self.conv2.add_module('relu2_s1',nn.ReLU(inplace=True))
         #self.conv2.add_module('batch2_s1', nn.BatchNorm2d(256))
         self.conv2.add_module('pool2_s1',nn.MaxPool2d(kernel_size=3, stride=2))
-        #self.conv2.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
+        self.conv2.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
 
         # ********** added*********** #
         # self.conv2.add_module('pool', nn.MaxPool2d(kernel_size=2, padding=2, stride=1))
@@ -128,16 +130,25 @@ class SiamNet(nn.Module):
         #self.fc6c.add_module('batch', nn.BatchNorm1d(1))
         #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
+
+    
+
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 4096))
+        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, self.output_dim))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
-        #self.fc7_new.add_module('relu7', nn.Sigmoid())
-        #self.fc7_new.add_module('batch', nn.BatchNorm1d(4096))
         #self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.classifier_new = nn.Sequential()
-        self.classifier_new.add_module('fc8', nn.Linear(4096, classes))
+        self.classifier_new.add_module('fc8', nn.Linear(self.output_dim, classes))
 
+        #self.fc7_new = nn.Sequential()
+        #self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 512))
+        #self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
+        #self.fc7_new.add_module('fc7_2', nn.Linear(512, 128))
+        #self.fc7_new.add_module('relu7_2', nn.ReLU(inplace=True))
+
+        #self.classifier_new = nn.Sequential()
+        #self.classifier_new.add_module('fc8', nn.Linear(128, classes))
     def load(self, checkpoint):
         model_dict = self.state_dict()
         pretrained_dict = torch.load(checkpoint)
