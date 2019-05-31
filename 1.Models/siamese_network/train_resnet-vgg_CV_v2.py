@@ -21,10 +21,8 @@ from torch.utils.data import Dataset, DataLoader
 import argparse
 from torch.autograd import Variable
 from sklearn.utils import class_weight
+import sys
 
-# from FraternalSiameseNetwork import SiamNet
-load_dataset = importlib.machinery.SourceFileLoader('load_dataset', '../../preprocess/load_dataset.py').load_module()
-process_results = importlib.machinery.SourceFileLoader('process_results', '../process_results.py').load_module()
 
 SEED = 42
 
@@ -443,10 +441,16 @@ def main():
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
+    parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
     # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
     parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
+
+    sys.path.insert(0, args.git_dir + '/nephronetwork/0.Preprocess/')
+    import load_dataset
+    sys.path.insert(0, args.git_dir + '/nephronetwork/2.Results/')
+    import process_results
 
     print("ARGS" + '\t' + str(args))
 
