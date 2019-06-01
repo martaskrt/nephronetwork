@@ -26,10 +26,6 @@ from sklearn.utils import class_weight
 <<<<<<< HEAD
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
-=======
-load_dataset = importlib.machinery.SourceFileLoader('load_dataset', '../../preprocess/load_dataset.py').load_module()
-process_results = importlib.machinery.SourceFileLoader('process_results', '../process_results.py').load_module()
->>>>>>> e6f8c867e6940c7c9c8082e6c464ffbb4d9c9537
 
 SEED = 42
 
