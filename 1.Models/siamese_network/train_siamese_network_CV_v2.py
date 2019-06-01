@@ -23,8 +23,9 @@ from torch.autograd import Variable
 from sklearn.utils import class_weight
 
 # from FraternalSiameseNetwork import SiamNet
-load_dataset = importlib.machinery.SourceFileLoader('load_dataset', '../../preprocess/load_dataset.py').load_module()
-process_results = importlib.machinery.SourceFileLoader('process_results', '../process_results.py').load_module()
+<<<<<<< HEAD
+load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
+process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
 
 SEED = 42
 
@@ -84,6 +85,7 @@ class KidneyDataset(torch.utils.data.Dataset):
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     if args.unet:
         print("importing UNET")
+        #from SiameseNetworkUNet import SiamNet
         from SiameseNetworkUNet import SiamNet
     else:
         print("importing SIAMNET")
@@ -444,7 +446,7 @@ def main():
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
     # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -479,43 +481,9 @@ def main():
         train_X=np.array(train_X_single)
         test_X=np.array(test_X_single)
 
-
+        
+    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))        
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
-    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
-    # train_X2=[]
-    # train_y2=[]
-    # train_cov2=[]
-    # test_X2=[]
-    # test_y2=[]
-    # test_cov2=[]
-    # for i in range(len(train_y)):
-    #     p_id = train_cov[i].split("_")[0]
-    #     if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-    #         train_y2.append(0)
-    #     else:
-    #         train_y2.append(train_y[i])
-    #     train_X2.append(train_X[i])
-    #     train_cov2.append(train_cov[i])
-    # for i in range(len(test_y)):
-    #     p_id = test_cov[i].split("_")[0]
-    #     if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-    #         test_y2.append(0)
-    #     else:
-    #         test_y2.append(test_y[i])
-    #     test_X2.append(test_X[i])
-    #     test_cov2.append(test_cov[i])
-
-    # num_1 = train_y2.count(1)
-    # num_0 = train_y2.count(0)
-    #
-    # train_X2=np.array(train_X2)
-    # train_y2=np.array(train_y2)
-    # #train_cov2=np.array(train_cov2)
-    # test_X2=np.array(test_X2)
-    # test_y2=np.array(test_y2)
-    # #test_cov2=np.array(test_cov2)
-    # print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
-    # train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
 
 
 if __name__ == '__main__':
