@@ -34,5 +34,34 @@
         
         TrainEpoch      11      ACC     98%     Loss    0.059986
         ValEpoch        11      ACC     98%     Loss    0.049827
- 
-```
+ 	```
+* UNet
+  * OCT -> Epoch 17
+    * ```
+        TrainEpoch      12      ACC     85%     Loss    0.411750
+        ValEpoch        12      ACC     92%     Loss    0.180877
+        TrainEpoch      13      ACC     85%     Loss    0.410350
+        ValEpoch        13      ACC     90%     Loss    0.260673
+        TrainEpoch      14      ACC     85%     Loss    0.407539
+        ValEpoch        14      ACC     86%     Loss    0.329182
+        TrainEpoch      15      ACC     85%     Loss    0.404169
+        ValEpoch        15      ACC     88%     Loss    0.338318
+        TrainEpoch      16      ACC     85%     Loss    0.399871
+        ValEpoch        16      ACC     92%     Loss    0.188772
+        TrainEpoch      17      ACC     85%     Loss    0.397727
+        ValEpoch        17      ACC     94%     Loss    0.143950
+    ```
+  * MNIST -> Epoch 17
+    * ```
+        TrainEpoch      15      ACC     98%     Loss    0.060345
+        ValEpoch        15      ACC     98%     Loss    0.058213
+        TrainEpoch      16      ACC     98%     Loss    0.062169
+        ValEpoch        16      ACC     98%     Loss    0.066499
+        TrainEpoch      17      ACC     98%     Loss    0.058322
+        ValEpoch        17      ACC     98%     Loss    0.045213
+        TrainEpoch      18      ACC     98%     Loss    0.058494
+        ValEpoch        18      ACC     98%     Loss    0.055068
+        TrainEpoch      19      ACC     98%     Loss    0.059320
+        ValEpoch        19      ACC     97%     Loss    0.067117
+    ```
+
