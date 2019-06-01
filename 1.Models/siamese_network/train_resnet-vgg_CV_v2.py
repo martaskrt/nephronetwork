@@ -12,7 +12,7 @@ import torch
 from torch import nn
 #from torch import optim
 import torch.nn.functional as F
-import torchvision.datasets.mnist
+#import torchvision.datasets.mnist
 from torchvision import transforms
 # from tqdm import tqdm
 import importlib.machinery
@@ -80,12 +80,14 @@ class KidneyDataset(torch.utils.data.Dataset):
 
 
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
-    if args.unet:
-        print("importing UNET")
-        from SiameseNetworkUNet import SiamNet
+    sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+    if args.vgg:
+        print("importing VGG")
+        from VGGResNetSiamese import RevisedVGG
     else:
-        print("importing SIAMNET")
-        from SiameseNetwork import SiamNet
+        print("importing ResNet18")
+        from VGGResNetSiamese import RevisedResNet
+
 
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
@@ -121,38 +123,42 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         #print("CLASS WEIGHTS: " + str(cw))
         #cross_entropy = nn.CrossEntropyLoss(weight=cw)
         #cross_entropy = nn.CrossEntropyLoss()
-        if args.view != "siamese":
-            net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
-        else:
-            net = SiamNet(output_dim=args.output_dim).to(device)
-        if args.checkpoint != "":
-            if "jigsaw" in args.dir and "unet" in args.dir:
-                print("Loading Jigsaw into UNet")
-                pretrained_dict = torch.load(args.checkpoint)
-                model_dict = net.state_dict()
-                unet_dict = {}
-
-                for k, v in model_dict.items():
-                    unet_dict[k] = model_dict[k]
-
-                unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
-                unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
-                unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
-                unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
-                unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
-                unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
-                unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
-                unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
-                unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
-                unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
-
-                unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-                unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
-
-                model_dict.update(unet_dict)
-                # 3. load the new state dict
-                net.load_state_dict(unet_dict)
+        # if args.view != "siamese":
+        #     net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
+        # else:
+        #     net = SiamNet(output_dim=args.output_dim).to(device)
+        if args.vgg:
+            # if "jigsaw" in args.dir and "unet" in args.dir:
+            #     print("Loading Jigsaw into UNet")
+            #     pretrained_dict = torch.load(args.checkpoint)
+            #     model_dict = net.state_dict()
+            #     unet_dict = {}
+            #
+            #     for k, v in model_dict.items():
+            #         unet_dict[k] = model_dict[k]
+            #
+            #     unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
+            #     unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
+            #     unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
+            #     unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
+            #     unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
+            #     unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
+            #     unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
+            #     unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
+            #     unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
+            #     unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
+            #
+            #     unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            #     unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
+            #
+            #     model_dict.update(unet_dict)
+            #     # 3. load the new state dict
+            #     net.load_state_dict(unet_dict)
             else:
+
+
+
+
                 pretrained_dict = torch.load(args.checkpoint)
                 #pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
                 model_dict = net.state_dict()
@@ -438,7 +444,8 @@ def main():
     parser.add_argument("--split", default=0.7, type=float, help="proportion of dataset to use as training")
     parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
-    parser.add_argument('--unet', action="store_true", help="UNet architecthure")
+    # parser.add_argument('--unet', action="store_true", help="UNet architecthure")
+    parser.add_argument('--vgg', action='store_true',help="Run VGG architecture, not using this flag runs ResNet16")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
