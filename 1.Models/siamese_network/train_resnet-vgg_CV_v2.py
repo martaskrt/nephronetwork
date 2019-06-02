@@ -450,7 +450,7 @@ def main():
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
     # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -531,3 +531,42 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+######## DEBUGGING MAIN FUNCTION
+
+args = {'epochs': 10,
+        'batch_size': 64,
+        'lr': 0.001,
+        'momentum': 0.9,
+        'adam': False,
+        'weight_decay': 5e-4,
+        'num_workers': 1,
+        'dir': './',
+        'contrast': 1,
+        'view': 'siamese',
+        'checkpoint':"", ## use if you want to do transfer learning -- could be interesting to use pretrained resnet and vgg,
+        'split':0.7,
+        'bottom_cut':0.0,
+        'etiology':'B',
+        'crop':0,
+        'output_dim':128, ## may be unnecessary in this code,
+        'git_dir':"C:/Users/Lauren/Desktop/DS Core/Projects/Urology/"
+        }
+
+datafile = args['git_dir'] + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle" ## CHANGE THIS IN THE MAIN FUNCTION
+
+sys.path.insert(0, args['git_dir'] + '/nephronetwork/0.Preprocess/')
+import load_dataset
+sys.path.insert(0, args['git_dir'] + '/nephronetwork/2.Results/')
+import process_results
+
+max_epochs = args['epochs']
+train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args['view'],
+                                                                                  sort_by_date=True,
+                                                                                  pickle_file=datafile,
+                                                                                  contrast=args['contrast'],
+                                                                                  split=args['split'],
+                                                                                  get_cov=True,
+                                                                                  bottom_cut=args['bottom_cut'],
+                                                                                  etiology=args['etiology'],
+                                                                                  crop=args['crop'])
