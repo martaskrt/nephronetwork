@@ -44,35 +44,6 @@ class KidneyDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         imgs, target, cov = self.X[index], self.y[index], self.cov[index]
-        # cov = []
-        # for i in range(len(self.cov)): # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num, 5: date_of_US_1
-        #     if i == 2:
-        #         if self.cov[i][index] == 0:
-        #             cov.append("M")
-        #         elif self.cov[i][index] == 0:
-        #             cov.append("F")
-        #     elif i == 3:
-        #         continue
-        #     elif i == 4:
-        #         cov.append(int(self.cov[i][index]))
-        #     else:
-        #         cov.append(self.cov[i][index])
-        #
-        # cov_id = ""
-        # for item in cov:
-        #     cov_id += str(item) + "_"
-        # cov_id = cov_id[:-1]
-
-        #to_pil = transforms.ToPILImage()
-        #to_tensor = transforms.ToTensor()
-        #for n in range(2):
-         #   temp_img = imgs[n]
-          #  m, s = temp_img.view(1, -1).mean(dim=1).numpy(), temp_img.view(1, -1).std(dim=1).numpy()
-           # s[s == 0] = 1
-           # norm = transforms.Normalize(mean=m.tolist(), std=s.tolist())
-           # temp_img = norm(to_tensor(to_pil(temp_img)))
-           # imgs[n] = temp_img
-        
         return imgs, target, cov
 
     def __len__(self):
@@ -110,70 +81,20 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
 
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=42)
-    # for i in range(len(train_cov)):
-    #     train_cov[i] = shuffle(train_cov[i], random_state=42)
-    #class_weights = class_weight.compute_class_weight('balanced',
-     #                                            np.unique(train_y),
-      #                                          train_y)
-    #print(class_weights)
+
     for train_index, test_index in skf.split(train_X, train_y):
-      #  class_weights=torch.tensor([1/num_0, 1/num_1]).to(device)
-        #class_weights=torch.tensor([0.5, 2.0]).to(device)
-        #cw=torch.from_numpy(class_weights).float().to(device)
-        #print("CLASS WEIGHTS: " + str(cw))
-        #cross_entropy = nn.CrossEntropyLoss(weight=cw)
-        #cross_entropy = nn.CrossEntropyLoss()
-        # if args.view != "siamese":
-        #     net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
-        # else:
-        #     net = SiamNet(output_dim=args.output_dim).to(device)
+
         if args.vgg:
-            # if "jigsaw" in args.dir and "unet" in args.dir:
-            #     print("Loading Jigsaw into UNet")
-            #     pretrained_dict = torch.load(args.checkpoint)
-            #     model_dict = net.state_dict()
-            #     unet_dict = {}
-            #
-            #     for k, v in model_dict.items():
-            #         unet_dict[k] = model_dict[k]
-            #
-            #     unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
-            #     unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
-            #     unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
-            #     unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
-            #     unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
-            #     unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
-            #     unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
-            #     unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
-            #     unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
-            #     unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
-            #
-            #     unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            #     unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
-            #
-            #     model_dict.update(unet_dict)
-            #     # 3. load the new state dict
-            #     net.load_state_dict(unet_dict)
+            if args.view != "siamese":
+                net = RevisedVGG(num_inputs=1).to(device)
             else:
+                net = RevisedVGG(num_inputs=2).to(device)
 
-
-
-
-                pretrained_dict = torch.load(args.checkpoint)
-                #pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
-                model_dict = net.state_dict()
-
-                pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-           
-            
-                pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-                for k, v in model_dict.items():
-                    if k not in pretrained_dict:
-                        pretrained_dict[k] = model_dict[k]
-                # 2. overwrite entries in the existing state dict
-                model_dict.update(pretrained_dict)
-                # 3. load the new state dict
-                net.load_state_dict(pretrained_dict)
+        else:
+            if args.view != "siamese":
+                net = RevisedResNet(num_inputs=1).to(device)
+            else:
+                net = RevisedResNet(num_inputs=2).to(device)
 
         if args.adam:
             optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
@@ -186,18 +107,12 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         train_X_CV = train_X[train_index]
         train_y_CV = train_y[train_index]
         train_cov_CV = train_cov[train_index]
-        # for i in range(len(train_cov)):
-        #     print(i)
-        #     train_cov_CV.append([])
-        #     print(train_cov[i])
-        #     train_cov_CV.append(train_cov[i][train_index])
 
         val_X_CV = train_X[test_index]
         val_y_CV = train_y[test_index]
         val_cov_CV = train_cov[test_index]
-        # for i in range(len(train_cov)):
-        #     val_cov_CV.append([])
-        #     val_cov_CV[i] = train_cov[i][test_index]
+
+        print("Dataset generated")
 
         training_set = KidneyDataset(train_X_CV, train_y_CV, train_cov_CV)
         training_generator = DataLoader(training_set, **params)
@@ -206,6 +121,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         validation_generator = DataLoader(validation_set, **params)
 
         for epoch in range(max_epochs):
+            # print("Epoch " + str(epoch) + " started.")
             accurate_labels_train = 0
             accurate_labels_val = 0
             accurate_labels_test = 0
@@ -236,13 +152,19 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             counter_test = 0
             
             for batch_idx, (data, target, cov) in enumerate(training_generator):
+                # print("batch " + str(batch_idx) + " started")
+
                 optimizer.zero_grad()
 
                 output = net(data.to(device))
+                # print("network run with batch")
+
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
+
                 #print(output)
                 #print(target)
                 loss = F.cross_entropy(output, target)
+                # print("loss calculated")
                 #loss = cross_entropy(output, target)
                 #print(loss)
                 loss_accum_train += loss.item() * len(target)
@@ -421,8 +343,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 os.makedirs(args.dir)
             #if not os.path.isdir(args.dir + "/" + str(fold)):
                 #os.makedirs(args.dir + "/" + str(fold))
-            path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
-            torch.save(checkpoint, path_to_checkpoint)
+
+            ## UNCOMMENT THIS WHEN YOU WANT TO START SAVING YOUR MODELS!
+            # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
+            # torch.save(checkpoint, path_to_checkpoint)
 
         fold += 1
 
@@ -534,13 +458,13 @@ if __name__ == '__main__':
 
 ######## DEBUGGING MAIN FUNCTION
 
-args = {'epochs': 10,
+args_dict = {'epochs': 10,
         'batch_size': 64,
         'lr': 0.001,
         'momentum': 0.9,
         'adam': False,
         'weight_decay': 5e-4,
-        'num_workers': 1,
+        'num_workers': 0,
         'dir': './',
         'contrast': 1,
         'view': 'siamese',
@@ -550,23 +474,74 @@ args = {'epochs': 10,
         'etiology':'B',
         'crop':0,
         'output_dim':128, ## may be unnecessary in this code,
-        'git_dir':"C:/Users/Lauren/Desktop/DS Core/Projects/Urology/"
+        'git_dir':"C:/Users/Lauren/Desktop/DS Core/Projects/Urology/",
+        'vgg': False
         }
 
-datafile = args['git_dir'] + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle" ## CHANGE THIS IN THE MAIN FUNCTION
+class myargs():
+    def __init__(self,args_dict):
+        self.epochs = args_dict['epochs']
+        self.batch_size = args_dict['batch_size']
+        self.lr = args_dict['lr']
+        self.momentum = args_dict['momentum']
+        self.adam = args_dict['adam']
+        self.weight_decay = args_dict['weight_decay']
+        self.num_workers = args_dict['num_workers']
+        self.dir = args_dict['dir']
+        self.contrast = args_dict['contrast']
+        self.view = args_dict['view']
+        self.checkpoint = args_dict['checkpoint']
+        self.split = args_dict['split']
+        self.bottom_cut = args_dict['bottom_cut']
+        self.etiology = args_dict['etiology']
+        self.crop = args_dict['crop']
+        self.output_dim = args_dict['output_dim']
+        self.git_dir = args_dict['git_dir']
+        self.vgg = args_dict['vgg']
 
-sys.path.insert(0, args['git_dir'] + '/nephronetwork/0.Preprocess/')
-import load_dataset
-sys.path.insert(0, args['git_dir'] + '/nephronetwork/2.Results/')
+args = myargs(args_dict)
+args.git_dir
+
+datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle" ## CHANGE THIS IN THE MAIN FUNCTION
+
+sys.path.insert(0, args.git_dir + '/nephronetwork/0.Preprocess/')
+import load_dataset_LE
+sys.path.insert(0, args.git_dir + '/nephronetwork/2.Results/')
 import process_results
 
-max_epochs = args['epochs']
-train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get=args['view'],
+max_epochs = args.epochs
+train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset_LE.load_dataset(views_to_get=args.view,
                                                                                   sort_by_date=True,
                                                                                   pickle_file=datafile,
-                                                                                  contrast=args['contrast'],
-                                                                                  split=args['split'],
+                                                                                  contrast=args.contrast,
+                                                                                  split=args.split,
                                                                                   get_cov=True,
-                                                                                  bottom_cut=args['bottom_cut'],
-                                                                                  etiology=args['etiology'],
-                                                                                  crop=args['crop'])
+                                                                                  bottom_cut=args.bottom_cut,
+                                                                                  etiology=args.etiology,
+                                                                                  crop=args.crop,
+                                                                                    git_dir = args.git_dir)
+
+if args.view == "sag" or args.view == "trans":
+    train_X_single = []
+    test_X_single = []
+
+    for item in train_X:
+        if args.view == "sag":
+            train_X_single.append(item[0])
+        elif args.view  == "trans":
+            train_X_single.append(item[1])
+    for item in test_X:
+        if args.view == "sag":
+            test_X_single.append(item[0])
+        elif args.view == "trans":
+            test_X_single.append(item[1])
+
+    train_X = np.array(train_X_single)
+    test_X = np.array(test_X_single)
+
+train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
+
+print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
+
+
+
