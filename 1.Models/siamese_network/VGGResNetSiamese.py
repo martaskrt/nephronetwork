@@ -20,8 +20,13 @@ class RevisedResNet(nn.Module):
                                        nn.Sigmoid())
 
     def forward(self, x):
+
         if self.num_inputs == 1:
             x = x.unsqueeze(1)
+
+        # print("x size: ")
+        # print(x.size())
+
         B, T, C, H = x.size()
         x = x.transpose(0, 1)
         x_list = []
@@ -30,18 +35,22 @@ class RevisedResNet(nn.Module):
                 curr_x = torch.unsqueeze(x[i], 1)
             else:
                 curr_x = torch.unsqueeze(x[i], 1)
+            # print("curr_x.size(): ")
+            # print(curr_x.size())
             # if self.num_inputs == 1:
             #   curr_x = curr_x.expand(-1, 3, -1)
             # else:
-            curr_x = curr_x.expand(-1, 3, -1, -1)
+            # curr_x = curr_x.expand(-1, 3, -1, -1)
             if torch.cuda.is_available():
                 input = torch.cuda.FloatTensor(curr_x.to(device))
             else:
                 input = torch.FloatTensor(curr_x.to(device))
 
-                res_out = self.old_arch(input)
-                x_list.append(res_out)
+            res_out = self.old_arch(input)
+            x_list.append(res_out)
 
+
+        #print(x_list)
         x = torch.cat(x_list, 1)
         x = x.view(B, -1)
         x = self.combo_layer(x)
