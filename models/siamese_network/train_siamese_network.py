@@ -53,7 +53,11 @@ class KidneyDataset(torch.utils.data.Dataset):
         return len(self.X)
 
 
+<<<<<<< Updated upstream
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs, num_1, num_0):
+=======
+def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
+>>>>>>> Stashed changes
     if args.unet:
         print("importing UNET")
         from SiameseNetworkUNet import SiamNet
@@ -78,9 +82,15 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
 
     if args.view != "siamese":
+<<<<<<< Updated upstream
         net = SiamNet(num_inputs=1).to(device)
     else:
         net = SiamNet().to(device)
+=======
+        net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
+    else:
+        net = SiamNet(output_dim=args.output_dim).to(device)
+>>>>>>> Stashed changes
     if args.checkpoint != "":
         if "jigsaw" in args.dir and "unet" in args.dir:
             print("Loading Jigsaw into UNet")
@@ -311,8 +321,14 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
+<<<<<<< Updated upstream
     parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle",
                         help="File containing pandas dataframe with images stored as numpy array")
+=======
+    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle",
+                        help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
+>>>>>>> Stashed changes
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
@@ -343,6 +359,7 @@ def main():
             elif args.view == "trans":
                 test_X_single.append(item[1])
 
+<<<<<<< Updated upstream
         train_X = train_X_single
         test_X = test_X_single
 
@@ -381,6 +398,12 @@ def main():
     # test_cov2=np.array(test_cov2)
     print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
     train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
+=======
+        train_X = np.array(train_X_single)
+        test_X = np.array(test_X_single)
+
+    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
+>>>>>>> Stashed changes
 
 if __name__ == '__main__':
     main()
