@@ -597,7 +597,7 @@ def main():
     parser.add_argument('--resnet50', action='store_true',help="Run ResNet50 architecture, not using this flag runs ResNet16")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
-    parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
+    parser.add_argument("--git_dir",default="/home/lauren/")
     parser.add_argument('--cv', action='store_true',help="Flag to run cross validation")
     parser.add_argument("--stop_epoch", default=18, type=int, help="If not running cross validation, which epoch to finish with")
 
