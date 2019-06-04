@@ -51,6 +51,8 @@ class KidneyDataset(torch.utils.data.Dataset):
 
 
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
+    process_results = importlib.machinery.SourceFileLoader('process_results', args.git_dir + '/nephronetwork/2.Results/process_results.py').load_module()
+
     sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
     if args.vgg:
         print("importing VGG")
@@ -605,10 +607,10 @@ def main():
 
     datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle"
 
-    sys.path.append(args.git_dir + '/nephronetwork/0.Preprocess/')
+    sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
     import load_dataset_LE
-    sys.path.append(args.git_dir + '/nephronetwork/2.Results/')
-    import process_results
+    # sys.path.append(args.git_dir + 'nephronetwork/2.Results')
+    # import process_results
 
     max_epochs = args.epochs
     train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset_LE.load_dataset(views_to_get=args.view,
