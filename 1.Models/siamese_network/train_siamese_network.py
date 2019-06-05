@@ -23,8 +23,8 @@ from torch.autograd import Variable
 from sklearn.utils import class_weight
 
 # from FraternalSiameseNetwork import SiamNet
-load_dataset = importlib.machinery.SourceFileLoader('load_dataset', '../../preprocess/load_dataset.py').load_module()
-process_results = importlib.machinery.SourceFileLoader('process_results', '../process_results.py').load_module()
+load_dataset = importlib.machinery.SourceFileLoader('load_dataset', '../../0.Preprocess/load_dataset.py').load_module()
+process_results = importlib.machinery.SourceFileLoader('process_results', '../../2.Results/process_results.py').load_module()
 
 SEED = 42
 
@@ -57,6 +57,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     if args.unet:
         print("importing UNET")
         from SiameseNetworkUNet import SiamNet
+        #from SiameseNetworkUNet_GAP import SiamNet
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
@@ -311,7 +312,7 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle",
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
                         help="File containing pandas dataframe with images stored as numpy array")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
     args = parser.parse_args()
@@ -346,7 +347,7 @@ def main():
 
         train_X = np.array(train_X_single)
         test_X = np.array(test_X_single)
-
+    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 
 if __name__ == '__main__':

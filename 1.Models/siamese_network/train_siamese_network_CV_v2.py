@@ -1,30 +1,30 @@
 from sklearn.utils import shuffle
 # from sklearn.model_selection import KFold
 from sklearn.model_selection import StratifiedKFold
-import codecs
-import errno
-import matplotlib.pyplot as plt
+# import codecs
+# import errno
+# import matplotlib.pyplot as plt
 import numpy as np
 import os
-from PIL import Image
-import random
+# from PIL import Image
+# import random
 import torch
 from torch import nn
-from torch import optim
+#from torch import optim
 import torch.nn.functional as F
 import torchvision.datasets.mnist
 from torchvision import transforms
-from tqdm import tqdm
+# from tqdm import tqdm
 import importlib.machinery
 from torch.utils.data import Dataset, DataLoader
-from torchsummary import summary
+# from torchsummary import summary
 import argparse
 from torch.autograd import Variable
 from sklearn.utils import class_weight
 
 # from FraternalSiameseNetwork import SiamNet
-load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../preprocess/load_dataset.py').load_module()
-process_results = importlib.machinery.SourceFileLoader('process_results','../process_results.py').load_module()
+load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
+process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
 
 SEED = 42
 
@@ -85,6 +85,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     if args.unet:
         print("importing UNET")
         from SiameseNetworkUNet import SiamNet
+        #from SiameseNetworkUNet_GAP import SiamNet
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
@@ -123,6 +124,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         #print("CLASS WEIGHTS: " + str(cw))
         #cross_entropy = nn.CrossEntropyLoss(weight=cw)
         #cross_entropy = nn.CrossEntropyLoss()
+        #if fold == 1 or fold == 2:
+         #   fold += 1
+          #  continue
         if args.view != "siamese":
             net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
         else:
@@ -233,11 +237,14 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             
             for batch_idx, (data, target, cov) in enumerate(training_generator):
                 optimizer.zero_grad()
-
+            
                 output = net(data.to(device))
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
                 #print(output)
                 #print(target)
+                #print(output.shape, target.shape)
+                if len(output.shape) == 1:
+                    output = output.unsqueeze(0)
                 loss = F.cross_entropy(output, target)
                 #loss = cross_entropy(output, target)
                 #print(loss)
@@ -369,7 +376,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             all_targets_test = torch.cat(all_targets_test)
             all_pred_label_test = torch.cat(all_pred_label_test)
 
-            #patient_ID_test = torch.cat(patient_ID_test)
+            # patient_ID_test = torch.cat(patient_ID_test)
 
             assert len(all_targets_test) == len(test_y)
             assert len(all_pred_label_test) == len(test_y)
@@ -427,7 +434,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
-    parser.add_argument('--batch_size', default=128, type=int, help="Batch size")
+    parser.add_argument('--batch_size', default=64, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument('--adam', action="store_true", help="Use Adam optimizer instead of SGD")
@@ -444,7 +451,7 @@ def main():
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
     # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -478,44 +485,10 @@ def main():
 
         train_X=np.array(train_X_single)
         test_X=np.array(test_X_single)
-        
-        
-    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
-    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
-    # train_X2=[]
-    # train_y2=[]
-    # train_cov2=[]
-    # test_X2=[]
-    # test_y2=[]
-    # test_cov2=[]
-    # for i in range(len(train_y)):
-    #     p_id = train_cov[i].split("_")[0]
-    #     if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-    #         train_y2.append(0)
-    #     else:
-    #         train_y2.append(train_y[i])
-    #     train_X2.append(train_X[i])
-    #     train_cov2.append(train_cov[i])
-    # for i in range(len(test_y)):
-    #     p_id = test_cov[i].split("_")[0]
-    #     if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-    #         test_y2.append(0)
-    #     else:
-    #         test_y2.append(test_y[i])
-    #     test_X2.append(test_X[i])
-    #     test_cov2.append(test_cov[i])
 
-    # num_1 = train_y2.count(1)
-    # num_0 = train_y2.count(0)
-    #
-    # train_X2=np.array(train_X2)
-    # train_y2=np.array(train_y2)
-    # #train_cov2=np.array(train_cov2)
-    # test_X2=np.array(test_X2)
-    # test_y2=np.array(test_y2)
-    # #test_cov2=np.array(test_cov2)
-    # print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
-    # train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
+        
+    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))        
+    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 
 
 if __name__ == '__main__':

@@ -162,8 +162,8 @@ def load_images(label_data, dcm_files, opt):
         data = data.sort_values(by=['Date of Ultrasound 1', 'study_id', 'sample_num'])
     data.columns = data.columns.str.strip().str.lower().str.replace(" ","_")
     print(data.columns)
-    data.to_csv("preprocessed_images_20190517.csv", sep=',')
-    data.to_pickle("preprocessed_images_20190517.pickle")
+    data.to_csv("preprocessed_images_20190601.csv", sep=',')
+    data.to_pickle("preprocessed_images_20190601.pickle")
 
     print('\U0001F4A5')
 
