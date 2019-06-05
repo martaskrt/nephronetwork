@@ -4,7 +4,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import argparse
 import importlib.machinery
 import numpy as np
-from SiameseNetwork import SiamNet
+# from SiameseNetwork import SiamNet
+from SiameseNetworkUNet import SiamNet
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -30,7 +31,9 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(SEED)
 
 def train(args, train_dataset, val_dataset, test_dataset):
-    net = SiamNet(classes=4, num_inputs = 1)
+    # net = SiamNet(classes=4, num_inputs = 1) # Regular
+    net = SiamNet(classes=4) # UNet
+
     # if torch.cuda.device_count() > 1:
     #     print("Let's use", torch.cuda.device_count(), "GPUs!")
     #     # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
@@ -131,7 +134,7 @@ def train(args, train_dataset, val_dataset, test_dataset):
                           'optimizer': optimizer.state_dict()}
             if not os.path.isdir(args.dir):
                 os.makedirs(args.dir)
-            path_to_checkpoint = args.dir + '/' + "checkpoint_oct_" + str(epoch) + '.pth'
+            path_to_checkpoint = args.dir + '/' + "checkpoint_oct_unet_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
 
 
@@ -243,7 +246,7 @@ def load_data(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
-    parser.add_argument('--batch_size', default=128, type=int, help="Batch size")
+    parser.add_argument('--batch_size', default=64, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
     parser.add_argument("--weight_decay", default=5e-4, type=float, help="Weight decay")
