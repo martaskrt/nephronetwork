@@ -23,7 +23,6 @@ from torch.autograd import Variable
 from sklearn.utils import class_weight
 
 # from FraternalSiameseNetwork import SiamNet
-<<<<<<< HEAD
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
 
@@ -85,8 +84,8 @@ class KidneyDataset(torch.utils.data.Dataset):
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     if args.unet:
         print("importing UNET")
-        #from SiameseNetworkUNet import SiamNet
         from SiameseNetworkUNet import SiamNet
+        #from SiameseNetworkUNet_GAP import SiamNet
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
@@ -125,6 +124,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         #print("CLASS WEIGHTS: " + str(cw))
         #cross_entropy = nn.CrossEntropyLoss(weight=cw)
         #cross_entropy = nn.CrossEntropyLoss()
+        #if fold == 1 or fold == 2:
+         #   fold += 1
+          #  continue
         if args.view != "siamese":
             net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
         else:
@@ -235,11 +237,14 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             
             for batch_idx, (data, target, cov) in enumerate(training_generator):
                 optimizer.zero_grad()
-
+            
                 output = net(data.to(device))
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
                 #print(output)
                 #print(target)
+                #print(output.shape, target.shape)
+                if len(output.shape) == 1:
+                    output = output.unsqueeze(0)
                 loss = F.cross_entropy(output, target)
                 #loss = cross_entropy(output, target)
                 #print(loss)
