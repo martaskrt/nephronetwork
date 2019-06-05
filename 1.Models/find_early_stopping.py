@@ -24,8 +24,9 @@ def load_data(inputfile):
             counter = 0
             for line in f:
                 content = line[:-1].split('\t')
-                if len(content) < 2:
+                if len(content) < 2 or content[0] == "ARGS":
                     continue
+
                 if content[2] not in ["ValEpoch", "TrainEpoch", "TestEpoch"]:
                     continue
                 fold = int(content[1])
@@ -78,11 +79,11 @@ def confusion_matrix(args):
                  'model-val': avg_loss['model']['val'],
                  }
     p_dataframe = pd.Series(dataframe)
-    num_samples = 50
-    if "unet" in args.fname:
-        num_samples = 20
-    if "20190504" in args.fname:
-        num_samples = 35
+    num_samples = 35
+    # if "unet" in args.fname:
+    #     num_samples = 20
+    # if "20190504" in args.fname:
+    #     num_samples = 35
     print(num_samples)
     # ax = sns.scatterplot(x=np.arange(50), y=data["jigsaw"]["train"]["AUC"])
     # plt.scatter(x=np.arange(50), y=p_dataframe['model-train'], color='deepskyblue', label='model-train')
