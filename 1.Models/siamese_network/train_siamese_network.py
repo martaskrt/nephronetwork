@@ -65,6 +65,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     if args.unet:
         print("importing UNET")
         from SiameseNetworkUNet import SiamNet
+        #from SiameseNetworkUNet_GAP import SiamNet
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
