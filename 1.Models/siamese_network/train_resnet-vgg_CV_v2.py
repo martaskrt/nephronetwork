@@ -605,6 +605,14 @@ def main():
 
     args = parser.parse_args()
 
+    print("batch size: " + str(args.batch_size))
+    print("lr: " + str(args.lr))
+    print("momentum: " + str(args.momentum))
+    print("adam optimizer: " + str(args.adam))
+    print("weight decay: " + str(args.weight_decay))
+    print("view: " + str(args.view))
+
+
     datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle"
 
     sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
