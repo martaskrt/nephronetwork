@@ -5,7 +5,7 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5,output_dim=128):
+    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5,output_dim=256):
         super(SiamNet, self).__init__()
         self.num_inputs = num_inputs
         self.output_dim=output_dim
@@ -130,9 +130,6 @@ class SiamNet(nn.Module):
         #self.fc6c.add_module('batch', nn.BatchNorm1d(1))
         #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
-
-    
-
         self.fc7_new = nn.Sequential()
         self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, self.output_dim))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
@@ -197,7 +194,6 @@ class SiamNet(nn.Module):
         x = torch.cat(x_list, 1)
         x = self.fc7_new(x.view(B, -1))
         pred = self.classifier_new(x)
-
         return pred
 
 class LRN(nn.Module):
