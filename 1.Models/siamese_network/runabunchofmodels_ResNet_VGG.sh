@@ -14,8 +14,8 @@ do
     do
         for bs in "${my_bs[@]}"
         do
-            python3 train_resnet-vgg_CV_v2.py --vgg_bn --git_dir /home/lauren/ --view $view --lr $lr --bs $bs > /storage/vgg-densenet-out/vgg_bn-lr${lr}-bs${bs}-${view}.txt
-            python3 train_resnet-vgg_CV_v2.py --densenet --git_dir /home/lauren/ --view $view --lr $lr --bs $bs > /storage/vgg-densenet-out/vgg_bn-lr${lr}-bs${bs}-${view}.txt
+            python3 train_resnet-vgg_CV_v2.py --vgg_bn --git_dir /home/lauren/ --view $view --lr $lr --batch_size $bs --cv > /storage/vgg-densenet-out/vgg_bn-lr${lr}-bs${bs}-${view}.txt
+            python3 train_resnet-vgg_CV_v2.py --densenet --git_dir /home/lauren/ --view $view --lr $lr --batch_size $bs --cv > /storage/vgg-densenet-out/vgg_bn-lr${lr}-bs${bs}-${view}.txt
         done
     done
 done
