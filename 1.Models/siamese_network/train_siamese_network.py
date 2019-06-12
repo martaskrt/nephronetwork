@@ -367,9 +367,16 @@ def main():
             elif args.view == "trans":
                 test_X_single.append(item[1])
 
-        train_X = np.array(train_X_single)
-        test_X = np.array(test_X_single)
+        train_X = train_X_single
+        test_X = test_X_single
+
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
+
+    train_X = np.array(train_X)
+    train_y = np.array(train_y)
+    test_X = np.array(test_X)
+    test_y = np.array(test_y)
+
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 
 if __name__ == '__main__':
