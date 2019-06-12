@@ -648,8 +648,10 @@ def main():
 
     datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle"
 
-    sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
-    import load_dataset_LE
+    load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE', args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
+
+    # sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
+    # import load_dataset_LE
     # sys.path.append(args.git_dir + 'nephronetwork/2.Results')
     # import process_results
 
