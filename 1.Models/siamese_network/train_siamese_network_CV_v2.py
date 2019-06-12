@@ -511,8 +511,12 @@ def main():
             elif args.view == "trans":
                 test_X_single.append(item[1])
 
+        train_X=train_X_single
+        test_X=test_X_single
         train_X=np.array(train_X_single)
         test_X=np.array(test_X_single)
+        
+        
 
         
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))        

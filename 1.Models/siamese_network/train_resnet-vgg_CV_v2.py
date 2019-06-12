@@ -55,8 +55,14 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
     sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
     if args.vgg:
-        print("importing VGG")
+        print("importing VGG16 without BN")
         from VGGResNetSiamese import RevisedVGG
+    elif args.vgg_bn:
+        print("importing VGG16 with BN")
+        from VGGResNetSiamese import RevisedVGG_bn
+    elif args.densenet:
+        print("Importing DenseNet")
+        from VGGResNetSiamese import RevisedDenseNet
     elif args.resnet18:
         print("importing ResNet18")
         from VGGResNetSiamese import RevisedResNet
@@ -96,6 +102,19 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     net = RevisedVGG(num_inputs=1).to(device)
                 else:
                     net = RevisedVGG(num_inputs=2).to(device)
+
+            elif args.vgg_bn:
+                if args.view != "siamese":
+                    net = RevisedVGG_bn(num_inputs=1).to(device)
+                else:
+                    net = RevisedVGG_bn(num_inputs=2).to(device)
+
+            elif args.densenet:
+                if args.view != "siamese":
+                    net = RevisedDenseNet(num_inputs=1).to(device)
+                else:
+                    net = RevisedDenseNet(num_inputs=2).to(device)
+
 
             elif args.resnet18:
                 if args.view != "siamese":
@@ -379,11 +398,23 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             else:
                 net = RevisedVGG(num_inputs=2).to(device)
 
-        elif args.resnet18:
+        elif args.vgg_bn:
             if args.view != "siamese":
-                net = RevisedResNet(num_inputs=1).to(device)
+                net = RevisedVGG_bn(num_inputs=1).to(device)
             else:
-                net = RevisedResNet(num_inputs=2).to(device)
+                net = RevisedVGG_bn(num_inputs=2).to(device)
+
+        elif args.densenet:
+            if args.view != "siamese":
+                net = RevisedDenseNet(num_inputs=1).to(device)
+            else:
+                net = RevisedDenseNet(num_inputs=2).to(device)
+
+        elif args.resnet18:
+                if args.view != "siamese":
+                    net = RevisedResNet(num_inputs=1).to(device)
+                else:
+                    net = RevisedResNet(num_inputs=2).to(device)
 
         elif args.resnet50:
             if args.view != "siamese":
@@ -594,9 +625,11 @@ def main():
     parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     # parser.add_argument('--unet', action="store_true", help="UNet architecthure")
-    parser.add_argument('--vgg', action='store_true',help="Run VGG architecture, not using this flag runs ResNet16")
+    parser.add_argument('--vgg', action='store_true',help="Run VGG16 architecture, not using this flag runs ResNet")
+    parser.add_argument('--vgg_bn', action='store_true',help="Run VGG16 batch norm architecture")
+    parser.add_argument('--densenet', action='store_true',help="Run DenseNet")
     parser.add_argument('--resnet18', action='store_true',help="Run ResNet18 architecture, not using this flag runs ResNet16")
-    parser.add_argument('--resnet50', action='store_true',help="Run ResNet50 architecture, not using this flag runs ResNet16")
+    parser.add_argument('--resnet50', action='store_true',help="Run ResNet50 architecture, not using this flag runs ResNet50")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
@@ -605,10 +638,20 @@ def main():
 
     args = parser.parse_args()
 
-    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle"
+    print("batch size: " + str(args.batch_size))
+    print("lr: " + str(args.lr))
+    print("momentum: " + str(args.momentum))
+    print("adam optimizer: " + str(args.adam))
+    print("weight decay: " + str(args.weight_decay))
+    print("view: " + str(args.view))
 
-    sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
-    import load_dataset_LE
+
+    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190611.pickle"
+
+    load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE', args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
+
+    # sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
+    # import load_dataset_LE
     # sys.path.append(args.git_dir + 'nephronetwork/2.Results')
     # import process_results
 
