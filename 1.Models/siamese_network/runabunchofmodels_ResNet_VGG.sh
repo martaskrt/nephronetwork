@@ -2,7 +2,7 @@
 
 declare -a my_lrs=("0.001"  "0.005")
 declare -a my_views=("trans" "sag" "siamese")
-declare -a my_bs=(16 64 128)
+declare -a my_bs=(16 128)
 
 ###########################################################
 ######                MODEL LOOP                    #######
