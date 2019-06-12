@@ -97,12 +97,16 @@ def get_X(data, contrast, image_dim, siamese=False):
     if siamese:
         for i in range(num_samples):
             if (data[i]['image'].shape[0] < 2):
+                print("Case 1 --> id: {}".format(i))
                 samples_to_exclude.append(i)
                 continue
+            if i == 0:
+                print(data[i]['image'].shape)
             if (data[i]['kidney_view'].iloc[0] == "Sag" and data[i]['kidney_view'].iloc[1] == "Trans") or \
                     (data[i]['kidney_view'].iloc[1] == "Sag" and data[i]['kidney_view'].iloc[0] == "Trans"):
                 pass
             else:
+                print("Case 2 --> id: {}".format(i))
                 samples_to_exclude.append(i)
                 continue
             group = np.zeros((2, image_dim, image_dim))
@@ -123,6 +127,7 @@ def get_X(data, contrast, image_dim, siamese=False):
                     group[idx, :, :] = exposure.rescale_intensity(image)
             X.append(group)
         X = np.array(X)
+        print(len(samples_to_exclude))
         return X, samples_to_exclude
     else:
         for i in range(num_samples):
@@ -146,7 +151,7 @@ def get_f(data, samples_to_exclude=None, siamese=False):
     study_id_date_map = pd.read_csv("../../0.Preprocess/samples_with_studyids_and_usdates.csv")
     # "/Volumes/terminator/nephronetwork/preprocess/"
 
-    #study_id_date_map = pd.read_csv("/Volumes/terminator/nephronetwork/preprocess/samples_with_studyids_and_usdates.csv")
+    #study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
 
     # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
@@ -253,9 +258,9 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
     if siamese:
         train_grouped = train_data.groupby(['study_id', 'sample_num', 'kidney_side'])
         train_groups = []
+        
         for name, group in train_grouped:
             train_groups.append(group)
-
         train_X, samples_to_exclude = get_X(train_groups, contrast, image_dim, siamese=True)
         train_y = get_y(train_groups, siamese=True, samples_to_exclude=samples_to_exclude)
         assert len(train_y) == len(train_X)
