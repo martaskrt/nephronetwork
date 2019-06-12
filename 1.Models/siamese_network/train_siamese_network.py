@@ -53,19 +53,30 @@ class KidneyDataset(torch.utils.data.Dataset):
         return len(self.X)
 
 
-<<<<<<< HEAD:models/siamese_network/train_siamese_network.py
-<<<<<<< Updated upstream
-def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs, num_1, num_0):
-=======
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
->>>>>>> Stashed changes
-=======
-def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
->>>>>>> cf106506860ec84de96410356b26cf98ad3df5fd:1.Models/siamese_network/train_siamese_network.py
     if args.unet:
         print("importing UNET")
-        from SiameseNetworkUNet import SiamNet
-        #from SiameseNetworkUNet_GAP import SiamNet
+        if args.sc == 5:
+            from SiameseNetworkUNet import SiamNet
+        elif args.sc == 4:
+            from SiameseNetworkUNet_sc4_nosc3 import SiamNet
+        elif args.sc == 3:
+            from SiameseNetworkUNet_sc3 import SiamNet
+        elif args.sc == 2:
+            from SiameseNetworkUNet_sc2 import SiamNet
+        elif args.sc == 1:
+            from SiameseNetworkUNet_sc1 import SiamNet
+        elif args.sc == 0:
+            if args.upconv == 5:
+                from SiameseNetworkUNet_upconv import SiamNet
+            elif args.upconv == 4:
+                from SiameseNetworkUNet_upconv_4 import SiamNet
+            elif args.upconv == 3:
+                from SiameseNetworkUNet_upconv_3 import SiamNet
+            elif args.upconv == 2:
+                from SiameseNetworkUNet_upconv_2 import SiamNet
+            elif args.upconv == 1:
+                from SiameseNetworkUNet_upconv_1c_1ch import SiamNet
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
@@ -87,21 +98,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
 
     if args.view != "siamese":
-<<<<<<< HEAD:models/siamese_network/train_siamese_network.py
-<<<<<<< Updated upstream
-        net = SiamNet(num_inputs=1).to(device)
-    else:
-        net = SiamNet().to(device)
-=======
         net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
     else:
         net = SiamNet(output_dim=args.output_dim).to(device)
->>>>>>> Stashed changes
-=======
-        net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
-    else:
-        net = SiamNet(output_dim=args.output_dim).to(device)
->>>>>>> cf106506860ec84de96410356b26cf98ad3df5fd:1.Models/siamese_network/train_siamese_network.py
     if args.checkpoint != "":
         if "jigsaw" in args.dir and "unet" in args.dir:
             print("Loading Jigsaw into UNet")
@@ -331,21 +330,13 @@ def main():
     parser.add_argument("--bottom_cut", default=0.0, type=float, help="proportion of dataset to cut from bottom")
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
+    parser.add_argument("--sc", default=5, type=int, help="number of skip connections for unet (0, 1, 2, 3, 4, or 5)")
+    parser.add_argument("--upconv", default=5, type=int, help="number of upconv layers for unet (0, 1, 2, 3, 4, or 5). --sc must be set to 0")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
-<<<<<<< HEAD:models/siamese_network/train_siamese_network.py
-<<<<<<< Updated upstream
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle",
-                        help="File containing pandas dataframe with images stored as numpy array")
-=======
-    parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190524.pickle",
-                        help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
->>>>>>> Stashed changes
-=======
-    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
-                        help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
->>>>>>> cf106506860ec84de96410356b26cf98ad3df5fd:1.Models/siamese_network/train_siamese_network.py
+    #parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
+     #                   help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190611.pickle")
+    parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
@@ -376,58 +367,17 @@ def main():
             elif args.view == "trans":
                 test_X_single.append(item[1])
 
-<<<<<<< HEAD:models/siamese_network/train_siamese_network.py
-<<<<<<< Updated upstream
         train_X = train_X_single
         test_X = test_X_single
 
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
-    train_X2 = []
-    train_y2 = []
-    train_cov2 = []
-    test_X2 = []
-    test_y2 = []
-    test_cov2 = []
-    for i in range(len(train_y)):
-        p_id = train_cov[i].split("_")[0]
-        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-            train_y2.append(0)
-        else:
-            train_y2.append(train_y[i])
-        train_X2.append(train_X[i])
-        train_cov2.append(train_cov[i])
-    for i in range(len(test_y)):
-        p_id = test_cov[i].split("_")[0]
-        if int(p_id) in [21, 138, 253, 255, 357, 436, 472, 825, 834, 873]:
-            test_y2.append(0)
-        else:
-            test_y2.append(test_y[i])
-        test_X2.append(test_X[i])
-        test_cov2.append(test_cov[i])
 
-    num_1 = train_y2.count(1)
-    num_0 = train_y2.count(0)
-
-    train_X2 = np.array(train_X2)
-    train_y2 = np.array(train_y2)
-    # train_cov2=np.array(train_cov2)
-    test_X2 = np.array(test_X2)
-    test_y2 = np.array(test_y2)
-    # test_cov2=np.array(test_cov2)
-    print(len(train_X2), len(train_y2), len(train_cov2), len(test_X2), len(test_y2), len(test_cov2))
-    train(args, train_X2, train_y2, train_cov2, test_X2, test_y2, test_cov2, max_epochs, num_1, num_0)
-=======
-        train_X = np.array(train_X_single)
-        test_X = np.array(test_X_single)
+    train_X = np.array(train_X)
+    train_y = np.array(train_y)
+    test_X = np.array(test_X)
+    test_y = np.array(test_y)
 
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
->>>>>>> Stashed changes
-=======
-        train_X = np.array(train_X_single)
-        test_X = np.array(test_X_single)
-    print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
-    train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
->>>>>>> cf106506860ec84de96410356b26cf98ad3df5fd:1.Models/siamese_network/train_siamese_network.py
 
 if __name__ == '__main__':
     main()
