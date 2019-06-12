@@ -10,9 +10,11 @@ import argparse
 import extract_labels
 import pandas as pd
 import numpy as np
-
+import scipy
 IMAGE_PARAMS = {0: [2.1, 4, 4],
-                1: [2.5, 3.2, 3.2]}  # factor to crop images by: crop ratio, translate_x, translate_y
+                1: [2.5, 3.2, 3.2],
+                2: [1.7, 4.5, 4.5] # [2.5, 3.2, 3.2] # [1.7, 4.5, 4.5]
+               }  # factor to crop images by: crop ratio, translate_x, translate_y
 
 #rootdir = os.path.join(os.path.abspath(os.path.join('./', os.pardir)), 'all-images')
 #print(rootdir)
@@ -55,20 +57,21 @@ def crop_image(image, param_num):
     return cropped_image
 
 
-def view_sample_images(img):
-    plt.figure()
-    plt.subplot(2, 2, 1)
-    plt.imshow(img, cmap='gray')
+def view_sample_images(img, counter, target_dir):
+    #plt.figure()
+    #plt.subplot(2, 2, 1)
+    #plt.imshow(img, cmap='gray')
     rescaled_cropped_image = exposure.equalize_hist(img)
-    plt.subplot(2, 2, 2)
-    plt.imshow(rescaled_cropped_image, cmap='gray')
-    rescaled_cropped_image = exposure.equalize_adapthist(img)
-    plt.subplot(2, 2, 3)
-    plt.imshow(rescaled_cropped_image, cmap='gray')
-    rescaled_cropped_image = exposure.rescale_intensity(img)
-    plt.subplot(2, 2, 4)
-    plt.imshow(rescaled_cropped_image, cmap='gray')
-    plt.show()
+    #plt.subplot(2, 2, 2)
+    #plt.imshow(rescaled_cropped_image, cmap='gray')
+    #rescaled_cropped_image = exposure.equalize_adapthist(img)
+    #plt.subplot(2, 2, 3)
+    #plt.imshow(rescaled_cropped_image, cmap='gray')
+    #rescaled_cropped_image = exposure.rescale_intensity(img)
+    #plt.subplot(2, 2, 4)
+    #plt.imshow(rescaled_cropped_image, cmap='gray')
+    #plt.show()
+    scipy.misc.imsave("./{}/{}.jpg".format(target_dir, counter), rescaled_cropped_image)
 
 def get_kidney_view(file_name):
     view = ""
@@ -93,7 +96,8 @@ def load_images(label_data, dcm_files, opt):
 
     data = pd.DataFrame(columns=columns)
     print(data.columns)
-
+    counter_1 = 0
+    counter_2 = 0
     for image_path in dcm_files:
         if "rt-sag" not in image_path and "lt-sag" not in image_path and "lt-trans" not in image_path \
                 and "rt-trans" not in image_path:
@@ -119,16 +123,29 @@ def load_images(label_data, dcm_files, opt):
 
         new_row = label_data.loc[label_data['MRN'] == float(mrn)]
 
+        if new_row.empty:
+            continue
+        elif float(mrn) == float(2786688) and int(sample_num) == 1 and kidney_side == "Right":
+            print("skipping patient_810 sample_1 side_right")
+            continue
+        elif float(mrn) == float(2707080) and int(sample_num) == 4:
+            print("skipping patient_78 sample_4")
+            continue
+
+        if new_row.shape[0] == 2:
+            new_row = new_row.iloc[0]
+        
         try:
             ds = pydicom.dcmread(image_path)
         except:
             print("IMAGE PATH ERROR")
             print(image_path)
+            continue
         img = ds.pixel_array
         img = img_as_float(rgb2gray(img))
         manufacturer = ds.Manufacturer
         
-        print("Manufacturer: " + manufacturer)
+        #print("Manufacturer: " + manufacturer)
         #img_acq_date = ds.AcquisitionDate
 
         # number of cropped params to save
@@ -144,26 +161,32 @@ def load_images(label_data, dcm_files, opt):
             data.iloc[data.shape[0] - 1, data.columns.get_loc('crop_style')] = i
             cropped_image = crop_image(img, i)  # crop image with i-th params
             resized_image = transform.resize(cropped_image, output_shape=(opt.output_dim, opt.output_dim))  # reduce
+ 
             # image resolution
             data.iloc[data.shape[0] - 1, data.columns.get_loc('image')] = [resized_image.reshape((1,-1))]  # reshape
             # matrix to row_length=1
-
-
+          
             # display images
-            if opt.view > 0 :
-                view_sample_images(resized_image)
-        if opt.view > 0:
-            opt.view -= 1
+            #if opt.view > 0 and i == 2:
+             #   temp_dir = "view_images"
+              #  if not os.path.isdir(temp_dir):
+               #     os.makedirs(temp_dir)
+               # view_sample_images(resized_image, opt.view, temp_dir)
+        #if opt.view > 0:
+        #    opt.view -= 1
 
-
+        #if opt.view == 0:
+         #   import sys
+          #  sys.exit(0)
     data = data.drop(["MRN"], axis=1)
 
     if 'Date of Ultrasound 1' in data.columns:
         data = data.sort_values(by=['Date of Ultrasound 1', 'study_id', 'sample_num'])
     data.columns = data.columns.str.strip().str.lower().str.replace(" ","_")
-    print(data.columns)
-    data.to_csv("preprocessed_images_20190601.csv", sep=',')
-    data.to_pickle("preprocessed_images_20190601.pickle")
+    #print(data.columns)
+    #print("CROP_1: {} | CROP_2: {}".format(counter_1, counter_2))
+    data.to_csv("preprocessed_images_20190611.csv", sep=',')
+    data.to_pickle("preprocessed_images_20190611.pickle")
 
     print('\U0001F4A5')
 
