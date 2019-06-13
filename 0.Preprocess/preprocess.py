@@ -185,8 +185,8 @@ def load_images(label_data, dcm_files, opt):
     data.columns = data.columns.str.strip().str.lower().str.replace(" ","_")
     #print(data.columns)
     #print("CROP_1: {} | CROP_2: {}".format(counter_1, counter_2))
-    data.to_csv("preprocessed_images_20190611.csv", sep=',')
-    data.to_pickle("preprocessed_images_20190611.pickle")
+    data.to_csv("preprocessed_images_20190612.csv", sep=',')
+    data.to_pickle("preprocessed_images_20190612.pickle")
 
     print('\U0001F4A5')
 

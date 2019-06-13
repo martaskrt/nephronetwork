@@ -13,12 +13,11 @@ var3="mountpoint/20190611_fullModels/"
 #mkdir $var3
 
 
+dir_name="unet_20190612_vanilla_siamese_upconv_1c_1ch_noinit_bs256"
+python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 2 --batch_size 256 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-dir_name="unet_20190611_vanilla_siamese_upconv_1c_1ch_contrast2_1dropout0.2"
-python3 train_siamese_network_CV_v2.py --unet --sc 0 --upconv 1 --contrast 2 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
-
-dir_name="unet_20190611_vanilla_siamese_upconv_1c_1ch_contrast2_1dropout0.2_full"
-python3 train_siamese_network.py --unet --sc 0 --upconv 1 --contrast 2 --output_dim 256 --batch_size 128  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+dir_name="unet_20190612_vanilla_siamese_upconv_1c_1ch_noinit_bs256_full"
+python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 2 --output_dim 256 --batch_size 256  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
 
 #dir_name="unet_20190606_vanilla_siamese_sc2"
