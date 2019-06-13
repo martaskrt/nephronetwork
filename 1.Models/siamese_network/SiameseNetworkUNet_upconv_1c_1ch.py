@@ -9,7 +9,7 @@ class SiamNet(nn.Module):
         super(SiamNet, self).__init__()
         self.num_inputs = num_inputs
         self.output_dim=output_dim
-        print("HELLO! this is the unet with upconv_1c (one upconv layer with final max pool and without upsampling) and one input channel with no lrn and uniform weight init")
+        print("HELLO! this is the unet with upconv_1c (one upconv layer with final max pool and without upsampling) and one input channel without lrn")
         #print("dropout: {}".format(dropout_rate))
         print("LL DIM: " + str(self.output_dim))
         self.conv1 = nn.Sequential()
