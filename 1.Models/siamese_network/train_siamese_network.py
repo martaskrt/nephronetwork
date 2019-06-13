@@ -67,16 +67,12 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         elif args.sc == 1:
             from SiameseNetworkUNet_sc1 import SiamNet
         elif args.sc == 0:
-            if args.upconv == 5:
-                from SiameseNetworkUNet_upconv import SiamNet
-            elif args.upconv == 4:
-                from SiameseNetworkUNet_upconv_4 import SiamNet
-            elif args.upconv == 3:
-                from SiameseNetworkUNet_upconv_3 import SiamNet
-            elif args.upconv == 2:
-                from SiameseNetworkUNet_upconv_2 import SiamNet
-            elif args.upconv == 1:
+            if args.init == "none":
                 from SiameseNetworkUNet_upconv_1c_1ch import SiamNet
+            elif args.init == "fanin":
+                from SiameseNetworkUNet_upconv_1c_1ch_fanin import SiamNet
+            elif args.init == "fanout":
+                from SiameseNetworkUNet_upconv_1c_1ch_fanout import SiamNet
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
@@ -331,11 +327,11 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--sc", default=5, type=int, help="number of skip connections for unet (0, 1, 2, 3, 4, or 5)")
-    parser.add_argument("--upconv", default=5, type=int, help="number of upconv layers for unet (0, 1, 2, 3, 4, or 5). --sc must be set to 0")
+    parser.add_argument("--init", default="none")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     #parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
      #                   help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190611.pickle")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190612.pickle")
     parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
     args = parser.parse_args()
 
