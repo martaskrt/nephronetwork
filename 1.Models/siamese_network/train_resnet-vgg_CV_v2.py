@@ -646,7 +646,7 @@ def main():
     print("view: " + str(args.view))
 
 
-    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190611.pickle"
+    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190612.pickle"
 
     load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE', args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
 
