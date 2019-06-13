@@ -635,7 +635,7 @@ def main():
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
     parser.add_argument('--cv', action='store_true',help="Flag to run cross validation")
     parser.add_argument("--stop_epoch", default=18, type=int, help="If not running cross validation, which epoch to finish with")
-i
+
     args = parser.parse_args()
 
     print("batch size: " + str(args.batch_size))

@@ -5,12 +5,12 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.8,output_dim=128):
+    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5,output_dim=128):
         super(SiamNet, self).__init__()
         self.num_inputs = num_inputs
         self.output_dim=output_dim
-        print("HELLO! this is the unet with upconv_1c (one upconv layer with final max pool and without upsampling) and one input channel with dropout in first layer")
-        print("dropout: {}".format(dropout_rate))
+        print("HELLO! this is the unet with upconv_1c (one upconv layer with final max pool and without upsampling) and one input channel with no lrn and uniform weight init")
+        #print("dropout: {}".format(dropout_rate))
         print("LL DIM: " + str(self.output_dim))
         self.conv1 = nn.Sequential()
         self.conv1.add_module('conv1_s1',nn.Conv2d(1, 96, kernel_size=11, stride=2, padding=0))
@@ -18,19 +18,16 @@ class SiamNet(nn.Module):
         self.conv1.add_module('relu1_s1',nn.ReLU(inplace=True))
         #self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
         self.conv1.add_module('pool1_s1', nn.MaxPool2d(kernel_size=3, stride=2))
-        self.conv1.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
-        
+        #self.conv1.add_module('lrn1_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
         #**************** ADDED *******************#
         self.conv1.add_module('pool1_s2', nn.MaxPool2d(kernel_size=2, stride=1))
-
         self.conv2 = nn.Sequential()
         self.conv2.add_module('conv2_s1',nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2))
         self.conv2.add_module('batch2_s1', nn.BatchNorm2d(256))
         self.conv2.add_module('relu2_s1',nn.ReLU(inplace=True))
         #self.conv2.add_module('batch2_s1', nn.BatchNorm2d(256))
         self.conv2.add_module('pool2_s1',nn.MaxPool2d(kernel_size=3, stride=2))
-        self.conv2.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
-
+        #self.conv2.add_module('lrn2_s1',LRN(local_size=5, alpha=0.0001, beta=0.75))
         # ********** added*********** #
         # self.conv2.add_module('pool', nn.MaxPool2d(kernel_size=2, padding=2, stride=1))
         self.conv2.add_module('conv2b', nn.Conv2d(256, 256, kernel_size=2, padding=1, stride=1))
@@ -56,7 +53,6 @@ class SiamNet(nn.Module):
         #self.conv5.add_module('batch5_s1', nn.BatchNorm2d(256))
         # self.conv5.add_module('pool5_s1',nn.MaxPool2d(kernel_size=3, stride=2))
         self.conv5.add_module('pool5_s1', nn.MaxPool2d(kernel_size=2, stride=2))
-
         # *************************** changed layers *********************** #
 
         self.fc6 = nn.Sequential()
@@ -66,7 +62,6 @@ class SiamNet(nn.Module):
         self.fc6.add_module('relu6_s1', nn.ReLU(inplace=True))
         #self.fc6.add_module('batch6_s1', nn.BatchNorm2d(1024))
         self.fc6.add_module('pool5_s1', nn.MaxPool2d(kernel_size=2, stride=1))
-        #
         # self.fc6b = nn.Sequential()
         # # self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 256, kernel_size=3, stride=2))
         # self.fc6b.add_module('conv6b_s1', nn.Conv2d(1024, 96, kernel_size=1, stride=1))
@@ -95,14 +90,13 @@ class SiamNet(nn.Module):
         #self.uconnect1.add_module('batch', nn.BatchNorm2d(256))
         #self.uconnect1.add_module('upsample', nn.Upsample(scale_factor=2))  # 256 * 30 * 30
 
-
         self.fc6c = nn.Sequential()
         # self.fc6c.add_module('fc7', nn.Linear(256*2*2, 512))
         self.fc6c.add_module('fc7', nn.Linear(256*7*7, 512))
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
         #self.fc6c.add_module('relu7', nn.Sigmoid())
         #self.fc6c.add_module('batch', nn.BatchNorm1d(1))
-        self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
+        #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
         self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, self.output_dim))
