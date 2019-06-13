@@ -635,7 +635,7 @@ def main():
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
     parser.add_argument('--cv', action='store_true',help="Flag to run cross validation")
     parser.add_argument("--stop_epoch", default=18, type=int, help="If not running cross validation, which epoch to finish with")
-
+i
     args = parser.parse_args()
 
     print("batch size: " + str(args.batch_size))
@@ -646,7 +646,7 @@ def main():
     print("view: " + str(args.view))
 
 
-    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190611.pickle"
+    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190612.pickle"
 
     load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE', args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
 
