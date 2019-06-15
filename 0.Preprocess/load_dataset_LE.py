@@ -97,16 +97,12 @@ def get_X(data, contrast, image_dim, siamese=False):
     if siamese:
         for i in range(num_samples):
             if (data[i]['image'].shape[0] < 2):
-                print("Case 1 --> id: {}".format(i))
                 samples_to_exclude.append(i)
                 continue
-            if i == 0:
-                print(data[i]['image'].shape)
             if (data[i]['kidney_view'].iloc[0] == "Sag" and data[i]['kidney_view'].iloc[1] == "Trans") or \
                     (data[i]['kidney_view'].iloc[1] == "Sag" and data[i]['kidney_view'].iloc[0] == "Trans"):
                 pass
             else:
-                print("Case 2 --> id: {}".format(i))
                 samples_to_exclude.append(i)
                 continue
             group = np.zeros((2, image_dim, image_dim))
@@ -127,7 +123,6 @@ def get_X(data, contrast, image_dim, siamese=False):
                     group[idx, :, :] = exposure.rescale_intensity(image)
             X.append(group)
         X = np.array(X)
-        print(len(samples_to_exclude))
         return X, samples_to_exclude
     else:
         for i in range(num_samples):
@@ -146,14 +141,12 @@ def get_X(data, contrast, image_dim, siamese=False):
 '''
 
 '''
-def get_f(data, samples_to_exclude=None, siamese=False):
+def get_f(data, samples_to_exclude=None, siamese=False,git_dir="/home/lauren"):
 
-    study_id_date_map = pd.read_csv("../../0.Preprocess/samples_with_studyids_and_usdates.csv")
+    study_id_date_map = pd.read_csv(git_dir + "/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
     # "/Volumes/terminator/nephronetwork/preprocess/"
 
-    #study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
-
-    # study_id_date_map = pd.read_csv("/Users/Marta/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
+    #study_id_date_map = pd.read_csv("/Volumes/terminator/nephronetwork/preprocess/samples_with_studyids_and_usdates.csv")
 
     # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
@@ -248,7 +241,8 @@ def get_f(data, samples_to_exclude=None, siamese=False):
     return features
 
 
-def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_dim, get_features, get_cov=False, siamese=False):
+def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_dim, get_features, get_cov=False,
+                         siamese=False, git_dir="/home/lauren"):
     patient_ids_and_ultrasound_dates = list(set(zip(data.study_id, data.date_of_ultrasound_1)))
     if sort_by_date:
         patient_ids_sorted = sorted(patient_ids_and_ultrasound_dates, key=lambda x: x[1])
@@ -260,14 +254,14 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
     if siamese:
         train_grouped = train_data.groupby(['study_id', 'sample_num', 'kidney_side'])
         train_groups = []
-        
         for name, group in train_grouped:
             train_groups.append(group)
+
         train_X, samples_to_exclude = get_X(train_groups, contrast, image_dim, siamese=True)
         train_y = get_y(train_groups, siamese=True, samples_to_exclude=samples_to_exclude)
         assert len(train_y) == len(train_X)
         if get_features or get_cov:
-            train_features = get_f(train_groups, samples_to_exclude=samples_to_exclude, siamese=True)
+            train_features = get_f(train_groups, samples_to_exclude=samples_to_exclude, siamese=True,git_dir = git_dir)
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
@@ -285,7 +279,7 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
         assert len(test_y) == len(test_X)
 
         if get_features or get_cov:
-            test_features = get_f(test_groups, samples_to_exclude=samples_to_exclude, siamese=True)
+            test_features = get_f(test_groups, samples_to_exclude=samples_to_exclude, siamese=True, git_dir = git_dir)
             if get_cov:
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
@@ -312,8 +306,8 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
         assert len(test_y) == len(test_X)
 
         if get_features or get_cov:
-            train_features = get_f(train_data)
-            test_features = get_f(test_data)
+            train_features = get_f(train_data,git_dir=git_dir)
+            test_features = get_f(test_data,git_dir=git_dir)
             if get_cov:
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
@@ -335,23 +329,24 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
             return train_X, train_y, test_X, test_y
 
 
-def get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
+def get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False,git_dir="/home/lauren"):
     data = data[data.kidney_view == "Sag"]
-    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,)
+    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,git_dir=git_dir)
 
 
-def get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
+def get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False,git_dir="/home/lauren"):
     data = data[data.kidney_view == "Trans"]
-    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,)
+    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov,git_dir=git_dir)
 
 
-def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False):
-    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=get_cov, siamese=True)
+def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov=False, git_dir="/home/lauren"):
+    return load_train_test_sets(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features,
+                                get_cov=get_cov, siamese=True,git_dir=git_dir)
 
 
 def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, crop=0, get_features=False,
-                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B"):
-
+                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B",
+                 git_dir="/home/lauren/"):
     data = open_file(pickle_file)
 
     if drop_bilateral:
@@ -365,11 +360,11 @@ def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, 
         data = data[data.etiology == int(0)]
 
     if views_to_get == "sag":
-        return get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
+        return get_sag(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov, git_dir=git_dir)
     elif views_to_get == "trans":
-        return get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
+        return get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov, git_dir=git_dir)
     elif views_to_get == "siamese":
-        return get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
+        return get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov, git_dir=git_dir)
 
 
 

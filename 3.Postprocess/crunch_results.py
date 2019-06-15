@@ -15,7 +15,7 @@ def get_fold_avg(data_dict):
         epoch_avg_per_fold[key] /= 5
     return epoch_avg_per_fold
 
-def get_best_epoch(valloss, run=5):
+def get_best_epoch(valloss, run=10):
     min_loss = 0
     min_loss_epoch = 0
     found_it = True
@@ -77,6 +77,7 @@ def main():
         for fold in range(2, 6):
             valloss = np.sum((valloss, np.array(data[fold]['val'][metric])), axis=0)
         #print(valloss)
+        print(np.argmin(valloss))
         early_stop_epoch = get_best_epoch(valloss, run=10)
         # early_stop_epoch = 17
         process_model_output_file.compute_results(file, data, early_stop_epoch)

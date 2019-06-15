@@ -23,7 +23,6 @@ from torch.autograd import Variable
 from sklearn.utils import class_weight
 
 # from FraternalSiameseNetwork import SiamNet
-<<<<<<< HEAD
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
 process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
 
@@ -81,12 +80,36 @@ class KidneyDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.X)
 
+def init_weights(m):
+    #if type(m) == nn.Linear:
+    print(m.weight)
+    torch.nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+    #torch.nn.init.xavier_uniform(m.weight)
+    m.bias.data.fill_(0.01)
+    print(m.weight)
 
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs):
     if args.unet:
         print("importing UNET")
-        #from SiameseNetworkUNet import SiamNet
-        from SiameseNetworkUNet import SiamNet
+        
+        if args.sc == 5:
+            from SiameseNetworkUNet import SiamNet
+        elif args.sc == 4:
+            from SiameseNetworkUNet_sc4_nosc3 import SiamNet
+        elif args.sc == 3:
+            from SiameseNetworkUNet_sc3 import SiamNet
+        elif args.sc == 2:
+            from SiameseNetworkUNet_sc2 import SiamNet
+        elif args.sc == 1:
+            from SiameseNetworkUNet_sc1 import SiamNet
+        elif args.sc == 0:
+            if args.init == "none":
+                from SiameseNetworkUNet_upconv_1c_1ch import SiamNet
+            elif args.init == "fanin":
+                from SiameseNetworkUNet_upconv_1c_1ch_fanin import SiamNet
+            elif args.init == "fanout":
+                from SiameseNetworkUNet_upconv_1c_1ch_fanout import SiamNet
+      
     else:
         print("importing SIAMNET")
         from SiameseNetwork import SiamNet
@@ -125,10 +148,18 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         #print("CLASS WEIGHTS: " + str(cw))
         #cross_entropy = nn.CrossEntropyLoss(weight=cw)
         #cross_entropy = nn.CrossEntropyLoss()
+        #if fold == 1 or fold == 2:
+         #   fold += 1
+          #  continue
+        #if fold != 5:
+         #   fold += 1
+          #  continue
         if args.view != "siamese":
             net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
         else:
             net = SiamNet(output_dim=args.output_dim).to(device)
+        net.zero_grad()
+        #net.apply(init_weights)
         if args.checkpoint != "":
             if "jigsaw" in args.dir and "unet" in args.dir:
                 print("Loading Jigsaw into UNet")
@@ -235,11 +266,14 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             
             for batch_idx, (data, target, cov) in enumerate(training_generator):
                 optimizer.zero_grad()
-
+            
                 output = net(data.to(device))
                 target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
                 #print(output)
                 #print(target)
+                #print(output.shape, target.shape)
+                if len(output.shape) == 1:
+                    output = output.unsqueeze(0)
                 loss = F.cross_entropy(output, target)
                 #loss = cross_entropy(output, target)
                 #print(loss)
@@ -388,7 +422,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                                                                          results_test['fp'], results_test['fn'],
                                                                          results_test['tp']))
 
-
+           
             # if ((epoch+1) % 5) == 0 and epoch > 0:
             checkpoint = {'epoch': epoch,
                           'loss': loss,
@@ -421,8 +455,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 #os.makedirs(args.dir + "/" + str(fold))
             path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
             torch.save(checkpoint, path_to_checkpoint)
-
+            
         fold += 1
+        
 
 
 
@@ -444,9 +479,10 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
-    parser.add_argument("--output_dim", default=128, type=int, help="output dim for last linear layer")
-    # parser.add_argument("--datafile", default="../../preprocess/preprocessed_images_20190517.pickle", help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle", help="File containing pandas dataframe with images stored as numpy array")
+    parser.add_argument("--sc", default=5, type=int, help="number of skip connections for unet (0, 1, 2, 3, 4, or 5)")
+    parser.add_argument("--init", default="none")
+    parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190612.pickle", help="File containing pandas dataframe with images stored as numpy array")
 
     args = parser.parse_args()
 
@@ -478,8 +514,12 @@ def main():
             elif args.view == "trans":
                 test_X_single.append(item[1])
 
+        train_X=train_X_single
+        test_X=test_X_single
         train_X=np.array(train_X_single)
         test_X=np.array(test_X_single)
+        
+        
 
         
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))        
