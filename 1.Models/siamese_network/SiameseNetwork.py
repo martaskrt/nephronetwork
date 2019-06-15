@@ -4,11 +4,11 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, classes=2,num_inputs=2,dropout_rate=0.5):
+    def __init__(self, classes=2,num_inputs=2,dropout_rate=0.5, output_dim=128):
         super(SiamNet, self).__init__()
         
-
-	
+        self.output_dim = output_dim
+        print("LL DIM: " + str(self.output_dim))
         self.num_inputs = num_inputs
         
         self.conv = nn.Sequential()
@@ -57,12 +57,21 @@ class SiamNet(nn.Module):
         #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
-        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 4096))
+        self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, self.output_dim))
         self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
         #self.fc7_new.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.classifier_new = nn.Sequential()
-        self.classifier_new.add_module('fc8', nn.Linear(4096, classes))
+        self.classifier_new.add_module('fc8', nn.Linear(self.output_dim, classes))
+        
+        #self.fc7_new = nn.Sequential()
+        #self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, 512))
+        #self.fc7_new.add_module('relu7', nn.ReLU(inplace=True))
+        #self.fc7_new.add_module('fc7_2', nn.Linear(512, 128))
+        #self.fc7_new.add_module('relu7_2', nn.ReLU(inplace=True))
+
+        #self.classifier_new = nn.Sequential()
+        #self.classifier_new.add_module('fc8', nn.Linear(128, classes))
 
     def load(self, checkpoint):
         model_dict = self.state_dict()
