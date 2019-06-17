@@ -153,6 +153,8 @@ def get_f(data, samples_to_exclude=None, siamese=False):
 
     #study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
 
+    # study_id_date_map = pd.read_csv("/Users/Marta/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
+
     # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
     if siamese:
@@ -348,13 +350,15 @@ def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_
 
 
 def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, crop=0, get_features=False,
-                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B"):
+                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B", hydro_only=False):
 
     data = open_file(pickle_file)
 
     if drop_bilateral:
         data = data[((data['hydro_kidney'] == data['kidney_side']) & (data['laterality'] == "Bilateral"))
                     | (data['laterality'] != "Bilateral")]
+    if hydro_only:
+        data = data[(data['hydro_kidney'] == data['kidney_side'])]
     data = data[data.crop_style == float(crop)]
 
     if etiology == 'O':
