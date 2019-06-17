@@ -328,10 +328,11 @@ def main():
     parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--sc", default=5, type=int, help="number of skip connections for unet (0, 1, 2, 3, 4, or 5)")
     parser.add_argument("--init", default="none")
+    parser.add_argument("--hydro_only", action="store_true")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     #parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
      #                   help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190612.pickle")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190613.pickle")
     parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
     args = parser.parse_args()
 
@@ -346,7 +347,7 @@ def main():
                                                                                       get_cov=True,
                                                                                       bottom_cut=args.bottom_cut,
                                                                                       etiology=args.etiology,
-                                                                                      crop=args.crop)
+                                                                                      crop=args.crop, hydro_only=args.hydro_only)
 
     if args.view == "sag" or args.view == "trans":
         train_X_single = []
