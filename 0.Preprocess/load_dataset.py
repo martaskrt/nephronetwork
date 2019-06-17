@@ -153,6 +153,8 @@ def get_f(data, samples_to_exclude=None, siamese=False):
 
     #study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
 
+    # study_id_date_map = pd.read_csv("/Users/Marta/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
+
     # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
     if siamese:
