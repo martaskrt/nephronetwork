@@ -72,7 +72,8 @@ def select_columns(data, list_of_columns, etiology):
 
 
 def load_data(file_with_labels, file_with_mrns, columns_to_extract, etiology=True):
-    data = pd.read_csv(file_with_labels, sep='\t')
+    #data = pd.read_csv(file_with_labels, sep='\t')
+    data = pd.read_csv(file_with_labels)
     data.rename(columns={'Study ID': 'study_id'}, inplace=True)
     data = add_mrns(data, file_with_mrns)
     data = select_columns(data, columns_to_extract, etiology)
