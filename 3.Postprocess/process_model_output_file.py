@@ -49,7 +49,7 @@ def get_metric_results(data, early_stop_epoch):
 
     # max_of_avg_epochs = int(np.argmax(avg_of_val_epochs))
     max_of_avg_epochs = early_stop_epoch
-
+    #
     # print("best_val_epoch\t{}".format(max_of_avg_epochs))
     max_avg_epochs_results = {}
     max_avg_epochs_results['train'] = {}
