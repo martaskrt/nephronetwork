@@ -68,6 +68,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             from SiameseNetworkUNet_sc1 import SiamNet
         elif args.sc == 0:
             if args.init == "none":
+                #from FraternalSiameseNetwork_20190619 import SiamNet
                 from SiameseNetworkUNet_upconv_1c_1ch import SiamNet
             elif args.init == "fanin":
                 from SiameseNetworkUNet_upconv_1c_1ch_fanin import SiamNet
@@ -173,10 +174,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
         counter_train = 0
         counter_test = 0
-
+        net.train()  
         for batch_idx, (data, target, cov) in enumerate(training_generator):
             optimizer.zero_grad()
-
+            #net.train() # 20190619 
             output = net(data.to(device))
             target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
             # print(output)
@@ -207,11 +208,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             patient_ID_train.extend(cov)
 
-
-        with torch.set_grad_enabled(False):
+        net.eval()
+        with torch.no_grad():
+        #with torch.set_grad_enabled(False):
 
             for batch_idx, (data, target, cov) in enumerate(test_generator):
                 net.zero_grad()
+                #net.eval() # 20190619
                 optimizer.zero_grad()
                 output = net(data)
                 target = target.type(torch.LongTensor).to(device)
@@ -332,7 +335,7 @@ def main():
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     #parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
      #                   help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190613.pickle")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190617.pickle")
     parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
     args = parser.parse_args()
 
