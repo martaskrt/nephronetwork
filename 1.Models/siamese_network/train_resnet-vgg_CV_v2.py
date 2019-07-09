@@ -184,7 +184,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 counter_train = 0
                 counter_val = 0
                 counter_test = 0
-
+                net.train()
                 for batch_idx, (data, target, cov) in enumerate(training_generator):
                     # print("batch " + str(batch_idx) + " started")
 
@@ -227,8 +227,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     all_pred_label_train.append(pred_label)
 
                     patient_ID_train.extend(cov)
-
-                with torch.set_grad_enabled(False):
+                net.eval()
+                with torch.no_grad():
+                #with torch.set_grad_enabled(False):
                     for batch_idx, (data, target, cov) in enumerate(validation_generator):
                         net.zero_grad()
                         optimizer.zero_grad()
@@ -259,8 +260,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                         all_pred_label_val.append(pred_label)
 
                         patient_ID_val.extend(cov)
-
-                with torch.set_grad_enabled(False):
+                net.eval()
+                with torch.no_grad():
+                #with torch.set_grad_enabled(False):
 
                     for batch_idx, (data, target, cov) in enumerate(test_generator):
                         net.zero_grad()
@@ -459,7 +461,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             counter_train = 0
             counter_test = 0
-
+            net.train()
             for batch_idx, (data, target, cov) in enumerate(training_generator):
                 # print("batch " + str(batch_idx) + " started")
 
@@ -501,8 +503,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 all_pred_label_train.append(pred_label)
 
                 patient_ID_train.extend(cov)
-
-            with torch.set_grad_enabled(False):
+            net.eval()
+            with torch.no_grad():
+            #with torch.set_grad_enabled(False):
                 for batch_idx, (data, target, cov) in enumerate(test_generator):
                     net.zero_grad()
                     optimizer.zero_grad()
@@ -646,7 +649,7 @@ def main():
     print("view: " + str(args.view))
 
 
-    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190612.pickle"
+    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
 
     load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE', args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
 
