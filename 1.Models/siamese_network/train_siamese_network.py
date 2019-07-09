@@ -126,21 +126,21 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             # 3. load the new state dict
             net.load_state_dict(unet_dict)
         else:
-            pretrained_dict = torch.load(args.checkpoint)
-            # pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+            #pretrained_dict = torch.load(args.checkpoint)
+            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
             model_dict = net.state_dict()
 
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-
-            pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            for k, v in model_dict.items():
-                if k not in pretrained_dict:
-                    pretrained_dict[k] = model_dict[k]
+            print("loading checkpoint........")
+            #pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            #for k, v in model_dict.items():
+             #   if k not in pretrained_dict:
+              #      pretrained_dict[k] = model_dict[k]
             # 2. overwrite entries in the existing state dict
             model_dict.update(pretrained_dict)
             # 3. load the new state dict
             net.load_state_dict(pretrained_dict)
-
+            print("checkpoint loaded..........")
     if args.adam:
         optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
                                      weight_decay=hyperparams['weight_decay'])
