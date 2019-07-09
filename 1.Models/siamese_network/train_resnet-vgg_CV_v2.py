@@ -610,7 +610,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
             # torch.save(checkpoint, path_to_checkpoint)
 
-            if epoch == args.stop_epoch:
+            if epoch == (args.stop_epoch - 1):
                 path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
                 torch.save(checkpoint, path_to_checkpoint)
 
