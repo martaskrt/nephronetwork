@@ -389,6 +389,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 ## UNCOMMENT THIS WHEN YOU WANT TO START SAVING YOUR MODELS!
                 # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
                 # torch.save(checkpoint, path_to_checkpoint)
+                if epoch == (args.stop_epoch - 1):
+                    path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
+                    torch.save(checkpoint, path_to_checkpoint)
 
             fold += 1
 
@@ -644,6 +647,7 @@ def main():
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
     parser.add_argument('--cv', action='store_true',help="Flag to run cross validation")
     parser.add_argument("--stop_epoch", default=18, type=int, help="If not running cross validation, which epoch to finish with")
+    parser.add_argument("--cv_stop_epoch", default=18, type=int, help="get a pth file from a specific epoch")
 
     args = parser.parse_args()
 
