@@ -350,7 +350,7 @@ def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_
 
 
 def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, crop=0, get_features=False,
-                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B", hydro_only=False):
+                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B", hydro_only=False, gender=None):
 
     data = open_file(pickle_file)
 
@@ -360,6 +360,11 @@ def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, 
     if hydro_only:
         data = data[(data['hydro_kidney'] == data['kidney_side'])]
     data = data[data.crop_style == float(crop)]
+    if gender == 'male':
+        data = data[data.gender == "Male"]
+    elif gender == 'female':
+        data = data[data.gender == "Female"]
+        
 
     if etiology == 'O':
         data = data[data.etiology == int(1)]

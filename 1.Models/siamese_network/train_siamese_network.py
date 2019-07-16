@@ -337,6 +337,7 @@ def main():
      #                   help="File containing pandas dataframe with images stored as numpy array")
     parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190617.pickle")
     parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
+    parser.add_argument("--gender", default=None, type=str, help="choose from 'male' and 'female'")
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
@@ -350,7 +351,7 @@ def main():
                                                                                       get_cov=True,
                                                                                       bottom_cut=args.bottom_cut,
                                                                                       etiology=args.etiology,
-                                                                                      crop=args.crop, hydro_only=args.hydro_only)
+                                                                                      crop=args.crop, hydro_only=args.hydro_only, gender=args.gender)
 
     if args.view == "sag" or args.view == "trans":
         train_X_single = []
