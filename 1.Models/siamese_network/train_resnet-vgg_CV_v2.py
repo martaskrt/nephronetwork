@@ -389,7 +389,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 ## UNCOMMENT THIS WHEN YOU WANT TO START SAVING YOUR MODELS!
                 # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
                 # torch.save(checkpoint, path_to_checkpoint)
-                if epoch == (args.stop_epoch - 1):
+                if epoch == args.cv_stop_epoch:
                     path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
                     torch.save(checkpoint, path_to_checkpoint)
 
@@ -443,7 +443,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         training_set = KidneyDataset(train_X_CV, train_y_CV, train_cov_CV)
         training_generator = DataLoader(training_set, **params)
 
-        for epoch in range(args.stop_epoch):
+        for epoch in range(args.stop_epoch + 1):
             # print("Epoch " + str(epoch) + " started.")
             accurate_labels_train = 0
             accurate_labels_test = 0
@@ -613,7 +613,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
             # torch.save(checkpoint, path_to_checkpoint)
 
-            if epoch == (args.stop_epoch - 1):
+            if epoch == args.stop_epoch:
                 path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
                 torch.save(checkpoint, path_to_checkpoint)
 
