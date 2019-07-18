@@ -39,7 +39,7 @@ def open_file(file):
 ## GET FOLD NUMBER FROM FILE NAME
 def get_fold(file_name):
     pth_file = file_name.split("/")[len(file_name.split("/")) - 1]
-    fold = pth_file.split("_")[1]
+    fold = pth_file.split("_")[0]
     return fold
 
 ## CREAT PANDAS DATAFRAME FOR EACH FOLD
