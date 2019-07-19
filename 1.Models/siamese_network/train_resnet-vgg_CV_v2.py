@@ -389,9 +389,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 ## UNCOMMENT THIS WHEN YOU WANT TO START SAVING YOUR MODELS!
                 # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
                 # torch.save(checkpoint, path_to_checkpoint)
-                if epoch == args.cv_stop_epoch:
-                    path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
+                if epoch > 11:
+                    path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
                     torch.save(checkpoint, path_to_checkpoint)
+                    print("Checkpoint pth file written")
 
             fold += 1
 
@@ -622,7 +623,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=30, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=16, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
