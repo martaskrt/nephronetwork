@@ -99,34 +99,34 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             if args.vgg:
                 if args.view != "siamese":
-                    net = RevisedVGG(num_inputs=1).to(device)
+                    net = RevisedVGG(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedVGG(num_inputs=2).to(device)
+                    net = RevisedVGG(pretrain=args.pretrained, num_inputs=2).to(device)
 
             elif args.vgg_bn:
                 if args.view != "siamese":
-                    net = RevisedVGG_bn(num_inputs=1).to(device)
+                    net = RevisedVGG_bn(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedVGG_bn(num_inputs=2).to(device)
+                    net = RevisedVGG_bn(pretrain=args.pretrained, num_inputs=2).to(device)
 
             elif args.densenet:
                 if args.view != "siamese":
-                    net = RevisedDenseNet(num_inputs=1).to(device)
+                    net = RevisedDenseNet(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedDenseNet(num_inputs=2).to(device)
+                    net = RevisedDenseNet(pretrain=args.pretrained, num_inputs=2).to(device)
 
 
             elif args.resnet18:
                 if args.view != "siamese":
-                    net = RevisedResNet(num_inputs=1).to(device)
+                    net = RevisedResNet(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedResNet(num_inputs=2).to(device)
+                    net = RevisedResNet(pretrain=args.pretrained, num_inputs=2).to(device)
 
             elif args.resnet50:
                 if args.view != "siamese":
-                    net = RevisedResNet50(num_inputs=1).to(device)
+                    net = RevisedResNet50(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedResNet50(num_inputs=2).to(device)
+                    net = RevisedResNet50(pretrain=args.pretrained, num_inputs=2).to(device)
 
 
 
@@ -649,6 +649,7 @@ def main():
     parser.add_argument('--cv', action='store_true',help="Flag to run cross validation")
     parser.add_argument("--stop_epoch", default=18, type=int, help="If not running cross validation, which epoch to finish with")
     parser.add_argument("--cv_stop_epoch", default=18, type=int, help="get a pth file from a specific epoch")
+    parser.add_argument('--pretrained', action="store_true", help="Use Adam optimizer instead of SGD")
 
     args = parser.parse_args()
 
@@ -658,7 +659,7 @@ def main():
     print("adam optimizer: " + str(args.adam))
     print("weight decay: " + str(args.weight_decay))
     print("view: " + str(args.view))
-
+    print("pretrained weights:" + str(args.pretrained))
 
     datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
 
