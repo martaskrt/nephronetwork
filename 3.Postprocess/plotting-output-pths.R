@@ -239,7 +239,7 @@ str(phn.raw$kidney_side)
 
 ### PROCESSING THE FULL DATA
   ## full data
-my_analysis_name = "prehdict_20190802_vanilla_siamese_dim256_c1_full"
+my_analysis_name = "./p-val-calcs/prehdict_20190802_vanilla_siamese_dim256_c1"
   ## hydro only
 my_analysis_name = "20190618_vanilla_siamese_hydroonly_full"
 full_cv = FALSE
@@ -310,7 +310,7 @@ names(full.cts)[c(1,2)] = c("year","count")
 ggplot(full.cts,aes(x = year,y = count,fill = Data_Split)) + geom_bar(stat = "identity")
 
 ggplot(full_1,aes(x = date_of_us1.date,fill = Data_Split)) + 
-  geom_bar(binwidth = 75) + xlab("Date of First Ultrasound") + 
+  geom_bar(binwidth = 50) + xlab("Date of First Ultrasound") + 
   theme_bw()
 
     #######################
