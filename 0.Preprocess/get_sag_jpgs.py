@@ -17,7 +17,7 @@ def main():
     parser.add_argument("--etiology", default="B", help="O (obstruction), R (reflux), B (both)")
     # parser.add_argument('--unet', action="store_true", help="UNet architecthure")
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
-    parser.add_argument("--git_dir",default="")
+    parser.add_argument("--git_dir",default="/home/lauren/")
 
     args = parser.parse_args()
 
