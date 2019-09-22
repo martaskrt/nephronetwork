@@ -23,7 +23,7 @@ def main():
     train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset_LE.load_dataset(views_to_get=args.view,sort_by_date=True,pickle_file=datafile,contrast=args.contrast,split=args.split,get_cov=True,bottom_cut=args.bottom_cut,etiology=args.etiology,crop=args.crop,git_dir=args.git_dir)
 
 
-    for i in range(test_X.shape[1]):
+    for i in range(len(test_X)):
         img = test_X[i]
 
         img_details = train_cov[i].split("_")
