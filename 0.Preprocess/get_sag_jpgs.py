@@ -39,7 +39,7 @@ def main():
 
     for i in range(test_X.shape[1]):
         df_sub = test_X.iloc[i]
-        df_sub.head()
+        print(df_sub.head())
 
 #        img_file_name = str(int(sample_id)) + "_" + sample_name[1] + "_" + str(img_num) + ".jpg"
 #        scipy.misc.imsave(os.path.join(opt.jpg_dump_dir, img_file_name), resized_image)
