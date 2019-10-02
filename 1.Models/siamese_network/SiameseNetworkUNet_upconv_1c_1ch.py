@@ -5,15 +5,19 @@ import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class SiamNet(nn.Module):
-    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5,output_dim=128):
+    def __init__(self, num_inputs=2, classes=2,dropout_rate=0.5,output_dim=256, jigsaw=False):
         super(SiamNet, self).__init__()
         self.num_inputs = num_inputs
         self.output_dim=output_dim
-        print("HELLO! this is the unet with upconv_1c (one upconv layer with final max pool and without upsampling) and one input channel without lrn")
-        #print("dropout: {}".format(dropout_rate))
+        self.jigsaw = jigsaw
+        print("HELLO! this is the prehdict model with upconv_1c (one upconv layer with final max pool and without upsampling) and dropout")
+        print("dropout: {}".format(dropout_rate))
         print("LL DIM: " + str(self.output_dim))
         self.conv1 = nn.Sequential()
-        self.conv1.add_module('conv1_s1',nn.Conv2d(1, 96, kernel_size=11, stride=2, padding=0))
+        if jigsaw:
+            self.conv1.add_module('conv1_s1',nn.Conv2d(3, 96, kernel_size=11, stride=2, padding=0))
+        else:
+            self.conv1.add_module('conv1_s1',nn.Conv2d(1, 96, kernel_size=11, stride=2, padding=0))
         self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
         self.conv1.add_module('relu1_s1',nn.ReLU(inplace=True))
         #self.conv1.add_module('batch1_s1', nn.BatchNorm2d(96))
@@ -33,6 +37,7 @@ class SiamNet(nn.Module):
         self.conv2.add_module('conv2b', nn.Conv2d(256, 256, kernel_size=2, padding=1, stride=1))
         self.conv2.add_module('batch2_s1', nn.BatchNorm2d(256))
         self.conv2.add_module('relu2_s1',nn.ReLU(inplace=True))
+        #self.conv2.add_module('batch2_s1', nn.BatchNorm2d(256))
 
         self.conv3 = nn.Sequential()
         self.conv3.add_module('conv3_s1',nn.Conv2d(256, 384, kernel_size=3, padding=1))
@@ -86,6 +91,7 @@ class SiamNet(nn.Module):
         self.uconnect1.add_module('conv', nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1))
         self.uconnect1.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect1.add_module('relu', nn.ReLU(inplace=True))
+        #self.uconnect1.add_module('batch', nn.BatchNorm2d(256))
         self.uconnect1.add_module('pool6b_s1', nn.MaxPool2d(kernel_size=3, stride=2))
         #self.uconnect1.add_module('batch', nn.BatchNorm2d(256))
         #self.uconnect1.add_module('upsample', nn.Upsample(scale_factor=2))  # 256 * 30 * 30
@@ -96,7 +102,7 @@ class SiamNet(nn.Module):
         self.fc6c.add_module('relu7', nn.ReLU(inplace=True))
         #self.fc6c.add_module('relu7', nn.Sigmoid())
         #self.fc6c.add_module('batch', nn.BatchNorm1d(1))
-        #self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
+        self.fc6c.add_module('drop7', nn.Dropout(p=dropout_rate))
 
         self.fc7_new = nn.Sequential()
         self.fc7_new.add_module('fc7', nn.Linear(self.num_inputs * 512, self.output_dim))
@@ -126,7 +132,8 @@ class SiamNet(nn.Module):
 
         for i in range(self.num_inputs):
             curr_x = torch.unsqueeze(x[i], 1)
-            #curr_x = curr_x.expand(-1, 3, -1, -1)
+            if self.jigsaw:
+                curr_x = curr_x.expand(-1, 3, -1, -1)
             if torch.cuda.is_available():
                 input = torch.cuda.FloatTensor(curr_x.to(device))
             else:
