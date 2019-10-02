@@ -99,34 +99,34 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             if args.vgg:
                 if args.view != "siamese":
-                    net = RevisedVGG(num_inputs=1).to(device)
+                    net = RevisedVGG(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedVGG(num_inputs=2).to(device)
+                    net = RevisedVGG(pretrain=args.pretrained, num_inputs=2).to(device)
 
             elif args.vgg_bn:
                 if args.view != "siamese":
-                    net = RevisedVGG_bn(num_inputs=1).to(device)
+                    net = RevisedVGG_bn(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedVGG_bn(num_inputs=2).to(device)
+                    net = RevisedVGG_bn(pretrain=args.pretrained, num_inputs=2).to(device)
 
             elif args.densenet:
                 if args.view != "siamese":
-                    net = RevisedDenseNet(num_inputs=1).to(device)
+                    net = RevisedDenseNet(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedDenseNet(num_inputs=2).to(device)
+                    net = RevisedDenseNet(pretrain=args.pretrained, num_inputs=2).to(device)
 
 
             elif args.resnet18:
                 if args.view != "siamese":
-                    net = RevisedResNet(num_inputs=1).to(device)
+                    net = RevisedResNet(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedResNet(num_inputs=2).to(device)
+                    net = RevisedResNet(pretrain=args.pretrained, num_inputs=2).to(device)
 
             elif args.resnet50:
                 if args.view != "siamese":
-                    net = RevisedResNet50(num_inputs=1).to(device)
+                    net = RevisedResNet50(pretrain=args.pretrained, num_inputs=1).to(device)
                 else:
-                    net = RevisedResNet50(num_inputs=2).to(device)
+                    net = RevisedResNet50(pretrain=args.pretrained, num_inputs=2).to(device)
 
 
 
@@ -184,7 +184,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 counter_train = 0
                 counter_val = 0
                 counter_test = 0
-
+                net.train()
                 for batch_idx, (data, target, cov) in enumerate(training_generator):
                     # print("batch " + str(batch_idx) + " started")
 
@@ -227,8 +227,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                     all_pred_label_train.append(pred_label)
 
                     patient_ID_train.extend(cov)
-
-                with torch.set_grad_enabled(False):
+                net.eval()
+                with torch.no_grad():
+                #with torch.set_grad_enabled(False):
                     for batch_idx, (data, target, cov) in enumerate(validation_generator):
                         net.zero_grad()
                         optimizer.zero_grad()
@@ -259,8 +260,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                         all_pred_label_val.append(pred_label)
 
                         patient_ID_val.extend(cov)
-
-                with torch.set_grad_enabled(False):
+                net.eval()
+                with torch.no_grad():
+                #with torch.set_grad_enabled(False):
 
                     for batch_idx, (data, target, cov) in enumerate(test_generator):
                         net.zero_grad()
@@ -387,6 +389,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 ## UNCOMMENT THIS WHEN YOU WANT TO START SAVING YOUR MODELS!
                 # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
                 # torch.save(checkpoint, path_to_checkpoint)
+                if epoch > 11:
+                    path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
+                    torch.save(checkpoint, path_to_checkpoint)
+                    print("Checkpoint pth file written")
 
             fold += 1
 
@@ -438,7 +444,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         training_set = KidneyDataset(train_X_CV, train_y_CV, train_cov_CV)
         training_generator = DataLoader(training_set, **params)
 
-        for epoch in range(args.stop_epoch):
+        for epoch in range(args.stop_epoch + 1):
             # print("Epoch " + str(epoch) + " started.")
             accurate_labels_train = 0
             accurate_labels_test = 0
@@ -459,7 +465,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             counter_train = 0
             counter_test = 0
-
+            net.train()
             for batch_idx, (data, target, cov) in enumerate(training_generator):
                 # print("batch " + str(batch_idx) + " started")
 
@@ -501,8 +507,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 all_pred_label_train.append(pred_label)
 
                 patient_ID_train.extend(cov)
-
-            with torch.set_grad_enabled(False):
+            net.eval()
+            with torch.no_grad():
+            #with torch.set_grad_enabled(False):
                 for batch_idx, (data, target, cov) in enumerate(test_generator):
                     net.zero_grad()
                     optimizer.zero_grad()
@@ -607,10 +614,16 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
             # torch.save(checkpoint, path_to_checkpoint)
 
+            if epoch == args.stop_epoch:
+                path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
+                torch.save(checkpoint, path_to_checkpoint)
+
+
+
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=50, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=30, type=int, help="Number of epochs")
     parser.add_argument('--batch_size', default=16, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
@@ -635,6 +648,8 @@ def main():
     parser.add_argument("--git_dir",default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
     parser.add_argument('--cv', action='store_true',help="Flag to run cross validation")
     parser.add_argument("--stop_epoch", default=18, type=int, help="If not running cross validation, which epoch to finish with")
+    parser.add_argument("--cv_stop_epoch", default=18, type=int, help="get a pth file from a specific epoch")
+    parser.add_argument('--pretrained', action="store_true", help="Use Adam optimizer instead of SGD")
 
     args = parser.parse_args()
 
@@ -644,9 +659,9 @@ def main():
     print("adam optimizer: " + str(args.adam))
     print("weight decay: " + str(args.weight_decay))
     print("view: " + str(args.view))
+    print("pretrained weights:" + str(args.pretrained))
 
-
-    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190612.pickle"
+    datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
 
     load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE', args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
 
