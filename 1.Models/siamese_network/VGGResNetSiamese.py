@@ -5,12 +5,12 @@ from torch import nn
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class RevisedResNet(nn.Module):
-    def __init__(self, classes=2, num_inputs=2):
+    def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedResNet, self).__init__()
 
         self.classes = classes
         self.num_inputs = num_inputs
-        self.old_arch = torchvision.models.resnet18(pretrained=False)
+        self.old_arch = torchvision.models.resnet18(pretrained=pretrain)
         # self.old_arch.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.old_arch.fc = nn.Linear(512, 256, bias=True)
 
@@ -63,12 +63,12 @@ class RevisedResNet(nn.Module):
 
 
 class RevisedResNet50(nn.Module):
-    def __init__(self, classes=2, num_inputs=2):
+    def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedResNet50, self).__init__()
 
         self.classes = classes
         self.num_inputs = num_inputs
-        self.old_arch = torchvision.models.resnet50(pretrained=False)
+        self.old_arch = torchvision.models.resnet50(pretrained=pretrain)
         #self.old_arch.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         self.old_arch.fc = nn.Linear(2048, 256, bias=True)
 
@@ -135,12 +135,12 @@ class RevisedResNet50(nn.Module):
         return pred
 
 class RevisedVGG(nn.Module):
-    def __init__(self, classes=2, num_inputs=2):
+    def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedVGG, self).__init__()
 
         self.classes = classes
         self.num_inputs = num_inputs
-        self.old_arch = torchvision.models.vgg16(pretrained=False)
+        self.old_arch = torchvision.models.vgg16(pretrained=pretrain)
 
         self.first_seq = nn.Sequential(*list(self.old_arch.children())[0][:]) ## Remove input conv and replace with my own
 
@@ -217,12 +217,12 @@ class RevisedVGG(nn.Module):
 ## UPDATE AND TEST
 
 class RevisedVGG_bn(nn.Module):
-    def __init__(self, classes=2, num_inputs=2):
+    def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedVGG_bn, self).__init__()
 
         self.classes = classes
         self.num_inputs = num_inputs
-        self.old_arch = torchvision.models.vgg16_bn(pretrained=False)
+        self.old_arch = torchvision.models.vgg16_bn(pretrained=pretrain)
 
         self.first_seq = nn.Sequential(*list(self.old_arch.children())[0][:]) ## Remove input conv and replace with my own
 
@@ -299,12 +299,12 @@ class RevisedVGG_bn(nn.Module):
 
 
 class RevisedDenseNet(nn.Module):
-    def __init__(self, classes=2, num_inputs=2):
+    def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedDenseNet, self).__init__()
 
         self.classes = classes
         self.num_inputs = num_inputs
-        self.old_arch = torchvision.models.densenet121(pretrained=False)
+        self.old_arch = torchvision.models.densenet121(pretrained=pretrain)
 
         self.first_seq = list(self.old_arch.children())[0]
 
