@@ -68,6 +68,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             from SiameseNetworkUNet_sc1 import SiamNet
         elif args.sc == 0:
             if args.init == "none":
+                #from FraternalSiameseNetwork_20190619 import SiamNet
                 from SiameseNetworkUNet_upconv_1c_1ch import SiamNet
             elif args.init == "fanin":
                 from SiameseNetworkUNet_upconv_1c_1ch_fanin import SiamNet
@@ -92,11 +93,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=42)
 
-
+    jigsaw = False
+    if "jigsaw" in args.dir and "unet" in args.dir:
+        jigsaw = True
     if args.view != "siamese":
-        net = SiamNet(num_inputs=1, output_dim=args.output_dim).to(device)
+        net = SiamNet(num_inputs=1, output_dim=args.output_dim, jigsaw=jigsaw).to(device)
     else:
-        net = SiamNet(output_dim=args.output_dim).to(device)
+        net = SiamNet(output_dim=args.output_dim, jigsaw=jigsaw).to(device)
     if args.checkpoint != "":
         if "jigsaw" in args.dir and "unet" in args.dir:
             print("Loading Jigsaw into UNet")
@@ -124,22 +127,92 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             model_dict.update(unet_dict)
             # 3. load the new state dict
             net.load_state_dict(unet_dict)
+        elif "carson" in args.checkpoint:
+                if "mnist" in args.checkpoint:
+                    print("Loading mnist into SiamNet")
+                elif "oct" in args.checkpoint:
+                    print("Loading oct into SiamNet")
+                pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+                model_dict = net.state_dict()
+                unet_dict = {}
+
+                for k, v in model_dict.items():
+                    unet_dict[k] = model_dict[k]
+
+                #unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight'][:, 0, :, :].unsqueeze(1)
+                unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight'].mean(1).unsqueeze(1)
+                unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
+                unet_dict['conv1.batch1_s1.weight'] = pretrained_dict['conv.batch1_s1.weight']
+                unet_dict['conv1.batch1_s1.bias'] = pretrained_dict['conv.batch1_s1.bias']
+                unet_dict['conv1.batch1_s1.running_mean'] = pretrained_dict['conv.batch1_s1.running_mean']
+                unet_dict['conv1.batch1_s1.running_var'] = pretrained_dict['conv.batch1_s1.running_var']
+                unet_dict['conv1.batch1_s1.num_batches_tracked'] = pretrained_dict['conv.batch1_s1.num_batches_tracked']
+
+                unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
+                unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
+                unet_dict['conv2.batch2_s1.weight'] = pretrained_dict['conv.batch2_s1.weight']
+                unet_dict['conv2.batch2_s1.bias'] = pretrained_dict['conv.batch2_s1.bias']
+                unet_dict['conv2.batch2_s1.running_mean'] = pretrained_dict['conv.batch2_s1.running_mean']
+                unet_dict['conv2.batch2_s1.running_var'] = pretrained_dict['conv.batch2_s1.running_var']
+                unet_dict['conv2.batch2_s1.num_batches_tracked'] = pretrained_dict['conv.batch2_s1.num_batches_tracked']
+
+                unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
+                unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
+                unet_dict['conv3.batch3_s1.weight'] = pretrained_dict['conv.batch3_s1.weight']
+                unet_dict['conv3.batch3_s1.bias'] = pretrained_dict['conv.batch3_s1.bias']
+                unet_dict['conv3.batch3_s1.running_mean'] = pretrained_dict['conv.batch3_s1.running_mean']
+                unet_dict['conv3.batch3_s1.running_var'] = pretrained_dict['conv.batch3_s1.running_var']
+                unet_dict['conv3.batch3_s1.num_batches_tracked'] = pretrained_dict['conv.batch3_s1.num_batches_tracked']
+               
+                unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
+                unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
+                unet_dict['conv4.batch4_s1.weight'] = pretrained_dict['conv.batch4_s1.weight']
+                unet_dict['conv4.batch4_s1.bias'] = pretrained_dict['conv.batch4_s1.bias']
+                unet_dict['conv4.batch4_s1.running_mean'] = pretrained_dict['conv.batch4_s1.running_mean']
+                unet_dict['conv4.batch4_s1.running_var'] = pretrained_dict['conv.batch4_s1.running_var']
+                unet_dict['conv4.batch4_s1.num_batches_tracked'] = pretrained_dict['conv.batch4_s1.num_batches_tracked']
+
+                unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
+                unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
+                unet_dict['conv5.batch5_s1.weight'] = pretrained_dict['conv.batch5_s1.weight']
+                unet_dict['conv5.batch5_s1.bias'] = pretrained_dict['conv.batch5_s1.bias']
+                unet_dict['conv5.batch5_s1.running_mean'] = pretrained_dict['conv.batch5_s1.running_mean']
+                unet_dict['conv5.batch5_s1.running_var'] = pretrained_dict['conv.batch5_s1.running_var']
+                unet_dict['conv5.batch5_s1.num_batches_tracked'] = pretrained_dict['conv.batch5_s1.num_batches_tracked']
+
+                unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+                #unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight']
+                unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
+                unet_dict['fc6.batch6_s1.weight'] = pretrained_dict['fc6.batch6_s1.weight']
+                unet_dict['fc6.batch6_s1.bias'] = pretrained_dict['fc6.batch6_s1.bias']
+                unet_dict['fc6.batch6_s1.running_mean'] = pretrained_dict['fc6.batch6_s1.running_mean']
+                unet_dict['fc6.batch6_s1.running_var'] = pretrained_dict['fc6.batch6_s1.running_var']
+                unet_dict['fc6.batch6_s1.num_batches_tracked'] = pretrained_dict['fc6.batch6_s1.num_batches_tracked']
+
+                unet_dict['uconnect1.conv.weight'] = pretrained_dict['fc6b.conv6b_s1.weight']
+                unet_dict['uconnect1.conv.bias'] = pretrained_dict['fc6b.conv6b_s1.bias']
+
+                #unet_dict['fc6c.fc7.weight'] = pretrained_dict['fc6c.fc7.weight']
+                #unet_dict['fc6c.fc7.bias'] = pretrained_dict['fc6c.fc7.bias']
+                model_dict.update(unet_dict)
+                # 3. load the new state dict
+                net.load_state_dict(unet_dict)
         else:
-            pretrained_dict = torch.load(args.checkpoint)
-            # pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+            #pretrained_dict = torch.load(args.checkpoint)
+            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
             model_dict = net.state_dict()
 
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-
-            pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            for k, v in model_dict.items():
-                if k not in pretrained_dict:
-                    pretrained_dict[k] = model_dict[k]
+            print("loading checkpoint........")
+            #pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            #for k, v in model_dict.items():
+             #   if k not in pretrained_dict:
+              #      pretrained_dict[k] = model_dict[k]
             # 2. overwrite entries in the existing state dict
             model_dict.update(pretrained_dict)
             # 3. load the new state dict
             net.load_state_dict(pretrained_dict)
-
+            print("checkpoint loaded..........")
     if args.adam:
         optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
                                      weight_decay=hyperparams['weight_decay'])
@@ -173,10 +246,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
         counter_train = 0
         counter_test = 0
-
+        net.train()  
         for batch_idx, (data, target, cov) in enumerate(training_generator):
             optimizer.zero_grad()
-
+            #net.train() # 20190619 
             output = net(data.to(device))
             target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
             # print(output)
@@ -207,11 +280,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
             patient_ID_train.extend(cov)
 
-
-        with torch.set_grad_enabled(False):
+        net.eval()
+        with torch.no_grad():
+        #with torch.set_grad_enabled(False):
 
             for batch_idx, (data, target, cov) in enumerate(test_generator):
                 net.zero_grad()
+                #net.eval() # 20190619
                 optimizer.zero_grad()
                 output = net(data)
                 target = target.type(torch.LongTensor).to(device)
@@ -332,8 +407,9 @@ def main():
     parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
     #parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190601.pickle",
      #                   help="File containing pandas dataframe with images stored as numpy array")
-    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190613.pickle")
+    parser.add_argument("--datafile", default="../../0.Preprocess/preprocessed_images_20190617.pickle")
     parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
+    parser.add_argument("--gender", default=None, type=str, help="choose from 'male' and 'female'")
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
@@ -347,7 +423,7 @@ def main():
                                                                                       get_cov=True,
                                                                                       bottom_cut=args.bottom_cut,
                                                                                       etiology=args.etiology,
-                                                                                      crop=args.crop, hydro_only=args.hydro_only)
+                                                                                      crop=args.crop, hydro_only=args.hydro_only, gender=args.gender)
 
     if args.view == "sag" or args.view == "trans":
         train_X_single = []
