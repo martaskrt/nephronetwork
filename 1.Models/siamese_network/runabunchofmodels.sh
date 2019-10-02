@@ -6,68 +6,49 @@ var2=".txt"
 #mkdir mountpoint/20190601_CVModels
 #mkdir mountpoint/20190601_fullModels
 
-var1="/storage/20190611_CVModels/"
-var3="/storage/20190611_fullModels/"
+var1="/storage/20190903_CVModels/"
+var3="/storage/20190903_fullModels/"
 
 mkdir $var1
 mkdir $var3
 
 
-dir_name="unet_20190612_vanilla_siamese_upconv_1c_1ch_noinit_bs256"
-python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 2 --batch_size 256 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
-
-dir_name="unet_20190612_vanilla_siamese_upconv_1c_1ch_noinit_bs256_full"
-python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 2 --output_dim 256 --batch_size 256  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
-dir_name="unet_20190611_vanilla_siamese_upconv_1c_1ch_contrast2_noLRN"
-python3 train_siamese_network_CV_v2.py --unet --sc 0 --upconv 1 --contrast 2 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
-
-dir_name="unet_20190611_vanilla_siamese_upconv_1c_1ch_contrast2_noLRN_full"
-python3 train_siamese_network.py --unet --sc 0 --upconv 1 --contrast 2 --output_dim 256 --batch_size 128  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
 
-#dir_name="unet_20190606_vanilla_siamese_sc2"
-#python3 train_siamese_network_CV_v2.py --unet --sc 2 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+#dir_name="prehdict_20190802_vanilla_siamese_dim256_c1"
+#python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-#dir_name="unet_20190606_vanilla_siamese_sc2_full"
-#python3 train_siamese_network.py --unet --sc 2 --output_dim 256 --batch_size 128  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+#dir_name="prehdict_20190802_vanilla_siamese_dim256_c1_full"
+#python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var3$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
-#dir_name="unet_20190606_vanilla_siamese_sc1"
-#python3 train_siamese_network_CV_v2.py --unet --sc 1 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+#dir_name="prehdict_20190802_vanilla_siamese_dim512_c1"
+#python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 512 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-#dir_name="unet_20190606_vanilla_siamese_sc1_full"
-#python3 train_siamese_network.py --unet --sc 1 --output_dim 256 --batch_size 128  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+#dir_name="prehdict_20190802_vanilla_siamese_dim512_c1_full"
+#python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 512 --dir "$var3$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
-#dir_name="unet_20190606_vanilla_siamese_upconv"
-#python3 train_siamese_network_CV_v2.py --unet --sc 0 --batch_size 128 --epochs 35 --view 'siamese' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+#dir_name="prehdict_20190815_jigsawunet_siamese_c1"
+#python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese' --dir "$var1$dir_name" --checkpoint ../../models/JigsawPuzzlePytorch-master/checkpoints_20190415_bs256_e70_lr0.01_64_c1/jps_069_014770.pth.tar --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-#dir_name="unet_20190606_vanilla_siamese_upconv_full"
-#python3 train_siamese_network.py --unet --sc 0 --output_dim 256 --batch_size 128  --dir "$var3$dir_name" --epochs 35  --view 'siamese'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
-#dir_name="siamnet_20190601_vanilla_siamese_gap"
-#python3 train_siamese_network_CV_v2.py --dir "$var1$dir_name" --epochs 35  --view 'siamese'  --output_dim 256 > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+#dir_name="prehdict_20190815_jigsawunet_siamese_c1_full"
+#python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese' --dir "$var1$dir_name" --checkpoint ../../models/JigsawPuzzlePytorch-master/checkpoints_20190415_bs256_e70_lr0.01_64_c1/jps_069_014770.pth.tar --dir "$var3$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
-#dir_name="siamnet_20190601_vanilla_siamese_gap_full"
-#python3 train_siamese_network.py --output_dim 256 --dir "$var3$dir_name" --epochs 35  --view 'siamese' > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
-#dir_name="siamnet_20190601_vanilla_siamese"
-#python3 train_siamese_network_CV_v2.py --dir "$var1$dir_name" --epochs 35  --view 'siamese'  --output_dim 256 > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+#dir_name="prehdict_20190815_jigsawunet_sag_c1"
+#python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'sag' --dir "$var1$dir_name" --checkpoint ../../models/JigsawPuzzlePytorch-master/checkpoints_20190415_bs256_e70_lr0.01_64_c1/jps_069_014770.pth.tar --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-#dir_name="siamnet_20190601_vanilla_siamese_full"
-#python3 train_siamese_network.py --output_dim 256 --dir "$var3$dir_name" --epochs 35  --view 'siamese' > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+#dir_name="prehdict_20190815_jigsawunet_sag_c1_full"
+#python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'sag' --dir "$var1$dir_name" --checkpoint ../../models/JigsawPuzzlePytorch-master/checkpoints_20190415_bs256_e70_lr0.01_64_c1/jps_069_014770.pth.tar --dir "$var3$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
 
-#dir_name="unet_20190601_vanilla_sag_2"
-#python3 train_siamese_network_CV_v2.py --unet --dir "$var1$dir_name" --epochs 35  --view 'sag'  --output_dim 128 > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+#dir_name="prehdict_20190815_jigsawunet_trans_c1"
+#python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'trans' --dir "$var1$dir_name" --checkpoint ../../models/JigsawPuzzlePytorch-master/checkpoints_20190415_bs256_e70_lr0.01_64_c1/jps_069_014770.pth.tar --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-#dir_name="unet_20190601_vanilla_sag_full_2"
-#python3 train_siamese_network.py --unet --output_dim 128 --dir "$var3$dir_name" --epochs 35  --view 'sag'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+#dir_name="prehdict_20190815_jigsawunet_trans_c1_full"
+#python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'trans' --dir "$var1$dir_name" --checkpoint ../../models/JigsawPuzzlePytorch-master/checkpoints_20190415_bs256_e70_lr0.01_64_c1/jps_069_014770.pth.tar --dir "$var3$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+#dir_name="prehdict_20190802_vanilla_trans_GAP_c1"
+#python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'trans' --output_dim 256 --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
+dir_name="prehdict_20190903_octunet_siamese_c1"
+python3 train_siamese_network_CV_v2.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese'  --checkpoint ../transfer_learning/carson/transfer_learning_checkpoints/checkpoint_oct_3.pth --dir "$var1$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
 
-#dir_name="siamnet_20190601_vanilla_trans"
-#python3 train_siamese_network_CV_v2.py --dir "$var1$dir_name" --epochs 35  --view 'trans' --output_dim 128 > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
-
-#dir_name="siamnet_20190601_vanilla_trans_full"
-#python3 train_siamese_network.py --output_dim 128 --dir "$var3$dir_name" --epochs 35  --view 'trans'  > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
-
-#dir_name="unet_20190601_vanilla_siamese_gap"
-#python3 train_siamese_network_CV_v2.py --unet --dir "$var1$dir_name" --epochs 35  --view 'siamese'  --output_dim 256 > "$dir_name$var2" && mv "$dir_name$var2" "$var1$dir_name"
-
-#dir_name="unet_20190601_vanilla_siamese_gap_full"
-#python3 train_siamese_network.py --unet --output_dim 256 --dir "$var3$dir_name" --epochs 35  --view 'siamese' > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
+dir_name="prehdict_20190903_octunet_siamese_c1_full"
+python3 train_siamese_network.py --unet --sc 0 --init "none" --contrast 1 --batch_size 128 --epochs 35 --view 'siamese'  --checkpoint ../transfer_learning/carson/transfer_learning_checkpoints/checkpoint_oct_3.pth --dir "$var3$dir_name" > "$dir_name$var2" && mv "$dir_name$var2" "$var3$dir_name"
