@@ -290,6 +290,23 @@ table(full_dat$Target[full_dat$Data_Split == "Test"])/sum(table(full_dat$Target[
 
 # auc(full_hydro_only_rev$Target[full_hydro_only_rev$Data_Split == "Test"], 
 #     full_hydro_only_rev$Scaled_Pred[full_hydro_only_rev$Data_Split == "Test"])
+
+    #######################
+    ## HYDRO ONLY SUBSET SFU GRADE 3+4
+    #######################
+head(full_hydro_only_rev)
+new_d = full_hydro_only_rev
+new_d$ptn_id = unlist(lapply(strsplit(x = new_d$full_ID,split = "_"),function(x){as.numeric(x[1])}))
+head(new_d)
+
+new_d$my_ptn_id = paste0(new_d$ptn_id,"_",new_d$us_num,"_",new_d$kidney_side)
+new_d$my_ptn_id
+
+my_file_list = paste0(new_d$my_ptn_id,".jpg")
+
+setwd("C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/image-examples/sag-test-jpgs/")
+file.copy(my_file_list,"C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image-analysis/image-examples/high_ac_sag_jpgs/")
+
     #######################
     ## OVERALL BARPLOT OF DATA FOR THE MANUSCRIPT
     #######################
