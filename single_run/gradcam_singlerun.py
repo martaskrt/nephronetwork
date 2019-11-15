@@ -144,7 +144,7 @@ if __name__ == '__main__':
     checkpoint = "./prehdict_20190802_vanilla_siamese_dim256_c1_checkpoint_18.pth"
     net = CNN().to(device)
 
-    pretrained_dict = torch.load(checkpoint)['model_state_dict']
+    pretrained_dict = torch.load(checkpoint, map_location='cpu')['model_state_dict']i
 
     model_dict = net.state_dict()
 
