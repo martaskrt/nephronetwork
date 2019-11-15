@@ -145,7 +145,10 @@ if __name__ == '__main__':
     checkpoint = args.checkpoint
     net = CNN().to(device)
 
-    pretrained_dict = torch.load(checkpoint, map_location='cpu')['model_state_dict']i
+    if torch.cuda.is_available():
+        pretrained_dict = torch.load(checkpoint)['model_state_dict']
+    else:
+        pretrained_dict = torch.load(checkpoint, map_location='cpu')['model_state_dict']
 
     model_dict = net.state_dict()
 
