@@ -139,9 +139,10 @@ if __name__ == '__main__':
     parser.add_argument('--sag_path', required=True)
     parser.add_argument('--trans_path', required=True)
     parser.add_argument('--outdir', default="results")
+    parser.add_argument('-checkpoint',default="./prehdict_20190802_vanilla_siamese_dim256_c1_checkpoint_18.pth")
     args = parser.parse_args()
    
-    checkpoint = "./prehdict_20190802_vanilla_siamese_dim256_c1_checkpoint_18.pth"
+    checkpoint = args.checkpoint
     net = CNN().to(device)
 
     pretrained_dict = torch.load(checkpoint, map_location='cpu')['model_state_dict']i
