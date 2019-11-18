@@ -199,8 +199,8 @@ if __name__ == '__main__':
 
     # Grad cam
 
-    sag_filename_id = os.path.join(outdir, 'sag')
-    trans_filename_id = os.path.join(outdir, 'trans')
+    sag_filename_id = os.path.join(outdir, sag_path)
+    trans_filename_id = os.path.join(outdir, trans_path)
 
     grad_cam = GradCam(net, view='sag')
     # Generate cam mask
