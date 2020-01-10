@@ -1,10 +1,9 @@
 import PySimpleGUI as sg
-from PIL import Image
+from PIL import Image, ExifTags
 import pydicom
 from skimage.color import rgb2gray
-from skimage import img_as_float
-from skimage import transform
-from skimage import exposure
+from skimage import img_as_float, transform, exposure
+from matplotlib import cm
 # from skimage.io import imsave
 # from skimage import io
 # io.use_plugin('imageio', 'imsave')
@@ -13,6 +12,7 @@ import numpy as np
 import torch
 import os
 import copy
+import scipy
 
 ## HARD CODED: PREDICTION MODEL ARCHITECTURE BEING USEDc
 import Prehdict_CNN
@@ -78,7 +78,7 @@ def crop_image(image, param_num=0):
     cropped_image = image[start_row:start_row + new_dim, start_col:start_col + new_dim]
     return cropped_image
 
-def process_input_image(image, output_dim=256, crop=True, convert_grey=True):
+def process_input_image(image, crop, output_dim=256, convert_grey=True):
     """
     Processes image: crop, convert to greyscale and resize
 
@@ -97,6 +97,7 @@ def process_input_image(image, output_dim=256, crop=True, convert_grey=True):
         cropped_img = crop_image(image_grey)
     else:
         cropped_img = image_grey
+
     resized_img = transform.resize(cropped_img, output_shape=(output_dim, output_dim))
     image_out = set_contrast(resized_img) ## ultimately add contrast variable
 
@@ -117,20 +118,45 @@ def read_image_file(file_name, crop):
     if file_name[-3:] == 'dcm':
         my_dcm = pydicom.dcmread(file_name)
         image_in = my_dcm.pixel_array
+        # image_in.show()
         image_out = process_input_image(image_in, crop=crop)
 
     elif file_name[-3:] in img_types:
         image_in = Image.open(file_name).convert('L')
+        # for orientation in ExifTags.TAGS.keys():
+        #     if ExifTags.TAGS[orientation] == 'Orientation': break
+        # exif = dict(image_in._getexif().items())
+        #
+        # if exif[orientation] == 3:
+        #     image_in = image_in.rotate(180, expand=True)
+        # elif exif[orientation] == 6:
+        #     image_in = image_in.rotate(270, expand=True)
+        # elif exif[orientation] == 8:
+        #     image_in = image_in.rotate(90, expand=True)
+
         # pic = imageio.imread(file_name)
         # gray = lambda rgb: np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
         # image_in = gray(pic)
+        # image_in.show()
         image_out = process_input_image(image_in, convert_grey=False, crop=crop)
 
     elif file_name[-4:] in img_types:
         image_in = Image.open(file_name).convert('L')
+        # for orientation in ExifTags.TAGS.keys():
+        #     if ExifTags.TAGS[orientation] == 'Orientation': break
+        # exif = dict(image_in._getexif().items())
+        #
+        # if exif[orientation] == 3:
+        #     image_in = image_in.rotate(180, expand=True)
+        # elif exif[orientation] == 6:
+        #     image_in = image_in.rotate(270, expand=True)
+        # elif exif[orientation] == 8:
+        #     image_in = image_in.rotate(90, expand=True)
+
         # pic = imageio.imread(file_name)
         # gray = lambda rgb: np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
         # image_in = gray(pic)
+        # image_in.show()
         image_out = process_input_image(image_in, convert_grey=False, crop=crop)
 
     else:
@@ -145,8 +171,9 @@ def get_new_filename(image_file):
     :return: png image file name
     """
 
-    new_filename = '.'.join(image_file.split('.')[:-1]) + '.png'
+    new_filename = '.'.join(image_file.split('.')[:-1]) + '-preprocessed.png'
     return new_filename
+
 
 def format_np_output(np_arr):
     """
@@ -409,12 +436,17 @@ def apply_colormap_on_image(org_im, activation, colormap_name, opacity=0.4):
     heatmap[:, :, 3] = opacity
     heatmap = np.transpose(heatmap, (1, 0, 2)) ########## added since Image grabs them in different order
     heatmap = Image.fromarray((heatmap*255).astype(np.uint8))
+    # heatmap.show()
     no_trans_heatmap = Image.fromarray((no_trans_heatmap*255).astype(np.uint8))
+    # no_trans_heatmap.show()
 
-    # Apply heatmap on iamge
+    # Apply heatmap on image
     heatmap_on_image = Image.new("RGBA", org_im.size)
-    heatmap_on_image = Image.alpha_composite(heatmap_on_image, org_im.convert('RGBA'))
-    heatmap_on_image = Image.alpha_composite(heatmap_on_image, heatmap)
+    # heatmap_on_image.show()
+    heatmap_on_image = Image.alpha_composite(heatmap_on_image.convert('RGBA'), org_im.convert('RGBA'))
+    # heatmap_on_image.show()
+    heatmap_on_image = Image.alpha_composite(heatmap_on_image.convert('RGBA'), heatmap.convert('RGBA'))
+    # heatmap_on_image.show()
 
     return no_trans_heatmap, heatmap_on_image
 
@@ -426,6 +458,7 @@ def main():
     orig_trans_img = dir_path + '/Orig-Trans-Img-Spaceholder.png'
     grad_sag_img = dir_path + '/Grad-Sag-Img-Spaceholder.png'
     grad_trans_img = dir_path + '/Grad-Trans-Img-Spaceholder.png'
+    pth_file = dir_path + '/siam_checkpoint_18.pth'
 
     # orig_sag_img = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/Orig-Sag-Img-Spaceholder.png'
     # orig_trans_img = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/Orig-Trans-Img-Spaceholder.png'
@@ -436,7 +469,7 @@ def main():
               [sg.Text('Sagittal: '), sg.Input(), sg.FileBrowse()],
               [sg.Text('Transverse: '), sg.Input(), sg.FileBrowse()],
               [sg.Checkbox('Crop images?', default=False)],
-              [sg.Text('Network file (.pth): '), sg.Input(), sg.FileBrowse()],
+              # [sg.Text('Network file (.pth): '), sg.Input(), sg.FileBrowse()],
               [sg.Text('Output path: '), sg.Input(), sg.FolderBrowse()],
               [sg.OK(), sg.Exit()],
               [sg.Text('_' * 80)],
@@ -451,13 +484,13 @@ def main():
     #           [sg.Txt('', size=(8, 1), key='output')],
     #           [sg.Button('Calculate', bind_return_key=True)]]
 
-    window = sg.Window('Persistent open window', layout)
-    event, values = window.read()
+    window = sg.Window('PREHDICT', layout)
+    # event, values = window.read()
     # window.close()
 
     while True:  # Event Loop
         event, values = window.read()
-        print(event, values)
+        # print(event, values)
         if event in (None, 'Exit'):
             break
         if event == 'OK':
@@ -471,8 +504,8 @@ def main():
             # test_image = read_image_file(sag_file)
             # print(test_image)
 
-            sag_png_file, sag_prepd_img = create_png_file(sag_file,crop=crop)
-            trans_png_file, trans_prepd_img = create_png_file(trans_file,crop=crop)
+            sag_png_file, sag_prepd_img = create_png_file(sag_file, crop=crop)
+            trans_png_file, trans_prepd_img = create_png_file(trans_file, crop=crop)
 
             ##
             ##      RUN MODEL AND GET GRAD CAM + PROBABILITY OF SURGERY
@@ -486,7 +519,7 @@ def main():
             # args = parser.parse_args()
 
             # checkpoint = args.checkpoint
-            checkpoint = values[3]
+            checkpoint = pth_file
             net = CNN().to(device)
 
             pretrained_dict = torch.load(checkpoint, map_location=torch.device('cpu'))['model_state_dict']
@@ -508,7 +541,7 @@ def main():
 
             #*************************
             #*************************
-            outdir = values[4] ## MAKE SAME AS INPUT DIR
+            outdir = values[3] ## MAKE SAME AS INPUT DIR
             if not os.path.isdir(outdir):
                 os.makedirs(outdir)
 
@@ -535,11 +568,16 @@ def main():
                 output = net(torch.unsqueeze(combined_image, 0).to(device))
                 output_softmax = softmax(output)
                 pred_prob = output_softmax[:, 1]
+
+                ## calibration, currently hard coded
+                scaled_pred = scipy.special.expit(-4.245+(12.253*pred_prob))
             ## incorporate calibration in this at some point
 
 
-            print("Probability of surgery:::{:6.3f}".format(float(pred_prob)))
-            target_class = 1 if pred_prob >= 0.5 else 0
+            # print("Probability of surgery:::{:6.3f}".format(float(pred_prob)))
+            print("Probability of surgery:::{:6.3f}".format(float(scaled_pred)))
+            # target_class = 1 if pred_prob >= 0.5 else 0
+            target_class = 1 if scaled_pred >= 0.5 else 0
 
             original_image_sag = get_example_params(sag_file)
             original_image_trans = get_example_params(trans_file)
@@ -553,13 +591,15 @@ def main():
             # Generate cam mask
             cam = grad_cam.generate_cam(combined_image, target_class)
             # Save mask
-            sag_cam_img_file = save_class_activation_images(original_image_sag, cam, sag_filename_id)
+            # sag_cam_img_file = save_class_activation_images(original_image_sag, cam, sag_filename_id)
+            sag_cam_img_file = save_class_activation_images(Image.fromarray(np.uint8(cm.gist_earth(sag_prepd_img)*255)), cam, sag_filename_id)
 
             grad_cam = GradCam(net, view='trans')
             # Generate cam mask
             cam = grad_cam.generate_cam(combined_image, target_class)
             # Save mask
-            trans_cam_img_file = save_class_activation_images(original_image_trans, cam, trans_filename_id)
+            # trans_cam_img_file = save_class_activation_images(original_image_trans, cam, trans_filename_id)
+            trans_cam_img_file = save_class_activation_images(Image.fromarray(np.uint8(cm.gist_earth(trans_prepd_img)*255)), cam, trans_filename_id)
 
 
             ##
@@ -573,7 +613,12 @@ def main():
             # trans_gc_img = sg.Image(trans_cam_img_file)
 
             # Update the "output" text element to be the value of "input" element
-            window['output_prob'].update("Probability of surgery: " + str(round(float(pred_prob), 3)))
+            # window['output_prob'].update("Probability of surgery: " + str(round(float(pred_prob), 3)))
+            window['output_prob'].update("Probability of surgery: " + str(round(float(scaled_pred), 3)))
+            # window['orig_sag'].update(sag_png_file).set_size([180, 180])
+            # window['orig_trans'].update(trans_png_file).set_size([180, 180])
+            # window['gc_sag'].update(sag_cam_img_file).set_size([180, 180])
+            # window['gc_trans'].update(trans_cam_img_file).set_size([180, 180])
             window['orig_sag'].update(sag_png_file, size=[180, 180])
             window['orig_trans'].update(trans_png_file, size=[180, 180])
             window['gc_sag'].update(sag_cam_img_file, size=[180, 180])
