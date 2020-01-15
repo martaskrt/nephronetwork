@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import pandas as pd
 from PIL import Image
 from skimage import transform
