@@ -72,6 +72,26 @@ for file_name in labels.image_name:
     files_out.append(new_img_name)
     labels_out.append(labels.at[file_name,'revised_labels'])
 
+    ###
+    ### MAIN FUNCTION
+    ###
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--in_folder", default="./")
+    parser.add_argument("--out_folder", default="./")
+    parser.add_argument("--out_filename", default="data_sheet.csv")
+    parser.add_argument("--crop", default=0, type=int, help="Crop setting (0=big, 1=tight)")
+    parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
+    args = parser.parse_args()
+
+    print("ARGS" + '\t' + str(args))
+
+    my_nn = MyCNN
+
+
+if __name__ == "__main__":
+    main()
 
 
 

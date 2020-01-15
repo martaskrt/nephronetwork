@@ -385,6 +385,7 @@ def save_image(im, path):
     if isinstance(im, (np.ndarray, np.generic)):
         im = format_np_output(im)
         im = Image.fromarray(im)
+        im.resize((128, 128),Image.BILINEAR)
     im.save(path)
 
 def save_class_activation_images(org_img, activation_map, file_name):
@@ -411,6 +412,7 @@ def save_class_activation_images(org_img, activation_map, file_name):
     path_to_file = '{}_Cam_On_Image_{}.png'.format(file_name, map)
 
     # imsave(path_to_file, heatmap_on_image)
+    # heatmap_on_image_sm = heatmap_on_image.resize((128,128))
     save_image(heatmap_on_image, path_to_file)
     print("Heatmap on image written to: " + path_to_file)
             # Save grayscale heatmap
