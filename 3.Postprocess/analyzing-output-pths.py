@@ -37,9 +37,9 @@ def open_file(file):
     return data
 
 ## GET FOLD NUMBER FROM FILE NAME
-def get_fold(file_name):
+def get_fold(file_name,fold_in):
     pth_file = file_name.split("/")[len(file_name.split("/")) - 1]
-    fold = pth_file.split("_")[0]
+    fold = pth_file.split("_")[fold_in]
     return fold
 
 ## CREAT PANDAS DATAFRAME FOR EACH FOLD
@@ -136,14 +136,14 @@ def make_subset_nofold_df(my_fold_data):
     return train_df,test_df
 
     
-def make_full_df(pth_folder,cv):
+def make_full_df(pth_folder,cv,fold_in=0):
     my_pth_files = load_pth_files_names(pth_folder)
     
     if cv:     
         for file_name in my_pth_files: 
         
             fold_data = open_file(file_name)
-            fold_num = get_fold(file_name)
+            fold_num = get_fold(file_name,fold_in)
             if file_name == my_pth_files[0]:
                 my_train_df, my_val_df, my_test_df = make_subset_wfold_df(fold_data,fold_num)
                 print(file_name + " pandas dataframes created.")
@@ -172,11 +172,12 @@ def main():
     parser.add_argument('--checkpoint_folder', help="Number of epochs")
     parser.add_argument('--cv', action='store_true',default=False, help="Read in CV")
     parser.add_argument('--output_file', type=str, default='', help="Output file name")
+    parser.add_argument('--fold_inx', type=int, default=0, help="Output file name")
 
     args = parser.parse_args()
     
     if args.cv: 
-        train,val,test = make_full_df(args.checkpoint_folder,args.cv)
+        train,val,test = make_full_df(args.checkpoint_folder,args.cv,args.fold_inx)
     else:
         train,test = make_full_df(args.checkpoint_folder,args.cv)    
 
@@ -186,11 +187,13 @@ def main():
         file_root = args.output_file
     
     train.to_csv(args.checkpoint_folder+ "/" + file_root + "_train.csv")
-    if args.cv: 
-        val.to_csv(args.checkpoint_folder + "/" + file_root + "_val.csv")        
     test.to_csv(args.checkpoint_folder + "/" + file_root + "_test.csv")
+    if args.cv:
+        val.to_csv(args.checkpoint_folder + "/" + file_root + "_val.csv")        
+        print(file_root + "{_train,_val,_test}.csv written to : " + args.checkpoint_folder)
+    else:
+        print(file_root + "{_train,_test}.csv written to : " + args.checkpoint_folder)
 
-    print(file_root + "{_train,_val,_test}.csv written to : " + args.checkpoint_folder)   
 
 if __name__ == '__main__':
     main()
