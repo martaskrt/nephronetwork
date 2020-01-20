@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Apr  6 15:22:43 2019
-
-@author: Lauren
-"""
 
 import os
 import pydicom

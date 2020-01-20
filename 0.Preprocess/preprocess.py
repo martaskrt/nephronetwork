@@ -12,8 +12,8 @@ import pandas as pd
 import numpy as np
 import scipy
 IMAGE_PARAMS = {0: [2.1, 4, 4],
-                1: [2.5, 3.2, 3.2],
-                2: [1.7, 4.5, 4.5] # [2.5, 3.2, 3.2] # [1.7, 4.5, 4.5]
+                #1: [2.5, 3.2, 3.2],
+                #2: [1.7, 4.5, 4.5] # [2.5, 3.2, 3.2] # [1.7, 4.5, 4.5]
                }  # factor to crop images by: crop ratio, translate_x, translate_y
 
 #rootdir = os.path.join(os.path.abspath(os.path.join('./', os.pardir)), 'all-images')
@@ -125,10 +125,12 @@ def load_images(label_data, dcm_files, opt):
 
         if new_row.empty:
             continue
-        elif float(mrn) == float(2786688) and int(sample_num) == 1 and kidney_side == "Right":
+        
+        ## CHECK ##
+        elif int(810) == int(data.iloc[data.shape[0] - 1, data.columns.get_loc('study_id')]) and int(sample_num) == 1 and kidney_side == "Right":
             print("skipping patient_810 sample_1 side_right")
             continue
-        elif float(mrn) == float(2707080) and int(sample_num) == 4:
+        elif int(78) == int(data.iloc[data.shape[0] - 1, data.columns.get_loc('study_id')]) and int(sample_num) == 4:
             print("skipping patient_78 sample_4")
             continue
 
@@ -168,10 +170,13 @@ def load_images(label_data, dcm_files, opt):
           
             # display images
             #if opt.view > 0 and i == 2:
-             #   temp_dir = "view_images"
-              #  if not os.path.isdir(temp_dir):
-               #     os.makedirs(temp_dir)
-               # view_sample_images(resized_image, opt.view, temp_dir)
+            temp_dir = "/storage/original_dcms/"
+            if not os.path.isdir(temp_dir):
+                os.makedirs(temp_dir)
+            #view_sample_images(resized_image, opt.view, temp_dir)
+            dcm_name = "{}_{}_{}_{}.dcm".format(data.iloc[data.shape[0] - 1, data.columns.get_loc('study_id')], sample_num, kidney_view, kidney_side)
+            ds.save_as(temp_dir + dcm_name)
+
         #if opt.view > 0:
         #    opt.view -= 1
 
@@ -185,8 +190,8 @@ def load_images(label_data, dcm_files, opt):
     data.columns = data.columns.str.strip().str.lower().str.replace(" ","_")
     #print(data.columns)
     #print("CROP_1: {} | CROP_2: {}".format(counter_1, counter_2))
-    data.to_csv("preprocessed_images_20190612.csv", sep=',')
-    data.to_pickle("preprocessed_images_20190612.pickle")
+    #data.to_csv("preprocessed_images_20190730.csv", sep=',')
+    #data.to_pickle("preprocessed_images_20190730.pickle")
 
     print('\U0001F4A5')
 
