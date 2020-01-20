@@ -7,6 +7,7 @@ Created on Sat Apr  6 15:22:43 2019
 
 import os
 import pydicom
+import pandas as pd
 from skimage.color import rgb2gray
 # from skimage import exposure
 from skimage import img_as_float
@@ -15,16 +16,16 @@ import scipy.misc
 # import matplotlib.pyplot as plt
 import argparse
 
-
 # import extract_labels
 # import pandas as pd
 # import numpy as np
 # from PIL import Image
 
-
-# rootdir = os.path.join(os.path.abspath(os.path.join('./', os.pardir)), 'all-images')
-# print(rootdir)
-# rootdir = '/home/martaskreta/Desktop/CSC2516/all-images/'
+# Image crop params
+IMAGE_PARAMS = {0: [2.1, 4, 4],
+                1: [2.5, 3.2, 3.2],
+                2: [1.7, 4.5, 4.5]  # [2.5, 3.2, 3.2] # [1.7, 4.5, 4.5]
+                }  # factor to crop images by: crop ratio, translate_x, translate_y
 
 # loads all image paths to array
 def load_file_names(cab_dir):
@@ -35,14 +36,51 @@ def load_file_names(cab_dir):
                 dcm_files.append(os.path.join(subdir, file))
     return sorted(dcm_files)
 
+# CROP IMAGES #
+def crop_image(image, param_num):
+    width = image.shape[1]
+    height = image.shape[0]
 
-def load_images(dcm_files, opt):
-    # train_rows = round(label_data.shape[0]*0.75)
-    # print("train rows " + train_rows)
-    imgs = []
+    params = IMAGE_PARAMS[int(param_num)]
+
+    new_dim = int(width // params[0])  # final image will be square of dim width/2 * width/2
+
+    start_col = int(width // params[1])  # column (width position) to start from
+    start_row = int(height // params[2])  # row (height position) to start from
+
+    cropped_image = image[start_row:start_row + new_dim, start_col:start_col + new_dim]
+    return cropped_image
+
+# function to set the image contrast
+def set_contrast(image, contrast):
+    if contrast == 0:
+        out_img = image
+    elif contrast == 1:
+        out_img = exposure.equalize_hist(image)
+    elif contrast == 2:
+        out_img = exposure.equalize_adapthist(image)
+    elif contrast == 3:
+        out_img = exposure.rescale_intensity(image)
+
+    return out_img
+
+def get_filename(opt, linking_log):
+    mrn_usnum = opt.dcm_dir[1:]
+    my_mrn = mrn_usnum.split("_")[0]
+    deid = linking_log.loc[linking_log['mrn'] == my_mrn, ['deid']]
+    my_usnum = mrn_usnum.split("_")[1]
+    filename = '_'.join([deid,my_usnum])
+
+    return filename
+
+def load_images(dcm_files, link_log, lab_file, opt):
+
     img_num = 0
-    img_counter = []
     img_creation_time = []
+    manu = []
+    img_id = []
+    img_label = []
+
     for image_path in dcm_files:
         tokens = image_path.split("/")
         print(tokens)
@@ -63,6 +101,8 @@ def load_images(dcm_files, opt):
         sample_id = float_mrn
         print("sample id: " + str(int(sample_id)))
 
+        deid = link_log.loc[link_log['mrn'] == my_mrn, ['deid']]
+
         try:
             ds = pydicom.dcmread(image_path)
             print("Image read in from dicom")
@@ -77,33 +117,57 @@ def load_images(dcm_files, opt):
         except:
             print("Error grabbing instance number")
 
+        try:
+            manufacturer = ds.Manufacturer
+            manu.append(manufacturer)
+        except:
+            print("Error grabbing manufacturer")
+
+
         img = ds.pixel_array
         print("Image transferred to pixel array")
         img = img_as_float(rgb2gray(img))
+        cropped_image = crop_image(img, opt.params)  # crop image with i-th params
+        resized_image = transform.resize(cropped_image, output_shape=(opt.output_dim, opt.output_dim))  # reduce
+        final_img = set_contrast(resized_image, opt.contrast)
 
-        img_file_name = str(int(sample_id)) + "_" + sample_name[1] + "_" + str(inst_num) + ".jpg"
+        mrn_img_id_val = str(int(mrn)) + "_" + sample_name[1] + "_" + str(inst_num)
+        deid = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, ['revised_labels']]
+
+        img_id_val = str(int(deid)) + "_" + sample_name[1] + "_" + str(inst_num)
+        img_id.append(img_id_val)
+
+        img_file_name = img_id_val + ".jpg"
         print("Image file name:" + img_file_name)
-        scipy.misc.imsave(os.path.join(opt.jpg_dump_dir, img_file_name), img)
+        scipy.misc.imsave(os.path.join(opt.jpg_dump_dir, img_file_name), final_img)
         print('Image file written to' + opt.jpg_dump_dir + img_file_name)
 
         img_num = img_num + 1
 
         print("Error processing image array and writing file")
 
+    df_dict = {'image_ids' : img_id, 'image_label': img_label, 'image_manu': manu}
+    out_csv = pd.DataFrame(df_dict)
+    return out_csv
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-params', default=1, help="parameter settings to crop images "
                                                    "(see IMAGE_PARAMS_1 at top of file)")
     parser.add_argument('-output_dim', default=256, help="dimension of output image")
-    parser.add_argument('-rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/test-cabs/',
+    parser.add_argument('-rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-cabs/',
                         help="directory of US sequence dicoms")
     parser.add_argument('-dcm_dir', default='D5048003_1',
                         help="directory of US sequence dicoms")
-    parser.add_argument('-jpg_dump_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-test/',
+    parser.add_argument('-jpg_dump_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/label_img/',
                         help="directory of US sequence dicoms")
-    # parser.add_argument('-out_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/train-us-seqs/',
-    #                     help="directory of US sequence dicoms")
+    parser.add_argument('-csv_out_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/label_csv/',
+                        help="directory of US sequence dicoms")
+    parser.add_argument('-label_file', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/linking_log_20191120.csv',
+                        help="directory of US sequence dicoms")
+    parser.add_argument('-id_linking_file', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/view_label_df_20191120.csv',
+                        help="directory of US sequence dicoms")
+    parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
 
     opt = parser.parse_args()
     opt.view = int(opt.view)
@@ -112,14 +176,16 @@ def main():
     cab_dir = os.path.join(opt.rootdir, opt.dcm_dir)
     print("cab_dir: " + cab_dir)
 
-    dcm_files = load_file_names(cab_dir=cab_dir)
-    # print(".dcm files: ")
-    # print(dcm_files)
+    my_dcm_files = load_file_names(cab_dir=cab_dir)
+    my_linking_log = pd.read_csv(opt.id_linking_file)
+    my_lab_file = pd.read_csv(opt.label_file)
 
-    # data = load_labels()
-    # print("data: " )
-    # print(data)
-    load_images(dcm_files, opt)
+    csv_out = load_images(dcm_files=my_dcm_files, link_log=my_linking_log, lab_file=my_lab_file, opt=opt)
+    csv_filename = get_filename(opt, my_linking_log)
+
+    print("Writing csv file to: " + opt.csv_out_dir + "/" + csv_filename)
+    csv_out.to_csv(opt.csv_out_dir + "/" + csv_filename)
+
 
 
 if __name__ == "__main__":
@@ -127,5 +193,7 @@ if __name__ == "__main__":
 
 
 
-
+####
+####
+####
 
