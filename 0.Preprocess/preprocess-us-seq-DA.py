@@ -134,7 +134,7 @@ def load_images(dcm_files, link_log, lab_file, opt):
         final_img = set_contrast(resized_image, opt.contrast)
 
         mrn_img_id_val = str(int(mrn)) + "_" + sample_name[1] + "_" + str(inst_num)
-        label = lab_file.loc[lab_file['img_id'] == mrn_img_id_val]['revised_labels']
+        label = lab_file.loc[lab_file['img_id'] == mrn_img_id_val,'revised_labels'].values[0]
         img_label.append(label)
 
         img_id_val = str(int(deid)) + "_" + sample_name[1] + "_" + str(inst_num)
@@ -183,7 +183,7 @@ def main():
     my_lab_file = pd.read_csv(opt.rootdir + '/' + opt.label_filename)
 
     csv_out = load_images(dcm_files=my_dcm_files, link_log=my_linking_log, lab_file=my_lab_file, opt=opt)
-    csv_filename = get_filename(opt, linking_log=my_linking_log)
+    csv_filename = get_filename(opt, linking_log=my_linking_log) + ".csv"
 
     print("Writing csv file to: " + opt.csv_out_dir + "/" + csv_filename)
     csv_out.to_csv(opt.csv_out_dir + "/" + csv_filename)
