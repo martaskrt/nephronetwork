@@ -3,12 +3,14 @@ import os
 import pydicom
 import pandas as pd
 from skimage.color import rgb2gray
-# from skimage import exposure
+from skimage import exposure
 from skimage import img_as_float
-# from skimage import transform
-import scipy.misc
+from skimage import transform
+import imageio
+# from scipy.misc import imsave
 # import matplotlib.pyplot as plt
 import argparse
+import numpy as np
 
 # import extract_labels
 # import pandas as pd
@@ -61,9 +63,9 @@ def set_contrast(image, contrast):
 def get_filename(opt, linking_log):
     mrn_usnum = opt.dcm_dir[1:]
     my_mrn = mrn_usnum.split("_")[0]
-    deid = linking_log.loc[linking_log['mrn'] == my_mrn, ['deid']]
+    deid = linking_log.loc[linking_log['mrn'] == np.int64(my_mrn)]['deid']
     my_usnum = mrn_usnum.split("_")[1]
-    filename = '_'.join([deid,my_usnum])
+    filename = '_'.join([str(int(deid)),my_usnum])
 
     return filename
 
@@ -74,6 +76,9 @@ def load_images(dcm_files, link_log, lab_file, opt):
     manu = []
     img_id = []
     img_label = []
+
+    ## debug
+    # image_path = dcm_files[0]
 
     for image_path in dcm_files:
         tokens = image_path.split("/")
@@ -89,13 +94,16 @@ def load_images(dcm_files, link_log, lab_file, opt):
         mrn = sample_name[0]
         print(mrn)
 
+        ## debug
+        # mrn = '2455689'
+
         float_mrn = float(mrn)
         print(float_mrn)
 
         sample_id = float_mrn
         print("sample id: " + str(int(sample_id)))
 
-        deid = link_log.loc[link_log['mrn'] == my_mrn, ['deid']]
+        deid = str(int(link_log.loc[link_log['mrn'] == np.int64(mrn)]['deid']))
 
         try:
             ds = pydicom.dcmread(image_path)
@@ -126,19 +134,18 @@ def load_images(dcm_files, link_log, lab_file, opt):
         final_img = set_contrast(resized_image, opt.contrast)
 
         mrn_img_id_val = str(int(mrn)) + "_" + sample_name[1] + "_" + str(inst_num)
-        deid = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, ['revised_labels']]
+        label = lab_file.loc[lab_file['img_id'] == mrn_img_id_val]['revised_labels']
+        img_label.append(label)
 
         img_id_val = str(int(deid)) + "_" + sample_name[1] + "_" + str(inst_num)
         img_id.append(img_id_val)
 
         img_file_name = img_id_val + ".jpg"
         print("Image file name:" + img_file_name)
-        scipy.misc.imsave(os.path.join(opt.jpg_dump_dir, img_file_name), final_img)
+        imageio.imsave(os.path.join(opt.jpg_dump_dir, img_file_name), final_img)
         print('Image file written to' + opt.jpg_dump_dir + img_file_name)
 
         img_num = img_num + 1
-
-        print("Error processing image array and writing file")
 
     df_dict = {'image_ids' : img_id, 'image_label': img_label, 'image_manu': manu}
     out_csv = pd.DataFrame(df_dict)
@@ -150,6 +157,8 @@ def main():
                                                    "(see IMAGE_PARAMS_1 at top of file)")
     parser.add_argument('-output_dim', default=256, help="dimension of output image")
     parser.add_argument('-rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-cabs/',
+                        help="directory of US sequence dicoms")
+    parser.add_argument('-cabs_rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-cabs/',
                         help="directory of US sequence dicoms")
     parser.add_argument('-dcm_dir', default='D5048003_1',
                         help="directory of US sequence dicoms")
@@ -163,19 +172,18 @@ def main():
                         help="directory of US sequence dicoms")
     parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
 
-    opt = parser.parse_args()
-    opt.view = int(opt.view)
+    # opt = parser.parse_args() ## uncomment for run
     opt.output_dim = int(opt.output_dim)
 
-    cab_dir = os.path.join(opt.rootdir, opt.dcm_dir)
+    cab_dir = os.path.join(opt.cabs_rootdir, opt.dcm_dir + "/")
     print("cab_dir: " + cab_dir)
 
     my_dcm_files = load_file_names(cab_dir=cab_dir)
-    my_linking_log = pd.read_csv(opt.id_linking_file)
-    my_lab_file = pd.read_csv(opt.label_file)
+    my_linking_log = pd.read_csv(opt.rootdir + '/' + opt.id_linking_filename)
+    my_lab_file = pd.read_csv(opt.rootdir + '/' + opt.label_filename)
 
     csv_out = load_images(dcm_files=my_dcm_files, link_log=my_linking_log, lab_file=my_lab_file, opt=opt)
-    csv_filename = get_filename(opt, my_linking_log)
+    csv_filename = get_filename(opt, linking_log=my_linking_log)
 
     print("Writing csv file to: " + opt.csv_out_dir + "/" + csv_filename)
     csv_out.to_csv(opt.csv_out_dir + "/" + csv_filename)
@@ -190,4 +198,35 @@ if __name__ == "__main__":
 ####
 ####
 ####
+    # parser.add_argument('-params', default=1, help="parameter settings to crop images "
+    #                                                "(see IMAGE_PARAMS_1 at top of file)")
+    # parser.add_argument('-output_dim', default=256, help="dimension of output image")
+    # parser.add_argument('-rootdir', default='C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/',
+    #                     help="directory of US sequence dicoms")
+    # parser.add_argument('-dcm_dir', default='D5048003_1',
+    #                     help="directory of US sequence dicoms")
+    # parser.add_argument('-jpg_dump_dir', default='C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/',
+    #                     help="directory of US sequence dicoms")
+    # parser.add_argument('-csv_out_dir', default='C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/',
+    #                     help="directory of US sequence dicoms")
+    # parser.add_argument('-label_filename', default='linking_log_20191120.csv',
+    #                     help="directory of US sequence dicoms")
+    # parser.add_argument('-id_linking_filename', default='view_label_df_20191120.csv',
+    #                     help="directory of US sequence dicoms")
+    # parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
+
+# class make_opt():
+#     def __init__(self):
+#         self.params = 1
+#         self.output_dim = 256
+#         self.rootdir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image organization Nov 2019/'
+#         self.cabs_rootdir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/'
+#         self.dcm_dir = 'D5048003_1'
+#         self.jpg_dump_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/'
+#         self.csv_out_dir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Front-end-test-files/'
+#         self.label_filename = 'view_label_df_20200120.csv'
+#         self.id_linking_filename = 'linking_log_20191120.csv'
+#         self.contrast = 1
+#
+# opt = make_opt()
 
