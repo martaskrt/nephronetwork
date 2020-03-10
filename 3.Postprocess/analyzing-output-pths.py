@@ -177,9 +177,9 @@ def main():
     args = parser.parse_args()
     
     if args.cv: 
-        train,val,test = make_full_df(args.checkpoint_folder,args.cv,args.fold_inx)
+        train, val, test = make_full_df(args.checkpoint_folder,args.cv,args.fold_inx)
     else:
-        train,test = make_full_df(args.checkpoint_folder,args.cv)    
+        train, test = make_full_df(args.checkpoint_folder,args.cv)
 
     if args.output_file == '':
         file_root = args.checkpoint_folder.split("/")[len(args.checkpoint_folder.split("/")) - 1]

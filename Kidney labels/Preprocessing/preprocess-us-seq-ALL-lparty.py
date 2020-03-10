@@ -6,16 +6,12 @@ from skimage.color import rgb2gray
 from skimage import exposure
 from skimage import img_as_float
 from skimage import transform
-import imageio
+# import imageio
 # from scipy.misc import imsave
 # import matplotlib.pyplot as plt
 import argparse
 import numpy as np
-
-# import extract_labels
-# import pandas as pd
-# import numpy as np
-# from PIL import Image
+from PIL import Image
 
 # Image crop params
 IMAGE_PARAMS = {0: [2.1, 4, 4],
@@ -65,45 +61,91 @@ def get_filename(opt, linking_log):
     my_mrn = mrn_usnum.split("_")[0]
     deid = linking_log.loc[linking_log['mrn'] == np.int64(my_mrn)]['deid']
     my_usnum = mrn_usnum.split("_")[1]
-    filename = '_'.join([str(int(deid)),my_usnum])
+    filename = '_'.join([str(int(deid)), my_usnum])
 
     return filename
+
+def format_np_output(np_arr):
+    """
+        From: https://github.com/utkuozbulak/pytorch-cnn-visualizations/blob/master/src/misc_functions.py
+
+        This is a (kind of) bandaid fix to streamline saving procedure.
+        It converts all the outputs to the same format which is 3xWxH
+        with using sucecssive if clauses.
+    Args:
+        im_as_arr (Numpy array): Matrix of shape 1xWxH or WxH or 3xWxH
+    """
+    # Phase/Case 1: The np arr only has 2 dimensions
+    # Result: Add a dimension at the beginning
+    if len(np_arr.shape) == 2:
+        np_arr = np.expand_dims(np_arr, axis=0)
+    # Phase/Case 2: Np arr has only 1 channel (assuming first dim is channel)
+    # Result: Repeat first channel and convert 1xWxH to 3xWxH
+    if np_arr.shape[0] == 1:
+        np_arr = np.repeat(np_arr, 3, axis=0)
+    # Phase/Case 3: Np arr is of shape 3xWxH
+    # Result: Convert it to WxHx3 in order to make it saveable by PIL
+    if np_arr.shape[0] == 3:
+        np_arr = np_arr.transpose(1, 2, 0)
+    # Phase/Case 4: NP arr is normalized between 0-1
+    # Result: Multiply with 255 and change type to make it saveable by PIL
+    if np.max(np_arr) <= 1:
+        np_arr = (np_arr*255).astype(np.uint8)
+    return np_arr
+
+def save_image(im, path):
+    """
+        Saves a numpy matrix or PIL image as an image
+    Args:
+        im_as_arr (Numpy array): Matrix of shape DxWxH
+        path (str): Path to the image
+    """
+    if isinstance(im, (np.ndarray, np.generic)):
+        im = format_np_output(im)
+        im = Image.fromarray(im)
+    im.save(path)
 
 def load_images(dcm_files, link_log, lab_file, opt):
 
     img_num = 0
     img_creation_time = []
     manu = []
+    acq_date = []
+    acq_time = []
     img_id = []
-    img_label = []
+    view_label = []
+    surgery_label = []
+    function_label = []
+    reflux_label = []
+
 
     ## debug
     # image_path = dcm_files[0]
 
     for image_path in dcm_files:
         tokens = image_path.split("/")
-        print(tokens)
+        # print(tokens)
 
-        rootdir_tokens = opt.rootdir.split("/")
-        print(rootdir_tokens)
+        rootdir_tokens = opt.cabs_rootdir.split("/")
+        # print(rootdir_tokens)
 
         # get mrn and sample number
-        print(tokens[len(rootdir_tokens) - 1])
-        sample_name = tokens[len(rootdir_tokens) - 1][1:].split("_")
-        print(sample_name)
+        # print(tokens[len(rootdir_tokens) - 1])
+        sample_name = tokens[len(rootdir_tokens) - 1][1:].split("_") ## may need to remove [1:]
+        # print(sample_name)
         mrn = sample_name[0]
+        print("MRN being processed: ")
         print(mrn)
 
-        ## debug
-        # mrn = '2455689'
-
         float_mrn = float(mrn)
-        print(float_mrn)
+        # print(float_mrn)
 
         sample_id = float_mrn
         print("sample id: " + str(int(sample_id)))
 
+        # print(link_log.head)
         deid = str(int(link_log.loc[link_log['mrn'] == np.int64(mrn)]['deid']))
+        print("Deid: " + str(int(deid)))
 
         try:
             ds = pydicom.dcmread(image_path)
@@ -117,14 +159,9 @@ def load_images(dcm_files, link_log, lab_file, opt):
             inst_num = ds.InstanceNumber
             img_creation_time.append(inst_num)
         except:
+            inst_num = "NA"
+            img_creation_time.append(inst_num)
             print("Error grabbing instance number")
-
-        try:
-            manufacturer = ds.Manufacturer
-            manu.append(manufacturer)
-        except:
-            print("Error grabbing manufacturer")
-
 
         img = ds.pixel_array
         print("Image transferred to pixel array")
@@ -134,20 +171,98 @@ def load_images(dcm_files, link_log, lab_file, opt):
         final_img = set_contrast(resized_image, opt.contrast)
 
         mrn_img_id_val = str(int(mrn)) + "_" + sample_name[1] + "_" + str(inst_num)
-        label = lab_file.loc[lab_file['img_id'] == mrn_img_id_val,'revised_labels'].values[0]
-        img_label.append(label)
+        # print(lab_file.head)
+        print("Image ID: " + mrn_img_id_val)
 
-        img_id_val = str(int(deid)) + "_" + sample_name[1] + "_" + str(inst_num)
-        img_id.append(img_id_val)
+        try:
+            my_view = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'revised_labels'].values[0]
+            my_surg = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'Surgery'].values[0]
+            my_func = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'Function'].values[0]
+            my_refl = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'Reflux'].values[0]
 
-        img_file_name = img_id_val + ".jpg"
-        print("Image file name:" + img_file_name)
-        imageio.imsave(os.path.join(opt.jpg_dump_dir, img_file_name), final_img)
-        print('Image file written to' + opt.jpg_dump_dir + img_file_name)
+            view_label.append(my_view)
+            surgery_label.append(my_surg)
+            function_label.append(my_func)
+            reflux_label.append(my_refl)
+
+            print("View label: " + my_view)
+            print("Surgery label: " + my_surg)
+            print("Function label: " + my_func)
+            print("Reflux label: " + my_refl)
+
+            img_id_val = str(int(deid)) + "_" + sample_name[1] + "_" + str(inst_num)
+            img_id.append(img_id_val)
+            print("De-id image ID: " + img_id_val)
+
+            img_file_name = img_id_val + ".jpg"
+            print("Image file name:" + img_file_name)
+
+            manufacturer = ds.Manufacturer
+            manu.append(manufacturer)
+            img_date = ds.ContentDate
+            acq_date.append(img_date)
+            img_time = ds.ContentTime
+            acq_time.append(img_time)
+            print("Manufacturer name: " + manufacturer)
+            print("Image acquisition date: " + img_date)
+            print("Image acquisition time: " + img_time)
+
+            save_image(final_img, os.path.join(opt.jpg_dump_dir, img_file_name))
+            print('Image file written to' + opt.jpg_dump_dir + img_file_name)
+
+        except:
+            print("Image ID not in label file")
+
+            my_view = 'Missing'
+            my_surg = 'Missing'
+            my_func = 'Missing'
+            my_refl = 'Missing'
+
+            view_label.append(my_view)
+            surgery_label.append(my_surg)
+            function_label.append(my_func)
+            reflux_label.append(my_refl)
+
+            print("View label: " + my_view)
+            print("Surgery label: " + my_surg)
+            print("Function label: " + my_func)
+            print("Reflux label: " + my_refl)
+
+            img_id_val = str(int(deid)) + "_" + sample_name[1] + "_" + str(inst_num)
+            img_id.append(img_id_val)
+            print("De-id image ID: " + img_id_val)
+
+            img_file_name = img_id_val + ".jpg"
+            print("Image file name:" + img_file_name)
+
+            manufacturer = ds.Manufacturer
+            manu.append(manufacturer)
+            img_date = ds.ContentDate
+            acq_date.append(img_date)
+            img_time = ds.ContentTime
+            acq_time.append(img_time)
+            print("Manufacturer name: " + manufacturer)
+            print("Image acquisition date: " + img_date)
+            print("Image acquisition time: " + img_time)
+
+            save_image(final_img, os.path.join(opt.jpg_dump_dir, img_file_name))
+            print('Image file written to' + opt.jpg_dump_dir + img_file_name)
 
         img_num = img_num + 1
 
-    df_dict = {'image_ids' : img_id, 'image_label': img_label, 'image_manu': manu}
+    # print("Image IDs: ")
+    # print(img_id)
+    # print("Image labels: ")
+    # print(img_label)
+    # print("Image manufacturers: ")
+    # print(manu)
+    df_dict = {'image_ids': img_id, 'image_manu': manu,
+               'image_acq_date': acq_date, 'image_acq_time': acq_time, 'view_label': view_label,
+               'surgery_label': surgery_label, 'function_label': function_label,
+               'reflux_label': reflux_label}
+    for key in df_dict:
+        print(key + ": " + str(len(df_dict[key])))
+
     out_csv = pd.DataFrame(df_dict)
     return out_csv
 
@@ -156,23 +271,23 @@ def main():
     parser.add_argument('-params', default=1, help="parameter settings to crop images "
                                                    "(see IMAGE_PARAMS_1 at top of file)")
     parser.add_argument('-output_dim', default=256, help="dimension of output image")
-    parser.add_argument('-rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-cabs/',
+    parser.add_argument('-rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/',
                         help="directory of US sequence dicoms")
     parser.add_argument('-cabs_rootdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-cabs/',
                         help="directory of US sequence dicoms")
     parser.add_argument('-dcm_dir', default='D5048003_1',
                         help="directory of US sequence dicoms")
-    parser.add_argument('-jpg_dump_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/label_img/',
+    parser.add_argument('-jpg_dump_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all_label_img/',
                         help="directory of US sequence dicoms")
-    parser.add_argument('-csv_out_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/label_csv/',
+    parser.add_argument('-csv_out_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all_label_csv/',
                         help="directory of US sequence dicoms")
-    parser.add_argument('-label_file', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/linking_log_20191120.csv',
+    parser.add_argument('-label_filename', default='full_labels_20200211.csv',
                         help="directory of US sequence dicoms")
-    parser.add_argument('-id_linking_file', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/view_label_df_20191120.csv',
+    parser.add_argument('-id_linking_filename', default='full_linking_log_20200211.csv',
                         help="directory of US sequence dicoms")
     parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
 
-    # opt = parser.parse_args() ## uncomment for run
+    opt = parser.parse_args() ## comment for debug
     opt.output_dim = int(opt.output_dim)
 
     cab_dir = os.path.join(opt.cabs_rootdir, opt.dcm_dir + "/")
@@ -215,6 +330,8 @@ if __name__ == "__main__":
     #                     help="directory of US sequence dicoms")
     # parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
 
+
+    ## comment out after debug
 # class make_opt():
 #     def __init__(self):
 #         self.params = 1

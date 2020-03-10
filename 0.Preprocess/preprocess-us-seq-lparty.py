@@ -34,8 +34,6 @@ def load_file_names(cab_dir):
                dcm_files.append(os.path.join(subdir, file))
     return sorted(dcm_files)
 
-
-
 def load_images(dcm_files, opt):
     #train_rows = round(label_data.shape[0]*0.75)
     #print("train rows " + train_rows)
@@ -90,8 +88,6 @@ def load_images(dcm_files, opt):
         img_num = img_num + 1
 
         print("Error processing image array and writing file")
-
-
 
 def main():
     parser = argparse.ArgumentParser()
