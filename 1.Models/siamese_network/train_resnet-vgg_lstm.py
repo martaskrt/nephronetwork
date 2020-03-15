@@ -56,12 +56,12 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     if not local:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                args.git_dir + '/nephronetwork/2.Results/process_results.py').load_module()
-        sys.path.insert(0, '/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network/')
+        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
     else:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                '/Users/sulagshan/Documents/Thesis/nephronetwork/2.Results/process_results.py').load_module()
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+        sys.path.insert(0, '/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, "/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network")
 
     num_inputs = 1 if args.view != "siamese" else 2
@@ -380,6 +380,7 @@ def main():
             git_dir=args.git_dir
         )
     else:
+        # load dummy data locally to test logic
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
