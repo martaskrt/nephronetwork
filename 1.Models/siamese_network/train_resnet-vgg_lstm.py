@@ -380,7 +380,7 @@ def main():
             git_dir=args.git_dir
         )
     else:
-        data_losader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
+        data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
