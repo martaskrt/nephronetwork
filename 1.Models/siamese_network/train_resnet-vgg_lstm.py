@@ -58,21 +58,18 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                                                                args.git_dir + '/nephronetwork/2.Results/process_results.py').load_module()
         sys.path.insert(0, '/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
-        from VGGResNetSiameseSul import RevisedResNetLstm
     else:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                '/Users/sulagshan/Documents/Thesis/nephronetwork/2.Results/process_results.py').load_module()
         sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, "/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network")
-        from VGGResNetSiamese import RevisedResNetLstm
 
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
 
+    from VGGResNetSiameseLSTM import RevisedResNetLstm
     net = RevisedResNetLstm(pretrain=model_pretrain, num_inputs=num_inputs).to(device)
     print("importing ResNet18 + LSTM")
-    # else:
-    #     print("No model selected, add one of the following flags: --vgg, --resnet18, --resnet50")
 
     hyperparams = {'lr': args.lr,
                    'momentum': args.momentum,
@@ -90,8 +87,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
-    # Be careful here need to shuffle patients but not order within
-    # train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
+
+    # Be careful to not shuffle order of image seq within a patient
+    train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
     if debug:
         train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:42], train_y[40:42], train_cov[40:42], test_X[0:2], test_y[0:2], test_cov[0:2]
 
@@ -127,9 +125,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         counter_train = 0
         counter_test = 0
 
-        # if args.lstm:
-        # hidden = net.init_hidden(1)
-
         net.train()
         cur_patient = ''
         cur_patient_data = []
@@ -145,15 +140,12 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             # print(data.size())
             output = net(data.to(device))
             # print("network run with batch")
-            # target looks like: [tensor([0]), tensor([1]), tensor([0]), tensor([1])]
-            target = torch.tensor(target)
-            # now target looks like: tensor([0,1,0,1])
+            target = torch.tensor(target)  # change target to: tensor([0,1,0,1]) from: [tensor([0]), tensor([1]), tensor([0]), tensor([1])]
             target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
             # print(output)
             # print(target)
             loss = F.cross_entropy(output, target)
             # print("loss calculated")
-            # loss = cross_entropy(output, target)
             print(loss)
             loss_accum_train += loss.item() * len(target)
             loss.backward()
@@ -161,7 +153,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             optimizer.step()
             counter_train += len(target)
             output_softmax = softmax(output)
-            # output_softmax = output
             pred_prob = output_softmax[:, 1]
             pred_label = torch.argmax(output_softmax, dim=1)
             # print(pred_prob)
@@ -175,9 +166,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
         net.eval()
         with torch.no_grad():
-            # with torch.set_grad_enabled(False):
-            # if args.lstm:
-            # hidden = net.init_hidden(1)
+
             for batch_idx, (data, target, cov) in enumerate(test_generator):
                 net.zero_grad()
                 optimizer.zero_grad()
@@ -186,11 +175,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 target = target.type(torch.LongTensor).to(device)
 
                 loss = F.cross_entropy(output, target)
-                # loss = cross_entropy(output, target)
                 loss_accum_test += loss.item() * len(target)
                 counter_test += len(target)
                 output_softmax = softmax(output)
-                # output_softmax = output
                 accurate_labels_test += torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
                 pred_prob = output_softmax[:, 1]
@@ -206,14 +193,11 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
 
                 patient_ID_test.extend(cov)
 
-        # [len(e) for e in [all_pred_label_train, all_pred_label_train, all_targets_train, patient_ID_train]]
         all_pred_prob_train = torch.cat(all_pred_prob_train)
         all_targets_train = torch.cat(all_targets_train)
         all_pred_label_train = torch.cat(all_pred_label_train)
-
-        # patient_ID_train = torch.cat(patient_ID_train)
-
         totalTrainItems = sum(len(e) for e in train_y)
+
         assert len(all_targets_train) == totalTrainItems
         assert len(all_pred_prob_train) == totalTrainItems
         assert len(all_pred_label_train) == totalTrainItems
@@ -236,10 +220,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         all_pred_prob_test = torch.cat(all_pred_prob_test)
         all_targets_test = torch.cat(all_targets_test)
         all_pred_label_test = torch.cat(all_pred_label_test)
-
-        # patient_ID_test = torch.cat(patient_ID_test)
-        # [len(e) for e in [all_pred_label_test, all_pred_label_test, all_targets_test, patient_ID_test]]
         totalTestItems = sum(len(e) for e in test_y)
+
         assert len(all_targets_test) == totalTestItems
         assert len(all_pred_label_test) == totalTestItems
         assert len(all_pred_prob_test) == totalTestItems
@@ -257,25 +239,25 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                                                                      results_test['fp'], results_test['fn'],
                                                                      results_test['tp']))
 
-        # if ((epoch+1) % 5) == 0 and epoch > 0:
-        checkpoint = {'epoch': epoch,
-                      'loss': loss,
-                      'hyperparams': hyperparams,
-                      'args': args,
-                      'model_state_dict': net.state_dict(),
-                      'optimizer': optimizer.state_dict(),
-                      'loss_train': loss_accum_train / counter_train,
-                      'loss_test': loss_accum_test / counter_test,
-                      'accuracy_train': int(accurate_labels_train) / counter_train,
-                      'accuracy_test': int(accurate_labels_test) / counter_test,
-                      'results_train': results_train,
-                      'results_test': results_test,
-                      'all_pred_prob_train': all_pred_prob_train,
-                      'all_pred_prob_test': all_pred_prob_test,
-                      'all_targets_train': all_targets_train,
-                      'all_targets_test': all_targets_test,
-                      'patient_ID_train': patient_ID_train,
-                      'patient_ID_test': patient_ID_test}
+        if ((epoch+1) % 5) == 0 and epoch > 0:
+            checkpoint = {'epoch': epoch,
+                          'loss': loss,
+                          'hyperparams': hyperparams,
+                          'args': args,
+                          'model_state_dict': net.state_dict(),
+                          'optimizer': optimizer.state_dict(),
+                          'loss_train': loss_accum_train / counter_train,
+                          'loss_test': loss_accum_test / counter_test,
+                          'accuracy_train': int(accurate_labels_train) / counter_train,
+                          'accuracy_test': int(accurate_labels_test) / counter_test,
+                          'results_train': results_train,
+                          'results_test': results_test,
+                          'all_pred_prob_train': all_pred_prob_train,
+                          'all_pred_prob_test': all_pred_prob_test,
+                          'all_targets_train': all_targets_train,
+                          'all_targets_test': all_targets_test,
+                          'patient_ID_train': patient_ID_train,
+                          'patient_ID_test': patient_ID_test}
 
         if not os.path.isdir(args.dir):
             os.makedirs(args.dir)
@@ -317,7 +299,6 @@ def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
         # convert to np array
         organized_train_x = np.asarray([np.asarray(e) for e in list(x.values())])
         return organized_train_x, np.asarray(list(y.values())), np.asarray(list(cov.values()))
-        # return np.asarray(list(x.values()), dtype=np.float64), list(y.values()), list(cov.values())
 
     def allowOnlyNVisits(t_x, t_y, t_cov, n=4):
         x, y, cov = [],[],[]
@@ -379,11 +360,6 @@ def main():
     # print("view: " + str(args.view))
     # print("pretrained weights:" + str(args.pretrained))
 
-    # sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
-    # import load_dataset_LE
-    # sys.path.append(args.git_dir + 'nephronetwork/2.Results')
-    # import process_results
-
     max_epochs = args.epochs
     if not local:
         datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
@@ -404,18 +380,14 @@ def main():
             git_dir=args.git_dir
         )
     else:
-        data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
+        data_losader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
-    '''
-    todo:
-    #once we get train_X etc, we reorg so it can be processed with lstm To do:move this code to data loader
-    train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
-    '''
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
+    print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
-
+    print("note length is number of kidneys being processed, each of which has a seq of images")
 
 if __name__ == '__main__':
     main()
