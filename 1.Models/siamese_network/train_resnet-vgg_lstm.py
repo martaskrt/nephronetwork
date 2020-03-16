@@ -91,7 +91,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     # Be careful to not shuffle order of image seq within a patient
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
     if debug:
-        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:42], train_y[40:42], train_cov[40:42], test_X[0:2], test_y[0:2], test_cov[0:2]
+        pass
+        # train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:42], train_y[40:42], train_cov[40:42], test_X[0:2], test_y[0:2], test_cov[0:2]
 
     training_set = KidneyDataset(train_X, train_y, train_cov)
     test_set = KidneyDataset(test_X, test_y, test_cov)
@@ -292,7 +293,7 @@ def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
     def group(t_x, t_y, t_cov):
         x, y, cov = defaultdict(list), defaultdict(list), defaultdict(list)
         for i in range(len(t_cov)):
-            id = t_cov[i].split("_")[0]
+            id = t_cov[i].split("_")[0] + t_cov[i].split("_")[4]
             x[id].append(t_x[i])
             y[id].append(t_y[i])
             cov[id].append(t_cov[i])
