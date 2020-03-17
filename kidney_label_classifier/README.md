@@ -93,17 +93,22 @@ qsub -v task=granular,model=alexnet,run=hello_world nephro.sh
 
 1b. Alternatively, run `train_and_eval.py` on your desktop/server/wherever:
 ```
-python3 ~/PycharmProjects/nephro/train_and_eval.py \
-      --root_path='/Users/delvin/Documents/Projects/nephro_test/' \
-      --num_epochs=100 \
-      --manifest_path='/Users/delvin/Documents/Projects/nephro_test/data/kidney_manifest.csv' \
-      --model_out='/Users/delvin/Documents/Projects/nephro_test/output'   \
-      --metrics_every_iter=10 \
-      --no_wts \
-      --batch_size=64 \
-      --run_name=alexnet_no_wts
-      --model=alexnet
-      --task=granular
+Example usage:
+```
+python3 /home/delvinso/nephro/nephro_net/train_and_eval.py \
+  --root_path='/home/delvinso/nephro/' \
+  --num_epochs=100  \
+  --manifest_path='/home/delvinso/nephro/data/kidney_manifest.csv'  \
+  --model_out='/home/delvinso/nephro/output' \
+  --metrics_every_iter=100 \
+  --no_wts \
+  --batch_size=16 \
+  --run_name=alexnet_no_wts
+  --model=alexnet
+  --task=granular
+  
+```
+
 ```
 
 All scripts below can also be called simply by invoking `python3 script_name_here.py`
