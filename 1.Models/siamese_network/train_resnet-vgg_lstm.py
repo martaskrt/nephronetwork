@@ -24,8 +24,8 @@ from collections import defaultdict
 # from torchsummary import summary
 
 SEED = 42
-local = True
-debug = True
+local = False
+debug = False
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -147,7 +147,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             # print(target)
             loss = F.cross_entropy(output, target)
             # print("loss calculated")
-            print(loss)
+            # print(loss)
             loss_accum_train += loss.item() * len(target)
             loss.backward()
             accurate_labels_train += torch.sum(torch.argmax(output, dim=1) == target).cpu()

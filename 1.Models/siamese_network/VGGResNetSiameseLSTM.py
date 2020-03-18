@@ -35,8 +35,8 @@ class RevisedResNetLstm(nn.Module):
         # print("num_inputs: " + str(self.num_inputs))
         x_to_lstm = []
         # create lstm sequence by running images for kidney through CNN
-        for j in range(len(kidney)): # len(patient) should be 1
-            x = patient[j]
+        for j in range(len(kidney)):
+            x = kidney[j]
             if self.num_inputs == 1:
                 x = x.unsqueeze(1)
 
