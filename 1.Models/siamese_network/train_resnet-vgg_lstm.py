@@ -39,8 +39,8 @@ softmax = torch.nn.Softmax(dim=1)
 class KidneyDataset(torch.utils.data.Dataset):
 
     def __init__(self, X, y, cov):
-        # X = [torch.from_numpy(X).float() for e in X]
-        self.X = torch.from_numpy(X).float()
+        self.X = [torch.from_numpy(e).float() for e in X]
+        # self.X = torch.from_numpy(X).float()
         self.y = y
         self.cov = cov
 
@@ -312,10 +312,10 @@ def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
     
     train_x, train_y, train_cov = sortData(train_x, train_y, train_cov)
     train_x, train_y, train_cov = group(train_x, train_y, train_cov)
-    train_x, train_y, train_cov = allowOnlyNVisits(train_x, train_y, train_cov)
+    # train_x, train_y, train_cov = allowOnlyNVisits(train_x, train_y, train_cov)
     test_x, test_y, test_cov = sortData(test_x, test_y, test_cov)
     test_x, test_y, test_cov = group(test_x, test_y, test_cov)
-    test_x, test_y, test_cov = allowOnlyNVisits(test_x, test_y, test_cov)
+    # test_x, test_y, test_cov = allowOnlyNVisits(test_x, test_y, test_cov)
     
     return train_x, train_y, train_cov, test_x, test_y, test_cov
 
