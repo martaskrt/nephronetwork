@@ -95,8 +95,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     # Be careful to not shuffle order of image seq within a patient
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
     if debug:
-        # pass
-        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:50], train_y[40:50], train_cov[40:50], test_X[10:20], test_y[10:20], test_cov[10:20]
+        pass
+        # train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:50], train_y[40:50], train_cov[40:50], test_X[10:20], test_y[10:20], test_cov[10:20]
 
     training_set = KidneyDataset(train_X, train_y, train_cov)
     test_set = KidneyDataset(test_X, test_y, test_cov)
@@ -139,20 +139,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             if cur_patient == '' or cur_patient == getPatientID(cov):
                 cur_patient_data
             '''
-            # if batch_idx%100 == 0:
-            print("batch " + str(batch_idx) + " started")
+            if batch_idx%100 == 0:
+                print("batch " + str(batch_idx) + " started")
             optimizer.zero_grad()
-            # print("Input data.size(): ")
-            # print(data.size())
             output = net(data.to(device))
-            # print("network run with batch")
             target = torch.tensor(target)  # change target to: tensor([0,1,0,1]) from: [tensor([0]), tensor([1]), tensor([0]), tensor([1])]
             target = Variable(target.type(torch.LongTensor), requires_grad=False).to(device)
-            # print(output)
-            # print(target)
             loss = F.cross_entropy(output, target)
-            # print("loss calculated")
-            # print(loss)
             loss_accum_train += loss.item() * len(target)
             loss.backward()
             accurate_labels_train += torch.sum(torch.argmax(output, dim=1) == target).cpu()
@@ -161,8 +154,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             output_softmax = softmax(output)
             pred_prob = output_softmax[:, 1]
             pred_label = torch.argmax(output_softmax, dim=1)
-            # print(pred_prob)
-            # print(pred_label)
             assert len(pred_prob) == len(target)
             assert len(pred_label) == len(target)
             all_pred_prob_train.append(pred_prob)
@@ -201,16 +192,22 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         all_targets_train_tensor = torch.cat(all_targets_train)
         all_pred_label_train_tensor = torch.cat(all_pred_label_train)
         totalTrainItems = sum(len(e) for e in train_y)
-
         assert len(all_pred_prob_train_tensor) == totalTrainItems
         assert len(all_pred_label_train_tensor) == totalTrainItems
         assert len(all_targets_train_tensor) == totalTrainItems
         assert len(all_patient_ID_train) == len(train_y)
+        all_pred_prob_test_tensor = torch.cat(all_pred_prob_test)
+        all_targets_test_tensor = torch.cat(all_targets_test)
+        all_pred_label_test_tensor = torch.cat(all_pred_label_test)
+        totalTestItems = sum(len(e) for e in test_y)
+        assert len(all_pred_prob_test_tensor) == totalTestItems
+        assert len(all_pred_label_test_tensor) == totalTestItems
+        assert len(all_targets_test_tensor) == totalTestItems
+        assert len(all_patient_ID_test) == len(test_y)
 
         results_train = process_results.get_metrics(y_score=all_pred_prob_train_tensor.cpu().detach().numpy(),
                                                     y_true=all_targets_train_tensor.cpu().detach().numpy(),
                                                     y_pred=all_pred_label_train_tensor.cpu().detach().numpy())
-
         print('TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
               'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
                                                                      int(accurate_labels_train) / counter_train,
@@ -220,17 +217,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                                                                      results_train['tn'],
                                                                      results_train['fp'], results_train['fn'],
                                                                      results_train['tp']))
-
-        all_pred_prob_test_tensor = torch.cat(all_pred_prob_test)
-        all_targets_test_tensor = torch.cat(all_targets_test)
-        all_pred_label_test_tensor = torch.cat(all_pred_label_test)
-        totalTestItems = sum(len(e) for e in test_y)
-
-        assert len(all_pred_prob_test_tensor) == totalTestItems
-        assert len(all_pred_label_test_tensor) == totalTestItems
-        assert len(all_targets_test_tensor) == totalTestItems
-        assert len(all_patient_ID_test) == len(test_y)
-
         results_test = process_results.get_metrics(y_score=all_pred_prob_test_tensor.cpu().detach().numpy(),
                                                    y_true=all_targets_test_tensor.cpu().detach().numpy(),
                                                    y_pred=all_pred_label_test_tensor.cpu().detach().numpy())
@@ -285,18 +271,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         #     path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
         #     torch.save(checkpoint, path_to_checkpoint)
 
-'''
-1.0_1.0_M_2_Right_2016-10-07_2017-07-11_philips-medical-systems
-todo:implementations needs to be finished
-'''
 def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
-    # This code can be used to confirm that organizeData is keeping data in sync by using oldMatch to conform after
-    # oldMatch = {}
-    # for i in range(len(train_x)):
-    #     oldMatch[train_cov[i]] = (train_x[i], train_y[i])
-    # oldMatchTest = {}
-    # for i in range(len(test_x)):
-    #     oldMatchTest[test_cov[i]] = (test_x[i], test_y[i])
 
     def sortData(t_x, t_y, t_cov):
         train_cov, train_x, train_y = zip(*sorted(zip(t_cov, t_x, t_y), key=lambda x: float(x[0].split("_")[0])))
@@ -364,14 +339,6 @@ def parseArgs():
 
 def main():
     args = parseArgs()
-
-    # print("batch size: " + str(args.batch_size))
-    # print("lr: " + str(args.lr))
-    # print("momentum: " + str(args.momentum))
-    # print("adam optimizer: " + str(args.adam))
-    # print("weight decay: " + str(args.weight_decay))
-    # print("view: " + str(args.view))
-    # print("pretrained weights:" + str(args.pretrained))
 
     max_epochs = args.epochs
     if not local:
@@ -505,6 +472,26 @@ if __name__ == '__main__':
 # train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
 #
 # print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
+'''
+    # This code can be used to confirm that organizeData is keeping data in sync by using oldMatch to conform after
+    # oldMatch = {}
+    # for i in range(len(train_x)):
+    #     oldMatch[train_cov[i]] = (train_x[i], train_y[i])
+    # oldMatchTest = {}
+    # for i in range(len(test_x)):
+    #     oldMatchTest[test_cov[i]] = (test_x[i], test_y[i])
+'''
+
+'''
+    # print("batch size: " + str(args.batch_size))
+    # print("lr: " + str(args.lr))
+    # print("momentum: " + str(args.momentum))
+    # print("adam optimizer: " + str(args.adam))
+    # print("weight decay: " + str(args.weight_decay))
+    # print("view: " + str(args.view))
+    # print("pretrained weights:" + str(args.pretrained))
+'''
+
 
 '''
     if args.vgg:
