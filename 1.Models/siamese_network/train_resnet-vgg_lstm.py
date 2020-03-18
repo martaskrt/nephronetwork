@@ -9,6 +9,7 @@ from torch.autograd import Variable
 from sklearn.utils import shuffle
 import importlib.machinery
 from collections import defaultdict
+from datetime import datetime
 # from torchvision import transforms
 # from sklearn.utils import class_weight
 # from torch import nn
@@ -24,8 +25,10 @@ from collections import defaultdict
 # from torchsummary import summary
 
 SEED = 42
-local = False
-debug = False
+local = True
+debug = True
+timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+resFile = "../../../results/lstmRes_"+timestamp+".txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -64,6 +67,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         sys.path.insert(0, '/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, "/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network")
 
+    checkpointNum = 0
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
 
@@ -91,8 +95,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
     # Be careful to not shuffle order of image seq within a patient
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
     if debug:
-        pass
-        # train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:42], train_y[40:42], train_cov[40:42], test_X[0:2], test_y[0:2], test_cov[0:2]
+        # pass
+        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:50], train_y[40:50], train_cov[40:50], test_X[10:20], test_y[10:20], test_cov[10:20]
 
     training_set = KidneyDataset(train_X, train_y, train_cov)
     test_set = KidneyDataset(test_X, test_y, test_cov)
@@ -120,8 +124,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         all_pred_prob_test = []
         all_pred_label_test = []
 
-        patient_ID_test = []
-        patient_ID_train = []
+        all_patient_ID_test = []
+        all_patient_ID_train = []
 
         counter_train = 0
         counter_test = 0
@@ -135,6 +139,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             if cur_patient == '' or cur_patient == getPatientID(cov):
                 cur_patient_data
             '''
+            # if batch_idx%100 == 0:
             print("batch " + str(batch_idx) + " started")
             optimizer.zero_grad()
             # print("Input data.size(): ")
@@ -161,9 +166,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
             assert len(pred_prob) == len(target)
             assert len(pred_label) == len(target)
             all_pred_prob_train.append(pred_prob)
-            all_targets_train.append(target)
             all_pred_label_train.append(pred_label)
-            patient_ID_train.extend(cov)
+            all_targets_train.append(target)
+            all_patient_ID_train.append(cov)
 
         net.eval()
         with torch.no_grad():
@@ -182,31 +187,29 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 accurate_labels_test += torch.sum(torch.argmax(output, dim=1) == target).cpu()
 
                 pred_prob = output_softmax[:, 1]
-                pred_prob = pred_prob.squeeze()
                 pred_label = torch.argmax(output, dim=1)
 
                 assert len(pred_prob) == len(target)
                 assert len(pred_label) == len(target)
 
                 all_pred_prob_test.append(pred_prob)
-                all_targets_test.append(target)
                 all_pred_label_test.append(pred_label)
+                all_targets_test.append(target)
+                all_patient_ID_test.append(cov)
 
-                patient_ID_test.extend(cov)
-
-        all_pred_prob_train = torch.cat(all_pred_prob_train)
-        all_targets_train = torch.cat(all_targets_train)
-        all_pred_label_train = torch.cat(all_pred_label_train)
+        all_pred_prob_train_tensor = torch.cat(all_pred_prob_train)
+        all_targets_train_tensor = torch.cat(all_targets_train)
+        all_pred_label_train_tensor = torch.cat(all_pred_label_train)
         totalTrainItems = sum(len(e) for e in train_y)
 
-        assert len(all_targets_train) == totalTrainItems
-        assert len(all_pred_prob_train) == totalTrainItems
-        assert len(all_pred_label_train) == totalTrainItems
-        assert len(patient_ID_train) == totalTrainItems
+        assert len(all_pred_prob_train_tensor) == totalTrainItems
+        assert len(all_pred_label_train_tensor) == totalTrainItems
+        assert len(all_targets_train_tensor) == totalTrainItems
+        assert len(all_patient_ID_train) == len(train_y)
 
-        results_train = process_results.get_metrics(y_score=all_pred_prob_train.cpu().detach().numpy(),
-                                                    y_true=all_targets_train.cpu().detach().numpy(),
-                                                    y_pred=all_pred_label_train.cpu().detach().numpy())
+        results_train = process_results.get_metrics(y_score=all_pred_prob_train_tensor.cpu().detach().numpy(),
+                                                    y_true=all_targets_train_tensor.cpu().detach().numpy(),
+                                                    y_pred=all_pred_label_train_tensor.cpu().detach().numpy())
 
         print('TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
               'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
@@ -218,19 +221,19 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                                                                      results_train['fp'], results_train['fn'],
                                                                      results_train['tp']))
 
-        all_pred_prob_test = torch.cat(all_pred_prob_test)
-        all_targets_test = torch.cat(all_targets_test)
-        all_pred_label_test = torch.cat(all_pred_label_test)
+        all_pred_prob_test_tensor = torch.cat(all_pred_prob_test)
+        all_targets_test_tensor = torch.cat(all_targets_test)
+        all_pred_label_test_tensor = torch.cat(all_pred_label_test)
         totalTestItems = sum(len(e) for e in test_y)
 
-        assert len(all_targets_test) == totalTestItems
-        assert len(all_pred_label_test) == totalTestItems
-        assert len(all_pred_prob_test) == totalTestItems
-        assert len(patient_ID_test) == totalTestItems
+        assert len(all_pred_prob_test_tensor) == totalTestItems
+        assert len(all_pred_label_test_tensor) == totalTestItems
+        assert len(all_targets_test_tensor) == totalTestItems
+        assert len(all_patient_ID_test) == len(test_y)
 
-        results_test = process_results.get_metrics(y_score=all_pred_prob_test.cpu().detach().numpy(),
-                                                   y_true=all_targets_test.cpu().detach().numpy(),
-                                                   y_pred=all_pred_label_test.cpu().detach().numpy())
+        results_test = process_results.get_metrics(y_score=all_pred_prob_test_tensor.cpu().detach().numpy(),
+                                                   y_true=all_targets_test_tensor.cpu().detach().numpy(),
+                                                   y_pred=all_pred_label_test_tensor.cpu().detach().numpy())
         print('TestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
               'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
                                                                      int(accurate_labels_test) / counter_test,
@@ -240,28 +243,37 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                                                                      results_test['fp'], results_test['fn'],
                                                                      results_test['tp']))
 
-        if ((epoch+1) % 5) == 0 and epoch > 0:
+        if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
+            checkpointNum += 1
             checkpoint = {'epoch': epoch,
                           'loss': loss,
                           'hyperparams': hyperparams,
                           'args': args,
-                          'model_state_dict': net.state_dict(),
-                          'optimizer': optimizer.state_dict(),
+                          # 'model_state_dict': net.state_dict(),
+                          # 'optimizer': optimizer.state_dict(),
                           'loss_train': loss_accum_train / counter_train,
                           'loss_test': loss_accum_test / counter_test,
                           'accuracy_train': int(accurate_labels_train) / counter_train,
                           'accuracy_test': int(accurate_labels_test) / counter_test,
                           'results_train': results_train,
                           'results_test': results_test,
-                          'all_pred_prob_train': all_pred_prob_train,
-                          'all_pred_prob_test': all_pred_prob_test,
-                          'all_targets_train': all_targets_train,
-                          'all_targets_test': all_targets_test,
-                          'patient_ID_train': patient_ID_train,
-                          'patient_ID_test': patient_ID_test}
+                          # 'all_pred_prob_train': all_pred_prob_train,
+                          'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
+                          'all_targets_train': [e.tolist() for e in all_targets_train],
+                          'all_patient_ID_train': all_patient_ID_train,
+                          # 'all_pred_prob_test': all_pred_prob_test,
+                          'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
+                          'all_targets_test': [e.tolist() for e in all_targets_test],
+                          'all_patient_ID_test': all_patient_ID_test,
+                          }
+            f = open(resFile,"a")
+            f.write("checkpoint"+str(checkpointNum)+"\n")
+            f.write(str(checkpoint))
+            f.close()
 
-        if not os.path.isdir(args.dir):
-            os.makedirs(args.dir)
+
+        # if not os.path.isdir(args.dir):
+            # os.makedirs(args.dir)
         # if not os.path.isdir(args.dir + "/" + str(fold)):
         # os.makedirs(args.dir + "/" + str(fold))
 
@@ -269,9 +281,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
         # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
         # torch.save(checkpoint, path_to_checkpoint)
 
-        if epoch == args.stop_epoch:
-            path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
-            torch.save(checkpoint, path_to_checkpoint)
+        # if epoch == args.stop_epoch:
+        #     path_to_checkpoint = args.dir + "/checkpoint_" + str(epoch) + '.pth'
+        #     torch.save(checkpoint, path_to_checkpoint)
 
 '''
 1.0_1.0_M_2_Right_2016-10-07_2017-07-11_philips-medical-systems
@@ -321,7 +333,7 @@ def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
 
 def parseArgs():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs',         default=30,     type=int,   help="Number of epochs")
+    parser.add_argument('--epochs',         default=100,     type=int,   help="Number of epochs")
     parser.add_argument('--batch_size',     default=16,     type=int,   help="Batch size")
     parser.add_argument('--lr',             default=0.001,  type=float, help="Learning rate")
     parser.add_argument('--momentum',       default=0.9,    type=float, help="Momentum")
@@ -333,7 +345,7 @@ def parseArgs():
     parser.add_argument("--crop",           default=0,      type=int,   help="Crop setting (0=big, 1=tight)")
     parser.add_argument("--output_dim",     default=128,    type=int,   help="output dim for last linear layer")
     parser.add_argument("--git_dir",        default="C:/Users/Lauren/Desktop/DS Core/Projects/Urology/")
-    parser.add_argument("--stop_epoch",     default=18,     type=int,   help="If not running cross validation, which epoch to finish with")
+    parser.add_argument("--stop_epoch",     default=100,     type=int,   help="If not running cross validation, which epoch to finish with")
     parser.add_argument("--cv_stop_epoch",  default=18,     type=int,   help="get a pth file from a specific epoch")
     parser.add_argument("--view",           default="siamese",  help="siamese, sag, trans")
     parser.add_argument("--dir",            default="./",       help="Directory to save model checkpoints to")
@@ -384,6 +396,9 @@ def main():
         # load dummy data locally to test logic
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
+
+    f = open(resFile, "x")
+    f.close()
 
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
