@@ -27,7 +27,7 @@ class RevisedResNetLstm(nn.Module):
                             batch_first=True)             # put batch_size as first dim of input seq
         self.out_layer = nn.Sequential(nn.Linear(256, self.classes, bias=True))
 
-    def forward(self, patient):
+    def forward(self, kidney):
         # patient is a list of x tensors to train for a given patient
         # print("x size: ")
         # print(x.size())
@@ -35,8 +35,8 @@ class RevisedResNetLstm(nn.Module):
         # print("num_inputs: " + str(self.num_inputs))
         x_to_lstm = []
         # create lstm sequence by running images for kidney through CNN
-        for j in range(len(patient)): # len(patient) should be 1
-            x = patient[j]
+        for j in range(len(kidney)):
+            x = kidney[j]
             if self.num_inputs == 1:
                 x = x.unsqueeze(1)
 
@@ -83,12 +83,6 @@ class RevisedResNetLstm(nn.Module):
         pred = self.out_layer(lstm_out)
         # return a prediction that looks like e.g. [0,0,1,0]
         return pred
-
-    def init_hidden(self, batch_size):
-        weight = next(self.parameters()).data
-        self.hidden = (weight.new(1, batch_size, 256).zero_().to(device),
-                      weight.new(1, batch_size, 256).zero_().to(device))
-        return self.hidden
 
 class RevisedResNet(nn.Module):
     def __init__(self, pretrain=False, classes=2, num_inputs=2):
