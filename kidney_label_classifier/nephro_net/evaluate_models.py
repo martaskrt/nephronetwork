@@ -181,7 +181,7 @@ if __name__== "__main__":
     task_d = {'view': 4, 'granular': 6, 'bladder': 2}
     model_d = {'alexnet': 256, 'vgg': 512, 'resnet': 2048, 'densenet': 1024, 'squeezenet': 512, 'custom': 512}
     class_task = {'view': ['Bladder', 'Other', 'Saggital', 'Transverse'],
-                  'granular': ['Bladder', 'Other', 'Sag_R', 'Sag_L', 'Trans_Left', 'Trans_Right'],
+                  'granular': ['Bladder', 'Other', 'Sag_L', 'Sag_R', 'Trans_Left', 'Trans_Right'],
                   'bladder': ['Other', 'Bladder']}
 
     # ---- directories for dataloaders (absolute paths) ----
