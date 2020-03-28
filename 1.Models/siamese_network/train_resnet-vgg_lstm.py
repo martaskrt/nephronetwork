@@ -41,8 +41,8 @@ softmax = torch.nn.Softmax(dim=1)
 class KidneyDataset(torch.utils.data.Dataset):
 
     def __init__(self, X, y, cov):
-        self.X = [torch.tensor(e, requires_grad=True).float() for e in X]
-        # self.X = [torch.from_numpy(e).float() for e in X]
+        # self.X = [torch.tensor(e, requires_grad=True).float() for e in X]
+        self.X = [torch.from_numpy(e).float() for e in X]
         # self.X = torch.from_numpy(X).float()
         self.y = y
         self.cov = cov
@@ -68,8 +68,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         sys.path.insert(0, "/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network")
 
     checkpointNum = 0
-    num_inputs = 1 if args.view != "siamese" else 2
-    model_pretrain = args.pretrained if args.cv else False
 
     net = chooseNet(args)
 
@@ -329,15 +327,35 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         #     torch.save(checkpoint, path_to_checkpoint)
 
 def chooseNet(args):
-    if args.vgg_bn:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
-        print("importing MVCNNLstmNet1")
-        return MVCNNLstmNet1("vgg_bn")
+    num_inputs = 1 if args.view != "siamese" else 2
+    model_pretrain = args.pretrained if args.cv else False
 
+    if args.densenet:
+        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        print("importing MVCNNLstmNet1 densenet")
+        return MVCNNLstmNet1("densenet")
     elif args.resnet18:
-        from VGGResNetSiameseLSTM import RevisedResNetLstm
-        print("importing ResNet18 + LSTM")
-        return RevisedResNetLstm(pretrain=model_pretrain, num_inputs=num_inputs).to(device)
+        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        print("importing MVCNNLstmNet1 resnet18")
+        return MVCNNLstmNet1("resnet18")
+
+        # from VGGResNetSiameseLSTM import RevisedResNetLstm
+        # print("importing ResNet18 + LSTM")
+        # return RevisedResNetLstm(pretrain=model_pretrain, num_inputs=num_inputs).to(device)
+    elif args.resnet50:
+        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        print("importing MVCNNLstmNet1 resnet50")
+        return MVCNNLstmNet1("resnet50")
+
+    elif args.vgg:
+        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        print("importing MVCNNLstmNet1 vgg")
+        return MVCNNLstmNet1("vgg")
+
+    elif args.vgg_bn:
+        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        print("importing MVCNNLstmNet1 vgg_bn")
+        return MVCNNLstmNet1("vgg_bn")
 
 
 
@@ -438,7 +456,9 @@ def main():
     f.write("Description: debug") # write description to the first line here
     f.close()
 
-    args.vgg_bn = True
+    # args.vgg_bn = True
+    # args.resnet18 = True
+    args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")

@@ -33,6 +33,11 @@ class MVCNNLstmNet1(nn.Module):
     def forward(self, x):
         # input of the form [1, m, 2,256,256] 2 images sag and trans, m visits (m = len(x))
         x = torch.squeeze(x, 0)
+        if torch.cuda.is_available():
+            x = torch.cuda.FloatTensor(x.to(device))
+        else:
+            x = torch.FloatTensor(x.to(device))
+
         x_to_lstm = []
         for i in range(len(x)):
             x1, x2 = x[i][0], x[i][1]
@@ -65,34 +70,65 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.cnnLabel = cnn
         if cnn == "densenet":
-            pass
-        elif "restnet" in cnn:
+            densenet = torchvision.models.densenet121(pretrained=False)
+            self.seq1 = list(densenet.children())[0]
+            self.pool = nn.AvgPool2d(kernel_size=(5, 5), padding=(0,0))
+            self.seq2 = nn.Linear(in_features=1024, out_features=256, bias=True)
+            self.seq3 = nn.Sequential(nn.Linear(256, 256, bias=True),
+                                           nn.ReLU())
+        elif "resnet" in cnn:
             if cnn == "resnet18":
-                pass
+                self.seq1 = torchvision.models.resnet18(pretrained=False)
+                self.seq1.fc = nn.Linear(512, 256, bias=True)
+                self.seq2 = nn.Sequential(nn.Linear(256, 256, bias=True),
+                                           nn.ReLU())
             elif cnn == "resnet50":
-                pass
+                self.seq1 = torchvision.models.resnet50(pretrained=False)
+                self.seq1.fc = nn.Linear(2048, 256, bias=True)
+                self.seq2 = nn.Sequential(nn.Linear(256, 256, bias=True),
+                                           nn.ReLU())
         elif "vgg" in cnn:
             if cnn == "vgg":
                 vgg = torchvision.models.vgg16(pretrained=False)
             elif cnn == "vgg_bn":
                 vgg = torchvision.models.vgg16_bn(pretrained=False)
 
-            self.first_seq = nn.Sequential(*list(vgg.children())[0][:])
-            self.avg_pool = list(vgg.children())[1]
-            self.first_seq = nn.Sequential(self.first_seq, self.avg_pool)
-            self.final_seq = nn.Sequential(*list(vgg.children())[2][:-4],
+            self.seq1 = nn.Sequential(*list(vgg.children())[0][:])
+            self.pool = list(vgg.children())[1]
+            self.seq2 = nn.Sequential(*list(vgg.children())[2][:-4],
                                            nn.Linear(in_features=4096, out_features=4096),
                                            nn.ReLU(),
                                            nn.Dropout(p=0.5),
                                            nn.Linear(in_features=4096, out_features=256))
+            self.seq3 = nn.Sequential(nn.Linear(256, 256, bias=True),
+                                         nn.ReLU())
 
     def forward(self, input):
-        if "vgg" in self.cnnLabel:
+        if self.cnnLabel == "densenet":
             B = 1
-            input = input.unsqueeze(0).unsqueeze(0).expand(-1, 3, -1, -1)
-            out1 = self.first_seq(input)
-            out1_flat = out1.view(B, -1)
-            return self.final_seq(out1_flat)
+            input = input.unsqueeze(0).unsqueeze(0).expand(-1, 3, -1, -1)  # make three channels by replication
+            out1 = self.seq1(input)
+            out2 = self.pool(out1)
+            out2_flat = out2.view(B, -1)
+            out3 = self.seq2(out2_flat)
+            out4 = self.seq3(out3)
+            return out4
+
+        elif "resnet" in self.cnnLabel:
+            input = input.unsqueeze(0).unsqueeze(0).expand(-1, 3, -1, -1)  # make three channels by replication
+            out1 = self.seq1(input)
+            out2 = self.seq2(out1)
+            return out2
+
+        elif "vgg" in self.cnnLabel:
+            B = 1
+            input = input.unsqueeze(0).unsqueeze(0).expand(-1, 3, -1, -1)  # make three channels by replication
+            out1 = self.seq1(input)
+            out2 = self.pool(out1)
+            out2_flat = out2.view(B, -1)
+            out3 = self.seq2(out2_flat)
+            out4 = self.seq3(out3)
+            return out4
 
         return self.net(input)
 
