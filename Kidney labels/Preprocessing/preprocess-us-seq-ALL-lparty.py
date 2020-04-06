@@ -285,7 +285,7 @@ def main():
                         help="directory of US sequence dicoms")
     parser.add_argument('-id_linking_filename', default='full_linking_log_20200211.csv',
                         help="directory of US sequence dicoms")
-    parser.add_argument("--contrast", default=1, type=int, help="Image contrast to train on")
+    parser.add_argument("-contrast", default=1, type=int, help="Image contrast to train on")
 
     opt = parser.parse_args() ## comment for debug
     opt.output_dim = int(opt.output_dim)

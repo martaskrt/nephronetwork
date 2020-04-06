@@ -28,11 +28,10 @@ def load_pth_files_names(pth_folder):
     print(pth_files)
     return pth_files
 
-
 ## OPEN EACH OF THE PTHS -- they're each a dictionary with 1/5 of the data you'll want to use
 def open_file(file):
     print("Opening" + file)
-    data = torch.load(file)
+    data = torch.load(file, map_location=torch.device("cpu"))
     #print(data.head)
     return data
 
@@ -134,7 +133,6 @@ def make_subset_nofold_df(my_fold_data):
     test_df = pd.DataFrame.from_dict(test_dict)
 
     return train_df,test_df
-
     
 def make_full_df(pth_folder,cv,fold_in=0):
     my_pth_files = load_pth_files_names(pth_folder)
@@ -143,7 +141,7 @@ def make_full_df(pth_folder,cv,fold_in=0):
         for file_name in my_pth_files: 
         
             fold_data = open_file(file_name)
-            fold_num = get_fold(file_name,fold_in)
+            fold_num = get_fold(file_name, fold_in)
             if file_name == my_pth_files[0]:
                 my_train_df, my_val_df, my_test_df = make_subset_wfold_df(fold_data,fold_num)
                 print(file_name + " pandas dataframes created.")
@@ -172,12 +170,12 @@ def main():
     parser.add_argument('--checkpoint_folder', help="Number of epochs")
     parser.add_argument('--cv', action='store_true',default=False, help="Read in CV")
     parser.add_argument('--output_file', type=str, default='', help="Output file name")
-    parser.add_argument('--fold_inx', type=int, default=0, help="Output file name")
+    parser.add_argument('--fold_inx', type=int, default=0, help="Position the fold number is found in")
 
     args = parser.parse_args()
-    
+
     if args.cv: 
-        train, val, test = make_full_df(args.checkpoint_folder,args.cv,args.fold_inx)
+        train, val, test = make_full_df(args.checkpoint_folder, args.cv, args.fold_inx)
     else:
         train, test = make_full_df(args.checkpoint_folder,args.cv)
 
