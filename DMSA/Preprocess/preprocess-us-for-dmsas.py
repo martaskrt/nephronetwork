@@ -139,7 +139,7 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
     manu = []
     acq_date = []
     acq_time = []
-    acc_num = []
+    # acc_num = []
     img_id = []
     bladder_p = []
     sag_right_p = []
@@ -199,17 +199,17 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
         try:
             inst_num = ds.InstanceNumber
             img_creation_time.append(inst_num)
-        except:
+        except AttributeError:
             inst_num = "NA"
             img_creation_time.append(inst_num)
             print("Error grabbing instance number")
 
-        try:
-            img_acc = ds.AccessionNumber
-        except:
-            img_acc = "NA"
-            print("Error grabbing accession number")
-        acc_num.append(img_acc)
+        # try:
+        #     img_acc = ds.AccessionNumber
+        # except AttributeError:
+        #     img_acc = "NA"
+        #     print("Error grabbing accession number")
+        # acc_num.append(img_acc)
 
         try:
             img = ds.pixel_array
@@ -220,12 +220,17 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
             final_img = set_contrast(resized_image, opt.contrast)
             img = final_img
             if opt.predict_views:
-                img = cv2.GaussianBlur(final_img, (5, 5), 0)
+
+                try:
+                    img = cv2.GaussianBlur(final_img, (5, 5), 0)
+                except cv2.error:
+                    img = final_img
+
                 tor_img = torch.tensor(img).to(opt.device).view(1, 256, 256)
                 input_img = torch.cat((tor_img, tor_img, tor_img), 0).view(1, 3, 256, 256).to(opt.device)  # .double()
 
                 my_nn = my_nn.double().to(opt.device)
-                fwd_pass_out = torch.sigmoid(my_nn(input_img.double())).detach().numpy()
+                fwd_pass_out = torch.sigmoid(my_nn(input_img.double())).detach().to('cpu').numpy()
 
                 # print(fwd_pass_out)
                 # print(fwd_pass_out.shape)
@@ -377,16 +382,25 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
     #            'image_acq_date': acq_date, 'image_acq_time': acq_time, 'view_label': view_label,
     #            'surgery_label': surgery_label, 'function_label': function_label,
     #            'reflux_label': reflux_label}
-
     if opt.predict_views:
         df_dict = {'image_ids': img_id, 'image_manu': manu,
-                   'image_acq_date': acq_date, 'image_acq_time': acq_time, 'acc_num': acc_num,
+                   'image_acq_date': acq_date, 'image_acq_time': acq_time,
                    'bladder_p': bladder_p, 'sag_right_p': sag_right_p,
                    'sag_left_p': sag_left_p, 'trans_right_p': trans_right_p,
                    'trans_left_p': trans_left_p}
     else:
         df_dict = {'image_ids': img_id, 'image_manu': manu,
-                   'image_acq_date': acq_date, 'acc_num': acc_num}
+                   'image_acq_date': acq_date}
+
+    # if opt.predict_views:
+    #     df_dict = {'image_ids': img_id, 'image_manu': manu,
+    #                'image_acq_date': acq_date, 'image_acq_time': acq_time, 'acc_num': acc_num,
+    #                'bladder_p': bladder_p, 'sag_right_p': sag_right_p,
+    #                'sag_left_p': sag_left_p, 'trans_right_p': trans_right_p,
+    #                'trans_left_p': trans_left_p}
+    # else:
+    #     df_dict = {'image_ids': img_id, 'image_manu': manu,
+    #                'image_acq_date': acq_date, 'acc_num': acc_num}
 
     for key in df_dict:
         print(key + ": " + str(len(df_dict[key])))
