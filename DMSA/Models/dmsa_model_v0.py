@@ -36,7 +36,7 @@ def read_image_file(file_name):
 class DMSADataset(Dataset):
     """ Data loader for DMSA data """
 
-    def __init__(self, data_sheet, args, dim=256):
+    def __init__(self, args):
         """
         data_sheet: csv spreadsheet with 1 column for each US view image file ("SR","SL","TR","TL","B"),
             1 column for each DMSA view image file (A/P) ("DMSA_A" and "DMSA_P"),
@@ -47,9 +47,13 @@ class DMSADataset(Dataset):
             args.dichot: if set to True, a binary 0/1 value will be used as the label
             else if set to False, a continuous value for left function will be used as the label
         """
-        self.dim = dim
 
-        self.rootdir = args.rootdir
+        data_sheet = pd.read_csv(args.datasheet)
+
+        self.dim = args.dim
+
+        self.us_dir = args.us_dir
+        self.dmsa_dir = args.dmsa_dir
 
         self.id = data_sheet['ID']
 
@@ -72,16 +76,16 @@ class DMSADataset(Dataset):
 
     def __getitem__(self, index):
             ## Maybe add file path as argument to init? Maybe "opt"?
-        sr = read_image_file(self.rootdir + self.sr_file[index]).view(1, self.dim, self.dim)
-        sl = read_image_file(self.rootdir + self.sl_file[index]).view(1, self.dim, self.dim)
-        tr = read_image_file(self.rootdir + self.tr_file[index]).view(1, self.dim, self.dim)
-        tl = read_image_file(self.rootdir + self.tl_file[index]).view(1, self.dim, self.dim)
-        b = read_image_file(self.rootdir + self.b_file[index]).view(1, self.dim, self.dim)
+        sr = read_image_file(self.us_dir + self.sr_file[index]).view(1, self.dim, self.dim)
+        sl = read_image_file(self.us_dir + self.sl_file[index]).view(1, self.dim, self.dim)
+        tr = read_image_file(self.us_dir + self.tr_file[index]).view(1, self.dim, self.dim)
+        tl = read_image_file(self.us_dir + self.tl_file[index]).view(1, self.dim, self.dim)
+        b = read_image_file(self.us_dir + self.b_file[index]).view(1, self.dim, self.dim)
             ## make 5x256x256 tensor
         input_tensor = torch.cat((sr, sl, tr, tl, b), 0)
 
-        dmsa_a = read_image_file(self.rootdir + self.dmsa_a_file[index]).view(1, self.dim, self.dim)
-        dmsa_p = read_image_file(self.rootdir + self.dmsa_p_file[index]).view(1, self.dim, self.dim)
+        dmsa_a = read_image_file(self.dmsa_dir + self.dmsa_a_file[index]).view(1, self.dim, self.dim)
+        dmsa_p = read_image_file(self.dmsa_dir + self.dmsa_p_file[index]).view(1, self.dim, self.dim)
             ## make 2x256x256 tensor
         output_tensor = torch.cat((dmsa_a, dmsa_p),0)
 
@@ -95,12 +99,14 @@ class DMSADataset(Dataset):
 ## args for debugging :)
 class make_opt():
     def __init__(self):
-        self.rootdir = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image organization Nov 2019/'
-        # self.rootdir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/'
+        self.us_dir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-dmsa/'
+        self.dmsa_dir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/'
         self.dichot = False # for a 0/1 outcome, set to True
+        self.datasheet = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image organization Nov 2019/DMSA-datasheet-top3view.csv'
+        self.dim = 256
 
 opt = make_opt()
-my_datasheet=pd.read_csv(opt.rootdir + 'DMSA-datasheet-top3view.csv')
-my_data = DMSADataset(data_sheet=my_datasheet, args=opt)
+my_data = DMSADataset(args=opt)
 my_dataloader = DataLoader(my_data, shuffle=True)
+
 
