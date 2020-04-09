@@ -329,33 +329,44 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
 def chooseNet(args):
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
-
-    if args.densenet:
+    if args.mvcnn:
         from VGGResNetSiameseLSTM import MVCNNLstmNet1
-        print("importing MVCNNLstmNet1 densenet")
-        return MVCNNLstmNet1("densenet")
-    elif args.resnet18:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
-        print("importing MVCNNLstmNet1 resnet18")
-        return MVCNNLstmNet1("resnet18")
-
-        # from VGGResNetSiameseLSTM import RevisedResNetLstm
-        # print("importing ResNet18 + LSTM")
-        # return RevisedResNetLstm(pretrain=model_pretrain, num_inputs=num_inputs).to(device)
-    elif args.resnet50:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
-        print("importing MVCNNLstmNet1 resnet50")
-        return MVCNNLstmNet1("resnet50")
-
-    elif args.vgg:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
-        print("importing MVCNNLstmNet1 vgg")
-        return MVCNNLstmNet1("vgg")
-
-    elif args.vgg_bn:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
-        print("importing MVCNNLstmNet1 vgg_bn")
-        return MVCNNLstmNet1("vgg_bn")
+        if args.densenet:
+            print("importing MVCNNLstmNet1 densenet")
+            return MVCNNLstmNet1("densenet")
+        elif args.resnet18:
+            print("importing MVCNNLstmNet1 resnet18")
+            return MVCNNLstmNet1("resnet18")
+        elif args.resnet50:
+            print("importing MVCNNLstmNet1 resnet50")
+            return MVCNNLstmNet1("resnet50")
+        elif args.vgg:
+            print("importing MVCNNLstmNet1 vgg")
+            return MVCNNLstmNet1("vgg")
+        elif args.vgg_bn:
+            print("importing MVCNNLstmNet1 vgg_bn")
+            return MVCNNLstmNet1("vgg_bn")
+    elif args.BichannelCNNLstmNet:
+        from VGGResNetSiameseLSTM import BichannelCNNLstmNet
+        if args.densenet:
+            print("imp")
+            return BichannelCNNLstmNet("densenet")
+        elif args.resnet18:
+            print("importing MVCNNLstmNet1 resnet18")
+            return BichannelCNNLstmNet("resnet18")
+        elif args.resnet50:
+            print("importing MVCNNLstmNet1 resnet50")
+            return BichannelCNNLstmNet("resnet50")
+        elif args.vgg:
+            print("importing MVCNNLstmNet1 vgg")
+            return BichannelCNNLstmNet("vgg")
+        elif args.vgg_bn:
+            print("importing MVCNNLstmNet1 vgg_bn")
+            return BichannelCNNLstmNet("vgg_bn")
+    # old import
+    # from VGGResNetSiameseLSTM import RevisedResNetLstm
+    # print("importing ResNet18 + LSTM")
+    # return RevisedResNetLstm(pretrain=model_pretrain, num_inputs=num_inputs).to(device)
 
 
 
@@ -456,6 +467,10 @@ def main():
     f.write("Description: debug") # write description to the first line here
     f.close()
 
+    args.mvcnn = False
+    args.BichannelCNNLstmNet = True
+    # args.mvcnn = True
+    # args.BichannelCNNLstmNet = False
     # args.vgg_bn = True
     # args.resnet18 = True
     args.densenet = True
