@@ -26,8 +26,11 @@ from datetime import datetime
 SEED = 42
 local = True
 debug = True
+model_name = "vgg_bn"
+
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 resFile = "../../../results/lstmRes_"+timestamp+".txt"
+resFile2 = "../../../results/lstmRes_"+timestamp+"_labels_pred.txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -271,7 +274,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                                                                      results_test['tn'],
                                                                      results_test['fp'], results_test['fn'],
                                                                      results_test['tp']))
-        results_test = process_results.get_metrics(y_score=all_pred_prob_val_tensor.cpu().detach().numpy(),
+        results_val = process_results.get_metrics(y_score=all_pred_prob_val_tensor.cpu().detach().numpy(),
                                                    y_true=all_targets_val_tensor.cpu().detach().numpy(),
                                                    y_pred=all_pred_label_val_tensor.cpu().detach().numpy())
         print('ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
@@ -284,33 +287,66 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                                                                      results_test['fp'], results_test['fn'],
                                                                      results_test['tp']))
 
-        if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
-            checkpointNum += 1
-            checkpoint = {'epoch': epoch,
-                          'loss': loss,
-                          'hyperparams': hyperparams,
-                          'args': args,
-                          # 'model_state_dict': net.state_dict(),
-                          # 'optimizer': optimizer.state_dict(),
-                          'loss_train': loss_accum_train / counter_train,
-                          'loss_test': loss_accum_test / counter_test,
-                          'accuracy_train': int(accurate_labels_train) / counter_train,
-                          'accuracy_test': int(accurate_labels_test) / counter_test,
-                          'results_train': results_train,
-                          'results_test': results_test,
-                          # 'all_pred_prob_train': all_pred_prob_train,
-                          'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
-                          'all_targets_train': [e.tolist() for e in all_targets_train],
-                          'all_patient_ID_train': all_patient_ID_train,
-                          # 'all_pred_prob_test': all_pred_prob_test,
-                          'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
-                          'all_targets_test': [e.tolist() for e in all_targets_test],
-                          'all_patient_ID_test': all_patient_ID_test,
-                          }
-            f = open(resFile,"a")
-            f.write("checkpoint"+str(checkpointNum)+"\n")
-            f.write(str(checkpoint))
-            f.close()
+        # if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
+        checkpointNum += 1
+        checkpoint = {'epoch': epoch,
+                      'loss': loss,
+                      'hyperparams': hyperparams,
+                      'args': args,
+                      # 'model_state_dict': net.state_dict(),
+                      # 'optimizer': optimizer.state_dict(),
+                      'loss_train': loss_accum_train / counter_train,
+                      'loss_test': loss_accum_test / counter_test,
+                      'accuracy_train': int(accurate_labels_train) / counter_train,
+                      'accuracy_test': int(accurate_labels_test) / counter_test,
+                      'results_train': results_train,
+                      'results_test': results_test,
+                      # 'all_pred_prob_train': all_pred_prob_train,
+                      'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
+                      'all_targets_train': [e.tolist() for e in all_targets_train],
+                      'all_patient_ID_train': all_patient_ID_train,
+                      # 'all_pred_prob_test': all_pred_prob_test,
+                      'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
+                      'all_targets_test': [e.tolist() for e in all_targets_test],
+                      'all_patient_ID_test': all_patient_ID_test,
+                      # 'all_pred_prob_val': all_pred_prob_val,
+                      'all_pred_label_val': [e.tolist() for e in all_pred_label_val],
+                      'all_targets_val': [e.tolist() for e in all_targets_val],
+                      'all_patient_ID_val': all_patient_ID_val,
+                      }
+        checkpoint_v2 = {'epoch': epoch,
+                      'loss': loss,
+                      'hyperparams': hyperparams,
+                      'args': args,
+                      # 'model_state_dict': net.state_dict(),
+                      # 'optimizer': optimizer.state_dict(),
+                      'loss_train': loss_accum_train / counter_train,
+                      'loss_test': loss_accum_test / counter_test,
+                      'accuracy_train': int(accurate_labels_train) / counter_train,
+                      'accuracy_test': int(accurate_labels_test) / counter_test,
+                      # 'all_pred_prob_train': all_pred_prob_train,
+                      'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
+                      'all_targets_train': [e.tolist() for e in all_targets_train],
+                      'all_patient_ID_train': all_patient_ID_train,
+                      # 'all_pred_prob_test': all_pred_prob_test,
+                      'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
+                      'all_targets_test': [e.tolist() for e in all_targets_test],
+                      'all_patient_ID_test': all_patient_ID_test,
+                      # 'all_pred_prob_val': all_pred_prob_val,
+                      'all_pred_label_val': [e.tolist() for e in all_pred_label_val],
+                      'all_targets_val': [e.tolist() for e in all_targets_val],
+                      'all_patient_ID_val': all_patient_ID_val,
+                      }
+
+        f = open(resFile,"a")
+        f.write("checkpoint"+str("\n"+checkpointNum)+"\n")
+        f.write(str(checkpoint))
+        f.close()
+
+        f = open(resFile2, "a")
+        f.write("checkpoint" + str(checkpointNum) + "\n")
+        f.write(str(checkpoint_v2))
+        f.close()
 
 
         # if not os.path.isdir(args.dir):
@@ -464,16 +500,19 @@ def main():
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
     f = open(resFile, "x")  # create the file using "x" arg
-    f.write("Description: debug") # write description to the first line here
+    f.write("Description:"+model_name) # write description to the first line here
+    f.close()
+    f = open(resFile2, "x")  # create the file using "x" arg
+    f.write("Description:"+model_name) # write description to the first line here
     f.close()
 
     args.mvcnn = False
     args.BichannelCNNLstmNet = True
     # args.mvcnn = True
     # args.BichannelCNNLstmNet = False
-    # args.vgg_bn = True
+    args.vgg_bn = True
     # args.resnet18 = True
-    args.densenet = True
+    # args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")
