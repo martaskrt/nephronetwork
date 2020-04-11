@@ -339,12 +339,12 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                       }
 
         f = open(resFile,"a")
-        f.write("checkpoint"+str("\n"+checkpointNum)+"\n")
+        f.write("checkpoint"+"\n"+str(checkpointNum)+"\n")
         f.write(str(checkpoint))
         f.close()
 
         f = open(resFile2, "a")
-        f.write("checkpoint" + str(checkpointNum) + "\n")
+        f.write("checkpoint" +"\n"+ str(checkpointNum) + "\n")
         f.write(str(checkpoint_v2))
         f.close()
 
@@ -385,19 +385,19 @@ def chooseNet(args):
     elif args.BichannelCNNLstmNet:
         from VGGResNetSiameseLSTM import BichannelCNNLstmNet
         if args.densenet:
-            print("imp")
+            print("importing BichannelCNNLstmNet densenet")
             return BichannelCNNLstmNet("densenet")
         elif args.resnet18:
-            print("importing MVCNNLstmNet1 resnet18")
+            print("importing BichannelCNNLstmNet resnet18")
             return BichannelCNNLstmNet("resnet18")
         elif args.resnet50:
-            print("importing MVCNNLstmNet1 resnet50")
+            print("importing BichannelCNNLstmNet resnet50")
             return BichannelCNNLstmNet("resnet50")
         elif args.vgg:
-            print("importing MVCNNLstmNet1 vgg")
+            print("importing BichannelCNNLstmNet vgg")
             return BichannelCNNLstmNet("vgg")
         elif args.vgg_bn:
-            print("importing MVCNNLstmNet1 vgg_bn")
+            print("importing BichannelCNNLstmNet vgg_bn")
             return BichannelCNNLstmNet("vgg_bn")
     # old import
     # from VGGResNetSiameseLSTM import RevisedResNetLstm
