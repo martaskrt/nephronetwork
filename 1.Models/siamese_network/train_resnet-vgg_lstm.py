@@ -26,11 +26,12 @@ from datetime import datetime
 SEED = 42
 local = True
 debug = True
-model_name = "vgg_bn"
+model_name = "bichannelLstm resnet18"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-resFile = "../../../results/lstmRes_"+timestamp+".txt"
-resFile2 = "../../../results/lstmRes_"+timestamp+"_labels_pred.txt"
+resFile = "../../../results/lstmRes_"+timestamp+"_"+model_name+".txt"
+resFile2 = "../../../results/lstmRes_"+timestamp+"_"+model_name+"_labels_pred.txt"
+resFile3 = "../../../results/lstmRes_"+timestamp+"_"+model_name+"_summarized.txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -253,39 +254,43 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         results_train = process_results.get_metrics(y_score=all_pred_prob_train_tensor.cpu().detach().numpy(),
                                                     y_true=all_targets_train_tensor.cpu().detach().numpy(),
                                                     y_pred=all_pred_label_train_tensor.cpu().detach().numpy())
-        print('TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
-                                                                     int(accurate_labels_train) / counter_train,
-                                                                     loss_accum_train / counter_train,
-                                                                     results_train['auc'],
-                                                                     results_train['auprc'],
-                                                                     results_train['tn'],
-                                                                     results_train['fp'], results_train['fn'],
-                                                                     results_train['tp']))
+        resTrainStr = 'TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\tAUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
+                                                                                                                                     int(accurate_labels_train) / counter_train,
+                                                                                                                                     loss_accum_train / counter_train,
+                                                                                                                                     results_train['auc'],
+                                                                                                                                     results_train['auprc'],
+                                                                                                                                     results_train['tn'],
+                                                                                                                                     results_train['fp'],
+                                                                                                                                     results_train['fn'],
+                                                                                                                                     results_train['tp'])
         results_test = process_results.get_metrics(y_score=all_pred_prob_test_tensor.cpu().detach().numpy(),
                                                    y_true=all_targets_test_tensor.cpu().detach().numpy(),
                                                    y_pred=all_pred_label_test_tensor.cpu().detach().numpy())
-        print('TestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
-                                                                     int(accurate_labels_test) / counter_test,
-                                                                     loss_accum_test / counter_test,
-                                                                     results_test['auc'],
-                                                                     results_test['auprc'],
-                                                                     results_test['tn'],
-                                                                     results_test['fp'], results_test['fn'],
-                                                                     results_test['tp']))
+        resTestStr = 'TestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\tAUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
+                                                                                                                                   int(accurate_labels_test) / counter_test,
+                                                                                                                                   loss_accum_test / counter_test,
+                                                                                                                                   results_test['auc'],
+                                                                                                                                   results_test['auprc'],
+                                                                                                                                   results_test['tn'],
+                                                                                                                                   results_test['fp'],
+                                                                                                                                   results_test['fn'],
+                                                                                                                                   results_test['tp'])
         results_val = process_results.get_metrics(y_score=all_pred_prob_val_tensor.cpu().detach().numpy(),
                                                    y_true=all_targets_val_tensor.cpu().detach().numpy(),
                                                    y_pred=all_pred_label_val_tensor.cpu().detach().numpy())
-        print('ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
-                                                                     int(accurate_labels_test) / counter_test,
-                                                                     loss_accum_test / counter_test,
-                                                                     results_test['auc'],
-                                                                     results_test['auprc'],
-                                                                     results_test['tn'],
-                                                                     results_test['fp'], results_test['fn'],
-                                                                     results_test['tp']))
+        resValStr = 'ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\tAUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
+                                                                                                                                 int(accurate_labels_val) / counter_val,
+                                                                                                                                 loss_accum_val / counter_val,
+                                                                                                                                 results_val['auc'],
+                                                                                                                                 results_val['auprc'],
+                                                                                                                                 results_val['tn'],
+                                                                                                                                 results_val['fp'],
+                                                                                                                                 results_val['fn'],
+                                                                                                                                 results_val['tp'])
+        if debug:
+            print(resTrainStr)
+            print(resTestStr)
+            print(resValStr)
 
         # if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
         checkpointNum += 1
@@ -297,10 +302,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                       # 'optimizer': optimizer.state_dict(),
                       'loss_train': loss_accum_train / counter_train,
                       'loss_test': loss_accum_test / counter_test,
+                      'loss_val': loss_accum_val / counter_val,
                       'accuracy_train': int(accurate_labels_train) / counter_train,
                       'accuracy_test': int(accurate_labels_test) / counter_test,
+                      'accuracy_val': int(accurate_labels_val) / counter_val,
                       'results_train': results_train,
                       'results_test': results_test,
+                      'results_val': results_val,
                       # 'all_pred_prob_train': all_pred_prob_train,
                       'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
                       'all_targets_train': [e.tolist() for e in all_targets_train],
@@ -322,8 +330,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                       # 'optimizer': optimizer.state_dict(),
                       'loss_train': loss_accum_train / counter_train,
                       'loss_test': loss_accum_test / counter_test,
+                      'loss_val': loss_accum_val / counter_val,
                       'accuracy_train': int(accurate_labels_train) / counter_train,
                       'accuracy_test': int(accurate_labels_test) / counter_test,
+                      'accuracy_val': int(accurate_labels_val) / counter_val,
                       # 'all_pred_prob_train': all_pred_prob_train,
                       'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
                       'all_targets_train': [e.tolist() for e in all_targets_train],
@@ -346,6 +356,13 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         f = open(resFile2, "a")
         f.write("checkpoint" +"\n"+ str(checkpointNum) + "\n")
         f.write(str(checkpoint_v2))
+        f.close()
+
+        f = open(resFile3,"a")
+        f.write("Epoch "+str(epoch)+"\n")
+        f.write(resTrainStr + "\n")
+        f.write(resTestStr + "\n")
+        f.write(resValStr + "\n")
         f.close()
 
 
@@ -446,7 +463,7 @@ def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs',         default=100,     type=int,   help="Number of epochs")
     parser.add_argument('--batch_size',     default=16,     type=int,   help="Batch size")
-    parser.add_argument('--lr',             default=0.001,  type=float, help="Learning rate")
+    parser.add_argument('--lr',             default=0.01,  type=float, help="Learning rate")
     parser.add_argument('--momentum',       default=0.9,    type=float, help="Momentum")
     parser.add_argument("--weight_decay",   default=5e-4,   type=float, help="Weight decay")
     parser.add_argument("--num_workers",    default=1,      type=int,   help="Number of CPU workers")
@@ -505,13 +522,16 @@ def main():
     f = open(resFile2, "x")  # create the file using "x" arg
     f.write("Description:"+model_name) # write description to the first line here
     f.close()
+    f = open(resFile3, "x")  # create the file using "x" arg
+    f.write("Description:"+model_name+" summarized results") # write description to the first line here
+    f.close()
 
     args.mvcnn = False
     args.BichannelCNNLstmNet = True
     # args.mvcnn = True
     # args.BichannelCNNLstmNet = False
-    args.vgg_bn = True
-    # args.resnet18 = True
+    # args.vgg_bn = True
+    args.resnet18 = True
     # args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
