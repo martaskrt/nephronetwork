@@ -235,6 +235,90 @@ class CNN2(nn.Module):
 
 class MVCNNLstmNet2(nn.Module):
     """
+    Multi-View CNN. Pass sag and trans view through independent CNN stacks which outputs
+    feature vectors. In MVCNNLstmNet2 we merge the feature vectors by concatenation and pass through fc. This
+    is subsequently passed to the LSTM.
+    """
+    def __init__(self, cnn, shareWeights=False, joinMode=3):
+        super(MVCNNLstmNet2, self).__init__()
+        # settings
+        self.shareWeights = shareWeights
+        # joinMode values 0: join stacks by concatting, 1: join stacks with avg pool,
+        # 2: join stacks with max pool, 3: join stacks using linear layer
+        self.joinMode = joinMode
+        # hyper-parameters
+        if joinMode == 0:
+            self.hidden_dim =  512  # lstm hidden dim
+        elif joinMode in (1,2,3):
+            self.hidden_dim = 256  # lstm hidden dim
+
+        self.layer_dim = 1  # lstm num of hidden layers
+        self.batch_size = 1  # processing 1 kidney sequence at a time
+        self.classes = 2  # two classes are surgery required or not required
+
+        # net layers
+        self.cnn1 = CNN(cnn)  # used for sag view input
+        if not shareWeights:
+            self.cnn2 = CNN(cnn)  # used for trans view input
+
+        if joinMode == 3:
+            self.comboNet = nn.Sequential(nn.Linear(512, 256, bias=True), nn.ReLU())
+
+        self.lstm = nn.LSTM(input_size=512 if joinMode == 0 else 256,               # dim of each input vector in seq
+                            hidden_size=self.hidden_dim,  # dim of hidden layer also output size
+                            num_layers=self.layer_dim,    # num of stacked LSTM Cells
+                            batch_first=True)
+        self.fc = nn.Sequential(nn.Linear(self.hidden_dim, 128, bias=True), nn.ReLU())
+        self.outNet = nn.Linear(128, self.classes, bias=True)
+
+
+    def forward(self, x):
+        # input of the form [1, m, 2,256,256] 2 images sag and trans, m visits (m = len(x))
+        x = torch.squeeze(x, 0)
+        if torch.cuda.is_available():
+            x = torch.cuda.FloatTensor(x.to(device))
+        else:
+            x = torch.FloatTensor(x.to(device))
+
+        x_to_lstm = []
+        for i in range(len(x)):
+            x1, x2 = x[i][0], x[i][1]
+            cnn1_out = self.cnn1(x1)  # vector of 256
+            if self.shareWeights:
+                cnn2_out = self.cnn1(x2)  # vector of 256
+            else:
+                cnn2_out = self.cnn2(x2)  # vector of 256
+            if self.joinMode == 0:
+                x_to_lstm.append(torch.cat((torch.squeeze(cnn1_out, 0), torch.squeeze(cnn2_out, 0)), dim=0))
+            elif self.joinMode in (1, 2):
+                # here we can just take the max or average of the two 256 vectors, not sure if this would do well?
+                # alternativly we put a max pool layer before passing sag and trans to cnn stacks and just have
+                # 1 cnn stack but this also doesnt seem like a good approach intuitively?
+                # although we never know performance until we run it
+                pass
+            elif self.joinMode == 3:
+                x_to_linear_combo = torch.cat((torch.squeeze(cnn1_out, 0), torch.squeeze(cnn2_out, 0)), dim=0)
+                x_to_lstm.append(self.comboNet(x_to_linear_combo))
+
+        seq = torch.stack(x_to_lstm).unsqueeze(0) # len 512
+        # init hidden and cell state for this seq of images
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        # process whole sequence through lstm
+        lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
+
+        # squeeze out batch size
+        lstm_out = torch.squeeze(lstm_out, 0)
+        fc_out = self.fc(lstm_out)
+
+        # pass tensor of shape [m,self.hidden_dim] to linear layer which should process
+        # each tensor individually with batch mode
+        pred = self.outNet(fc_out)
+        # return a prediction that looks like e.g. [0,0,1,0]; len(pred) = m
+        return pred
+
+class MVCNNLstmNet3(nn.Module):
+    """
     MVCNN with 4 stacks of CNN
     Notes: Might be better to make this two stack each stack takes two layer input layers are
     left and right, stack s represent sag and trans
@@ -339,9 +423,9 @@ class CNN3(nn.Module):
         #     elif cnn == "vgg_bn":
         #         pass
 
-class CNNLstm_Wrapper(nn.Module):
+class SiameseCNNLstm(nn.Module):
     def __init__(self, cnn):
-        super(CNNLstm_Wrapper, self).__init__()
+        super(SiameseCNNLstm, self).__init__()
         self.cnnLabel = cnn
         self.classes = 2
         self.num_inputs = 2  # not used kept here for mention

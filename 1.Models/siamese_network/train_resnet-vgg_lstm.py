@@ -27,7 +27,7 @@ import os
 SEED = 42
 local = True
 debug = False
-model_name = "mvcnn_shared_densenet"
+model_name = "DebugSiameseCNNLstmDenseNet"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 print(timestamp)
@@ -382,22 +382,23 @@ def chooseNet(args):
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
     if args.mvcnn:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        # from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        from VGGResNetSiameseLSTM import MVCNNLstmNet2
         if args.densenet:
-            print("importing MVCNNLstmNet1 densenet")
-            return MVCNNLstmNet1("densenet", args.mvcnnSharedWeights).to(device)
+            print("importing MVCNNLstmNet2 densenet")
+            return MVCNNLstmNet2("densenet", args.mvcnnSharedWeights).to(device)
         elif args.resnet18:
-            print("importing MVCNNLstmNet1 resnet18")
-            return MVCNNLstmNet1("resnet18", args.mvcnnSharedWeights).to(device)
+            print("importing MVCNNLstmNet2 resnet18")
+            return MVCNNLstmNet2("resnet18", args.mvcnnSharedWeights).to(device)
         elif args.resnet50:
-            print("importing MVCNNLstmNet1 resnet50")
-            return MVCNNLstmNet1("resnet50", args.mvcnnSharedWeights).to(device)
+            print("importing MVCNNLstmNet2 resnet50")
+            return MVCNNLstmNet2("resnet50", args.mvcnnSharedWeights).to(device)
         elif args.vgg:
-            print("importing MVCNNLstmNet1 vgg")
-            return MVCNNLstmNet1("vgg", args.mvcnnSharedWeights).to(device)
+            print("importing MVCNNLstmNet2 vgg")
+            return MVCNNLstmNet2("vgg", args.mvcnnSharedWeights).to(device)
         elif args.vgg_bn:
-            print("importing MVCNNLstmNet1 vgg_bn")
-            return MVCNNLstmNet1("vgg_bn", args.mvcnnSharedWeights).to(device)
+            print("importing MVCNNLstmNet2 vgg_bn")
+            return MVCNNLstmNet2("vgg_bn", args.mvcnnSharedWeights).to(device)
     elif args.BichannelCNNLstmNet:
         from VGGResNetSiameseLSTM import BichannelCNNLstmNet
         if args.densenet:
@@ -415,6 +416,23 @@ def chooseNet(args):
         elif args.vgg_bn:
             print("importing BichannelCNNLstmNet vgg_bn")
             return BichannelCNNLstmNet("vgg_bn").to(device)
+    elif args.SiameseCNNLstm:
+        from VGGResNetSiameseLSTM import SiameseCNNLstm
+        if args.densenet:
+            print("importing SiameseCNNLstm densenet")
+            return SiameseCNNLstm("densenet").to(device)
+        elif args.resnet18:
+            print("importing SiameseCNNLstm resnet18")
+            return SiameseCNNLstm("resnet18").to(device)
+        elif args.resnet50:
+            print("importing SiameseCNNLstm resnet50")
+            return SiameseCNNLstm("resnet50").to(device)
+        elif args.vgg:
+            print("importing SiameseCNNLstm vgg")
+            return SiameseCNNLstm("vgg").to(device)
+        elif args.vgg_bn:
+            print("importing SiameseCNNLstm vgg_bn")
+            return SiameseCNNLstm("vgg_bn").to(device)
     # old import
     # from VGGResNetSiameseLSTM import RevisedResNetLstm
     # print("importing ResNet18 + LSTM")
@@ -431,8 +449,8 @@ def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
     def group(t_x, t_y, t_cov):
         x, y, cov = defaultdict(list), defaultdict(list), defaultdict(list)
         for i in range(len(t_cov)):
-            # id = t_cov[i].split("_")[0] + t_cov[i].split("_")[4]  # split data per kidney e.g 5.0Left, 5.0Right, 6.0Left, ...
-            id = t_cov[i].split("_")[0] # split only on id e.g. 5.0, 6.0, 7.0, ...
+            id = t_cov[i].split("_")[0] + t_cov[i].split("_")[4]  # split data per kidney e.g 5.0Left, 5.0Right, 6.0Left, ...
+            # id = t_cov[i].split("_")[0] # split only on id e.g. 5.0, 6.0, 7.0, ...
             x[id].append(t_x[i])
             y[id].append(t_y[i])
             cov[id].append(t_cov[i])
@@ -525,13 +543,12 @@ def main():
     f.write("Description:"+model_name+" summarized results"+"\n") # write description to the first line here
     f.close()
 
-    args.mvcnnSharedWeights = True
-    # args.mvcnn = False
-    # args.BichannelCNNLstmNet = True
-    args.mvcnn = True
+    args.mvcnnSharedWeights = False
+    args.SiameseCNNLstm = True
+    args.mvcnn = False
     args.BichannelCNNLstmNet = False
-    # args.vgg_bn = True
-    # args.resnet18 = True
+    args.vgg_bn = False
+    args.resnet18 = False
     args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
