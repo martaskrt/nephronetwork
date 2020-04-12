@@ -9,6 +9,7 @@ from sklearn.utils import shuffle
 import importlib.machinery
 from collections import defaultdict
 from datetime import datetime
+import os
 # from torchvision import transforms
 # from sklearn.utils import class_weight
 # from torch import nn
@@ -25,13 +26,15 @@ from datetime import datetime
 
 SEED = 42
 local = True
-debug = True
-model_name = "bichannelLstm resnet18"
+debug = False
+model_name = "mvcnn_shared_densenet"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-resFile = "../../../results/lstmRes_"+timestamp+"_"+model_name+".txt"
-resFile2 = "../../../results/lstmRes_"+timestamp+"_"+model_name+"_labels_pred.txt"
-resFile3 = "../../../results/lstmRes_"+timestamp+"_"+model_name+"_summarized.txt"
+print(timestamp)
+os.mkdir("../../../results/"+model_name+"_"+timestamp)
+resFile = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_info.txt"
+resFile2 = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_auc.txt"
+resFile3 = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_summary.txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -71,8 +74,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         sys.path.insert(0, '/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, "/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network")
 
-    checkpointNum = 0
-
     net = chooseNet(args)
 
     hyperparams = {'lr': args.lr,
@@ -96,7 +97,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
     if debug:
         # pass
-        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:42], train_y[40:42], train_cov[40:42], test_X[10:12], test_y[10:12], test_cov[10:12]
+        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[1:5], train_y[1:5], train_cov[1:5], test_X[1:5], test_y[1:5], test_cov[1:5]
 
     training_set = KidneyDataset(train_X, train_y, train_cov)
     test_set = KidneyDataset(test_X, test_y, test_cov)
@@ -293,7 +294,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
             print(resValStr)
 
         # if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
-        checkpointNum += 1
         checkpoint = {'epoch': epoch,
                       'loss': loss,
                       'hyperparams': hyperparams,
@@ -309,53 +309,48 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                       'results_train': results_train,
                       'results_test': results_test,
                       'results_val': results_val,
-                      # 'all_pred_prob_train': all_pred_prob_train,
                       'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
+                      'all_pred_prob_train': [e.tolist() for e in all_pred_prob_train],
                       'all_targets_train': [e.tolist() for e in all_targets_train],
-                      'all_patient_ID_train': all_patient_ID_train,
-                      # 'all_pred_prob_test': all_pred_prob_test,
                       'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
+                      'all_pred_prob_test': [e.tolist() for e in all_pred_prob_test],
                       'all_targets_test': [e.tolist() for e in all_targets_test],
-                      'all_patient_ID_test': all_patient_ID_test,
-                      # 'all_pred_prob_val': all_pred_prob_val,
                       'all_pred_label_val': [e.tolist() for e in all_pred_label_val],
+                      'all_pred_prob_val': [e.tolist() for e in all_pred_prob_val],
                       'all_targets_val': [e.tolist() for e in all_targets_val],
+                      'all_patient_ID_train': all_patient_ID_train,
+                      'all_patient_ID_test': all_patient_ID_test,
                       'all_patient_ID_val': all_patient_ID_val,
                       }
-        checkpoint_v2 = {'epoch': epoch,
-                      'loss': loss,
-                      'hyperparams': hyperparams,
-                      'args': args,
-                      # 'model_state_dict': net.state_dict(),
-                      # 'optimizer': optimizer.state_dict(),
-                      'loss_train': loss_accum_train / counter_train,
-                      'loss_test': loss_accum_test / counter_test,
-                      'loss_val': loss_accum_val / counter_val,
-                      'accuracy_train': int(accurate_labels_train) / counter_train,
-                      'accuracy_test': int(accurate_labels_test) / counter_test,
-                      'accuracy_val': int(accurate_labels_val) / counter_val,
-                      # 'all_pred_prob_train': all_pred_prob_train,
-                      'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
-                      'all_targets_train': [e.tolist() for e in all_targets_train],
-                      'all_patient_ID_train': all_patient_ID_train,
-                      # 'all_pred_prob_test': all_pred_prob_test,
-                      'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
-                      'all_targets_test': [e.tolist() for e in all_targets_test],
-                      'all_patient_ID_test': all_patient_ID_test,
-                      # 'all_pred_prob_val': all_pred_prob_val,
-                      'all_pred_label_val': [e.tolist() for e in all_pred_label_val],
-                      'all_targets_val': [e.tolist() for e in all_targets_val],
-                      'all_patient_ID_val': all_patient_ID_val,
-                      }
+        auc_info = {
+            'train_tpr': results_train['tpr'],
+            'train_fpr': results_train['fpr'],
+            'train_auroc_thresholds': results_train['auroc_thresholds'],
+            'test_tpr': results_test['tpr'],
+            'test_fpr': results_test['fpr'],
+            'test_auroc_thresholds': results_test['auroc_thresholds'],
+            'val_tpr': results_val['tpr'],
+            'val_fpr': results_val['fpr'],
+            'val_auroc_thresholds': results_val['auroc_thresholds'],
+            'train_recall': results_train['recall'],
+            'train_precision': results_train['precision'],
+            'train_auprc_thresholds': results_train['auprc_thresholds'],
+            'test_recall': results_test['recall'],
+            'test_precision': results_test['precision'],
+            'test_auprc_thresholds': results_test['auprc_thresholds'],
+            'val_recall': results_val['recall'],
+            'val_precision': results_val['precision'],
+            'val_auprc_thresholds': results_val['auprc_thresholds'],
+        }
 
         f = open(resFile,"a")
-        f.write("checkpoint"+"\n"+str(checkpointNum)+"\n")
-        f.write(str(checkpoint))
+        f.write("checkpoint"+"\n"+str(epoch)+"\n")
+        f.write(str(checkpoint)+"\n")
         f.close()
 
         f = open(resFile2, "a")
-        f.write("checkpoint" +"\n"+ str(checkpointNum) + "\n")
-        f.write(str(checkpoint_v2))
+        f.write("checkpoint" +"\n"+ str(epoch) + "\n")
+        f.write(str(auc_info)+"\n")
         f.close()
 
         f = open(resFile3,"a")
@@ -365,6 +360,10 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         f.write(resValStr + "\n")
         f.close()
 
+        modelPath = "../../../results/"+model_name+"_"+timestamp+"/model"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        optimizerPath = "../../../results/"+model_name+"_"+timestamp+"/optimizer"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        torch.save(net.state_dict(), modelPath)
+        torch.save(optimizer.state_dict(), optimizerPath)
 
         # if not os.path.isdir(args.dir):
             # os.makedirs(args.dir)
@@ -386,36 +385,36 @@ def chooseNet(args):
         from VGGResNetSiameseLSTM import MVCNNLstmNet1
         if args.densenet:
             print("importing MVCNNLstmNet1 densenet")
-            return MVCNNLstmNet1("densenet")
+            return MVCNNLstmNet1("densenet", args.mvcnnSharedWeights).to(device)
         elif args.resnet18:
             print("importing MVCNNLstmNet1 resnet18")
-            return MVCNNLstmNet1("resnet18")
+            return MVCNNLstmNet1("resnet18", args.mvcnnSharedWeights).to(device)
         elif args.resnet50:
             print("importing MVCNNLstmNet1 resnet50")
-            return MVCNNLstmNet1("resnet50")
+            return MVCNNLstmNet1("resnet50", args.mvcnnSharedWeights).to(device)
         elif args.vgg:
             print("importing MVCNNLstmNet1 vgg")
-            return MVCNNLstmNet1("vgg")
+            return MVCNNLstmNet1("vgg", args.mvcnnSharedWeights).to(device)
         elif args.vgg_bn:
             print("importing MVCNNLstmNet1 vgg_bn")
-            return MVCNNLstmNet1("vgg_bn")
+            return MVCNNLstmNet1("vgg_bn", args.mvcnnSharedWeights).to(device)
     elif args.BichannelCNNLstmNet:
         from VGGResNetSiameseLSTM import BichannelCNNLstmNet
         if args.densenet:
             print("importing BichannelCNNLstmNet densenet")
-            return BichannelCNNLstmNet("densenet")
+            return BichannelCNNLstmNet("densenet").to(device)
         elif args.resnet18:
             print("importing BichannelCNNLstmNet resnet18")
-            return BichannelCNNLstmNet("resnet18")
+            return BichannelCNNLstmNet("resnet18").to(device)
         elif args.resnet50:
             print("importing BichannelCNNLstmNet resnet50")
-            return BichannelCNNLstmNet("resnet50")
+            return BichannelCNNLstmNet("resnet50").to(device)
         elif args.vgg:
             print("importing BichannelCNNLstmNet vgg")
-            return BichannelCNNLstmNet("vgg")
+            return BichannelCNNLstmNet("vgg").to(device)
         elif args.vgg_bn:
             print("importing BichannelCNNLstmNet vgg_bn")
-            return BichannelCNNLstmNet("vgg_bn")
+            return BichannelCNNLstmNet("vgg_bn").to(device)
     # old import
     # from VGGResNetSiameseLSTM import RevisedResNetLstm
     # print("importing ResNet18 + LSTM")
@@ -517,22 +516,23 @@ def main():
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
     f = open(resFile, "x")  # create the file using "x" arg
-    f.write("Description:"+model_name) # write description to the first line here
+    f.write("Description:"+model_name+"\n") # write description to the first line here
     f.close()
     f = open(resFile2, "x")  # create the file using "x" arg
-    f.write("Description:"+model_name) # write description to the first line here
+    f.write("Description:"+model_name+"\n") # write description to the first line here
     f.close()
     f = open(resFile3, "x")  # create the file using "x" arg
-    f.write("Description:"+model_name+" summarized results") # write description to the first line here
+    f.write("Description:"+model_name+" summarized results"+"\n") # write description to the first line here
     f.close()
 
-    args.mvcnn = False
-    args.BichannelCNNLstmNet = True
-    # args.mvcnn = True
-    # args.BichannelCNNLstmNet = False
+    args.mvcnnSharedWeights = True
+    # args.mvcnn = False
+    # args.BichannelCNNLstmNet = True
+    args.mvcnn = True
+    args.BichannelCNNLstmNet = False
     # args.vgg_bn = True
-    args.resnet18 = True
-    # args.densenet = True
+    # args.resnet18 = True
+    args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")
