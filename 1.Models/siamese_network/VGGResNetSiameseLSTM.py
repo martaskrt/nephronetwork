@@ -74,8 +74,8 @@ class MVCNNLstmNet1(nn.Module):
 
         seq = torch.stack(x_to_lstm).unsqueeze(0) # len 512
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process whole sequence through lstm
         lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
 
@@ -302,8 +302,8 @@ class MVCNNLstmNet2(nn.Module):
 
         seq = torch.stack(x_to_lstm).unsqueeze(0) # len 512
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process whole sequence through lstm
         lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
 
@@ -365,8 +365,8 @@ class BichannelCNNLstmNet(nn.Module):
 
         seq = torch.stack(x_to_lstm).unsqueeze(0)
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process whole sequence through lstm
         lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
 
@@ -453,8 +453,8 @@ class SiameseCNNLstm(nn.Module):
 
         seq = torch.stack(x_to_lstm)
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process through lstm in a 1 batch of whole sequence
         lstm_out,_ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
         # squeeze out batch size
@@ -607,8 +607,8 @@ class RevisedResNetLstm(nn.Module):
 
         seq = torch.stack(x_to_lstm)
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process through lstm in a 1 batch of whole sequence
         lstm_out, hidden = self.lstm( seq, (hidden_0.detach(), cellState_0.detach()) )
 

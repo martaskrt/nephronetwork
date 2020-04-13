@@ -27,14 +27,13 @@ import os
 SEED = 42
 local = True
 debug = False
-model_name = "DebugSiameseCNNLstmDenseNet"
+model_name = "SiameseCNNLstm_ResNet18_lr005"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-print(timestamp)
-os.mkdir("../../../results/"+model_name+"_"+timestamp)
-resFile = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_info.txt"
-resFile2 = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_auc.txt"
-resFile3 = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_summary.txt"
+mainDir = "../../../results/" if local else "D:\\Sulagshan\\results\\"
+resFile = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_info.txt"
+resFile2 = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_auc.txt"
+resFile3 = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_summary.txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -65,9 +64,9 @@ class KidneyDataset(torch.utils.data.Dataset):
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     if not local:
         process_results = importlib.machinery.SourceFileLoader('process_results',
-                                                               args.git_dir + '/nephronetwork/2.Results/process_results.py').load_module()
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+                                                               '../../2.Results/process_results.py').load_module()
+        # sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+        # sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
     else:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                '/Users/sulagshan/Documents/Thesis/nephronetwork/2.Results/process_results.py').load_module()
@@ -126,7 +125,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         loss_accum_test = 0
         loss_accum_val = 0
 
-
         all_targets_train = []
         all_pred_prob_train = []
         all_pred_label_train = []
@@ -141,8 +139,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         all_pred_prob_val = []
         all_pred_label_val = []
         all_patient_ID_val = []
-
-
 
         counter_train = 0
         counter_test = 0
@@ -360,8 +356,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         f.write(resValStr + "\n")
         f.close()
 
-        modelPath = "../../../results/"+model_name+"_"+timestamp+"/model"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
-        optimizerPath = "../../../results/"+model_name+"_"+timestamp+"/optimizer"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        modelPath = mainDir+model_name+"_"+timestamp+"/model"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        optimizerPath = mainDir+model_name+"_"+timestamp+"/optimizer"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
         torch.save(net.state_dict(), modelPath)
         torch.save(optimizer.state_dict(), optimizerPath)
 
@@ -480,7 +476,7 @@ def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs',         default=100,     type=int,   help="Number of epochs")
     parser.add_argument('--batch_size',     default=16,     type=int,   help="Batch size")
-    parser.add_argument('--lr',             default=0.01,  type=float, help="Learning rate")
+    parser.add_argument('--lr',             default=0.005,  type=float, help="Learning rate")
     parser.add_argument('--momentum',       default=0.9,    type=float, help="Momentum")
     parser.add_argument("--weight_decay",   default=5e-4,   type=float, help="Weight decay")
     parser.add_argument("--num_workers",    default=1,      type=int,   help="Number of CPU workers")
@@ -508,6 +504,7 @@ def parseArgs():
     return parser.parse_args()
 
 def main():
+    print(timestamp)
     args = parseArgs()
 
     if not local:
@@ -533,6 +530,7 @@ def main():
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
+    os.mkdir("results/" + model_name + "_" + timestamp)
     f = open(resFile, "x")  # create the file using "x" arg
     f.write("Description:"+model_name+"\n") # write description to the first line here
     f.close()
@@ -548,8 +546,8 @@ def main():
     args.mvcnn = False
     args.BichannelCNNLstmNet = False
     args.vgg_bn = False
-    args.resnet18 = False
-    args.densenet = True
+    args.resnet18 = True
+    args.densenet = False
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")
