@@ -139,7 +139,7 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
     manu = []
     acq_date = []
     acq_time = []
-    # acc_num = []
+    acc_num = []
     img_id = []
     bladder_p = []
     sag_right_p = []
@@ -197,22 +197,16 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
         print("Deid: " + str(deid))
 
         try:
-            inst_num = ds.InstanceNumber
-            img_creation_time.append(inst_num)
-        except AttributeError:
-            inst_num = "NA"
-            img_creation_time.append(inst_num)
-            print("Error grabbing instance number")
-
-        # try:
-        #     img_acc = ds.AccessionNumber
-        # except AttributeError:
-        #     img_acc = "NA"
-        #     print("Error grabbing accession number")
-        # acc_num.append(img_acc)
-
-        try:
             img = ds.pixel_array
+
+            try:
+                inst_num = ds.InstanceNumber
+                img_creation_time.append(inst_num)
+            except AttributeError:
+                inst_num = "NA"
+                img_creation_time.append(inst_num)
+                print("Error grabbing instance number")
+
             print("Image transferred to pixel array")
             img = img_as_float(rgb2gray(img))
             cropped_image = crop_image(img, opt.params)  # crop image with i-th params
@@ -226,50 +220,50 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
                 except cv2.error:
                     img = final_img
 
-                tor_img = torch.tensor(img).to(opt.device).view(1, 256, 256)
-                input_img = torch.cat((tor_img, tor_img, tor_img), 0).view(1, 3, 256, 256).to(opt.device)  # .double()
+                try:
+                    tor_img = torch.tensor(img).to(opt.device).view(1, 256, 256)
+                    input_img = torch.cat((tor_img, tor_img, tor_img), 0).view(1, 3, 256, 256).to(
+                        opt.device)  # .double()
 
-                my_nn = my_nn.double().to(opt.device)
-                fwd_pass_out = torch.sigmoid(my_nn(input_img.double())).detach().to('cpu').numpy()
+                    my_nn = my_nn.double().to(opt.device)
+                    fwd_pass_out = torch.sigmoid(my_nn(input_img.double())).detach().to('cpu').numpy()
 
-                # print(fwd_pass_out)
-                # print(fwd_pass_out.shape)
+                    # print(fwd_pass_out)
+                    # print(fwd_pass_out.shape)
 
-                p_bladder = fwd_pass_out[0][0]
-                p_other = fwd_pass_out[0][1]
-                p_sag_left = fwd_pass_out[0][2]
-                p_sag_right = fwd_pass_out[0][3]
-                p_trans_left = fwd_pass_out[0][4]
-                p_trans_right = fwd_pass_out[0][5]
+                    p_bladder = fwd_pass_out[0][0]
+                    p_other = fwd_pass_out[0][1]
+                    p_sag_left = fwd_pass_out[0][2]
+                    p_sag_right = fwd_pass_out[0][3]
+                    p_trans_left = fwd_pass_out[0][4]
+                    p_trans_right = fwd_pass_out[0][5]
 
-                print("prob bladder = " + str(p_bladder))
-                print("prob other = " + str(p_other))
-                print("prob sag left = " + str(p_sag_left))
-                print("prob sag right = " + str(p_sag_right))
-                print("prob trans left = " + str(p_trans_left))
-                print("prob trans right = " + str(p_trans_right))
+                    print("prob bladder = " + str(p_bladder))
+                    print("prob other = " + str(p_other))
+                    print("prob sag left = " + str(p_sag_left))
+                    print("prob sag right = " + str(p_sag_right))
+                    print("prob trans left = " + str(p_trans_left))
+                    print("prob trans right = " + str(p_trans_right))
 
-                bladder_p.append(p_bladder)
-                sag_right_p.append(p_sag_right)
-                sag_left_p.append(p_sag_left)
-                trans_right_p.append(p_trans_right)
-                trans_left_p.append(p_trans_left)
+                    bladder_p.append(p_bladder)
+                    sag_right_p.append(p_sag_right)
+                    sag_left_p.append(p_sag_left)
+                    trans_right_p.append(p_trans_right)
+                    trans_left_p.append(p_trans_left)
 
-            try:
-                # my_view = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'revised_labels'].values[0]
-                # my_surg = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'Surgery'].values[0]
-                # my_func = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'Function'].values[0]
-                # my_refl = lab_file.loc[lab_file['img_id'] == mrn_img_id_val, 'Reflux'].values[0]
-                #
-                # view_label.append(my_view)
-                # surgery_label.append(my_surg)
-                # function_label.append(my_func)
-                # reflux_label.append(my_refl)
-                #
-                # print("View label: " + my_view)
-                # print("Surgery label: " + my_surg)
-                # print("Function label: " + my_func)
-                # print("Reflux label: " + my_refl)
+                except RuntimeError:
+                    bladder_p.append('NA')
+                    sag_right_p.append('NA')
+                    sag_left_p.append('NA')
+                    trans_right_p.append('NA')
+                    trans_left_p.append('NA')
+
+                try:
+                    img_acc = ds.AccessionNumber
+                except AttributeError:
+                    img_acc = "NA"
+                    print("Error grabbing accession number")
+                acc_num.append(img_acc)
 
                 try:
                     manufacturer = ds.Manufacturer
@@ -283,8 +277,7 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
                     try:
                         img_date = ds.StudyDate
                     except AttributeError:
-                        img_date = 'Unknown'
-
+                        img_date = 'NA'
                 acq_date.append(img_date)
 
                 try:
@@ -294,8 +287,8 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
                         img_time = ds.StudyTime
                     except AttributeError:
                         img_time = 'Unknown'
-
                 acq_time.append(img_time)
+
                 print("Manufacturer name: " + manufacturer)
                 print("Image acquisition date: " + img_date)
                 print("Image acquisition time: " + img_time)
@@ -310,65 +303,9 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
                 save_image(img, os.path.join(opt.jpg_dump_dir, img_file_name))
                 print('Image file written to' + opt.jpg_dump_dir + img_file_name)
 
-            except:
-                print("Image ID not in label file")
-
-                # my_view = 'Missing'
-                # my_surg = 'Missing'
-                # my_func = 'Missing'
-                # my_refl = 'Missing'
-                #
-                # view_label.append(my_view)
-                # surgery_label.append(my_surg)
-                # function_label.append(my_func)
-                # reflux_label.append(my_refl)
-                #
-                # print("View label: " + my_view)
-                # print("Surgery label: " + my_surg)
-                # print("Function label: " + my_func)
-                # print("Reflux label: " + my_refl)
-
-                try:
-                    manufacturer = ds.Manufacturer
-                except AttributeError:
-                    manufacturer = "NA"
-                manu.append(manufacturer)
-
-                try:
-                    img_date = ds.ContentDate
-                except AttributeError:
-                    try:
-                        img_date = ds.StudyDate
-                    except AttributeError:
-                        img_date = 'Unknown'
-
-                acq_date.append(img_date)
-
-                try:
-                    img_time = ds.ContentTime
-                except AttributeError:
-                    try:
-                        img_time = ds.StudyTime
-                    except AttributeError:
-                        img_time = 'Unknown'
-                acq_time.append(img_time)
-
-                print("Manufacturer name: " + manufacturer)
-                print("Image acquisition date: " + img_date)
-                print("Image acquisition time: " + img_time)
-
-                img_id_val = str(int(deid)) + "_" + str(inst_num) + str(img_date)
-                img_id.append(img_id_val)
-                print("De-id image ID: " + img_id_val)
-
-                img_file_name = img_id_val + ".jpg"
-                print("Image file name:" + img_file_name)
-
-                save_image(img, os.path.join(opt.jpg_dump_dir, img_file_name))
-                print('Image file written to' + opt.jpg_dump_dir + img_file_name)
-
-        except AttributeError:
+        except (AttributeError, ValueError):
             pass
+
 
         img_num = img_num + 1
 
@@ -382,25 +319,29 @@ def load_images(dcm_files, link_log, opt, my_nn=None):
     #            'image_acq_date': acq_date, 'image_acq_time': acq_time, 'view_label': view_label,
     #            'surgery_label': surgery_label, 'function_label': function_label,
     #            'reflux_label': reflux_label}
-    if opt.predict_views:
-        df_dict = {'image_ids': img_id, 'image_manu': manu,
-                   'image_acq_date': acq_date, 'image_acq_time': acq_time,
-                   'bladder_p': bladder_p, 'sag_right_p': sag_right_p,
-                   'sag_left_p': sag_left_p, 'trans_right_p': trans_right_p,
-                   'trans_left_p': trans_left_p}
-    else:
-        df_dict = {'image_ids': img_id, 'image_manu': manu,
-                   'image_acq_date': acq_date}
 
+    ### NO ACC NUMBER
     # if opt.predict_views:
     #     df_dict = {'image_ids': img_id, 'image_manu': manu,
-    #                'image_acq_date': acq_date, 'image_acq_time': acq_time, 'acc_num': acc_num,
+    #                'image_acq_date': acq_date, 'image_acq_time': acq_time,
     #                'bladder_p': bladder_p, 'sag_right_p': sag_right_p,
     #                'sag_left_p': sag_left_p, 'trans_right_p': trans_right_p,
     #                'trans_left_p': trans_left_p}
     # else:
     #     df_dict = {'image_ids': img_id, 'image_manu': manu,
-    #                'image_acq_date': acq_date, 'acc_num': acc_num}
+    #                'image_acq_date': acq_date}
+
+
+    ### WITH ACC NUMBER
+    if opt.predict_views:
+        df_dict = {'image_ids': img_id, 'image_manu': manu,'acc_num': acc_num,
+                   'image_acq_date': acq_date, 'image_acq_time': acq_time,
+                   'bladder_p': bladder_p, 'sag_right_p': sag_right_p,
+                   'sag_left_p': sag_left_p, 'trans_right_p': trans_right_p,
+                   'trans_left_p': trans_left_p}
+    else:
+        df_dict = {'image_ids': img_id, 'image_manu': manu,'acc_num':acc_num,
+                   'image_acq_date': acq_date}
 
     for key in df_dict:
         print(key + ": " + str(len(df_dict[key])))
