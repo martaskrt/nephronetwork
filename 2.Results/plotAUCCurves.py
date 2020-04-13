@@ -9,6 +9,7 @@ from sklearn.utils import shuffle
 import importlib.machinery
 from collections import defaultdict
 from datetime import datetime
+import matplotlib.pyplot as plt
 import os
 
 SEED = 42
@@ -43,8 +44,8 @@ class KidneyDataset(torch.utils.data.Dataset):
 
 def test(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     if not local:
-        process_results = importlib.machinery.SourceFileLoader('process_results',
-                                                               '../../2.Results/process_results.py').load_module()
+        process_results = importlib.machinery.SourceFileLoader('process_results','process_results.py').load_module()
+        sys.path.insert(0, 'C:\\Users\\Sulagshan\\Documents\\work' + '/nephronetwork/1.Models/siamese_network/')
     else:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                '/Users/sulagshan/Documents/Thesis/nephronetwork/2.Results/process_results.py').load_module()
@@ -79,7 +80,7 @@ def test(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     print("Dataset generated")
 
     if torch.cuda.device_count() > 1:
-        net = nn.DataParallel(net)
+        net = torch.nn.DataParallel(net)
 
     accurate_labels_test = 0
     accurate_labels_val = 0
@@ -210,6 +211,39 @@ def test(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     }
 
     plotAucCurves(auc_info)
+    plotAucCurvesManual(checkpoint)
+
+def plotAucCurvesManual(checkpoint):
+    testPredProb = checkpoint['all_pred_prob_test']
+    testTargets = checkpoint['all_targets_test']
+    valPredProb = checkpoint['all_pred_prob_val']
+    valTargets = checkpoint['all_targets_val']
+
+    def plotCurves(prob, targets):
+        fprs = []
+        tprs = []
+        ppvs = []
+        for thr in range(0,1,0.01):
+            tp, fp, tn, fn = 0,0,0,0
+            for i in range(len(prob)):
+                p,t = prob[i], targets[i]
+                pred = 0 if p < thr else 1
+                tp += 1 if pred == 1 and t == 1 else 0
+                fp += 1 if pred == 1 and t == 0 else 0
+                tn += 1 if pred == 0 and t == 0 else 0
+                fn += 1 if pred == 0 and t == 1 else 0
+            tpr = tp/(tp+fn)
+            fpr = fp/(fp+tn)
+            ppv = tp/(tp+fp)
+            fprs.append(fpr)
+            tprs.append(tpr)
+            ppvs.append(ppv)
+        #show auroc
+        plt.plot(fprs, tprs)
+        plt.show()
+        #show auprc
+        plt.plot(tprs, ppvs)
+        plt.show()
 
 def plotAucCurves(aucInfo):
     def plotAUROC(fpr, tpr):
