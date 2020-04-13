@@ -87,7 +87,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
                                     weight_decay=hyperparams['weight_decay'])
 
-    args.batch_size = 1
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
@@ -114,6 +113,9 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         training_generator.num_workers = 0
         test_generator.num_workers = 0
         val_generator.num_workers = 0
+
+    if torch.cuda.device_count() > 1:
+        net = nn.DataParallel(net)
 
     for epoch in range(args.stop_epoch + 1):
         print("Epoch " + str(epoch) + " started.")
@@ -503,9 +505,21 @@ def parseArgs():
     # parser.add_argument('--unet',         action="store_true", help="UNet architecthure")
     return parser.parse_args()
 
+def modifyArgs(args):
+    args.batch_size = 1
+    args.mvcnnSharedWeights = False
+    args.mvcnn = False
+    args.SiameseCNNLstm = True
+    args.BichannelCNNLstmNet = False
+    args.vgg_bn = False
+    args.resnet18 = True
+    args.densenet = False
+
+
 def main():
     print(timestamp)
     args = parseArgs()
+    modifyArgs(args)
 
     if not local:
         datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
@@ -541,13 +555,6 @@ def main():
     f.write("Description:"+model_name+" summarized results"+"\n") # write description to the first line here
     f.close()
 
-    args.mvcnnSharedWeights = False
-    args.SiameseCNNLstm = True
-    args.mvcnn = False
-    args.BichannelCNNLstmNet = False
-    args.vgg_bn = False
-    args.resnet18 = True
-    args.densenet = False
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")
