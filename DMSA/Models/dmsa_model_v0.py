@@ -82,12 +82,12 @@ class DMSADataset(Dataset):
         tl = read_image_file(self.us_dir + self.tl_file[index]).view(1, self.dim, self.dim)
         b = read_image_file(self.us_dir + self.b_file[index]).view(1, self.dim, self.dim)
             ## make 5x256x256 tensor
-        input_tensor = torch.cat((sr, sl, tr, tl, b), 0)
+        input_tensor = torch.cat((sr, sl, tr, tl, b), 0).float()
 
         dmsa_a = read_image_file(self.dmsa_dir + self.dmsa_a_file[index]).view(1, self.dim, self.dim)
         dmsa_p = read_image_file(self.dmsa_dir + self.dmsa_p_file[index]).view(1, self.dim, self.dim)
             ## make 2x256x256 tensor
-        output_tensor = torch.cat((dmsa_a, dmsa_p),0)
+        output_tensor = torch.cat((dmsa_a, dmsa_p),0).float()
 
         out_label = torch.tensor(self.label[index])
 
@@ -98,16 +98,26 @@ class DMSADataset(Dataset):
 
 ## args for debugging :)
 class make_opt():
-    def __init__(self):
-        self.us_dir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-dmsa/'
-        self.dmsa_dir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/'
+    def __init__(self, split="train"):
+        self.us_dir = '/data/alexchang/mnt/all-jpgs-dmsa/'
+        self.dmsa_dir = '/data/alexchang/mnt/all-dmsa-cabs/dmsa-jpgs/'
         self.dichot = False # for a 0/1 outcome, set to True
         # self.datasheet = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image organization Nov 2019/DMSA-datasheet-top3view.csv'
-        self.datasheet = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-datasheet-top3view.csv'
+        if split == "train":
+            
+            self.datasheet = '/data/alexchang/mnt/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv'
+
+            # self.datasheet = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-datasheet-top3view.csv'
+        elif split == "test":
+            self.datasheet = '/data/alexchang/mnt/data/load_training_test_sets/DMSA-val-datasheet-top2view.csv'
+        else:
+            raise Exception("Invalid split.")
+
         self.dim = 256
 
-opt = make_opt()
-my_data = DMSADataset(args=opt)
-my_dataloader = DataLoader(my_data, shuffle=True)
+if __name__ == "__main__":
+    opt = make_opt()
+    my_data = DMSADataset(args=opt)
+    my_dataloader = DataLoader(my_data, shuffle=True)
 
 
