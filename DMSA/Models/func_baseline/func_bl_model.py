@@ -35,11 +35,11 @@ def flatten_list(in_list):
 
     return flat_list
 
-def make_img_dict(path,file_list):
+def make_img_dict(path,file_list,dim):
 
     dict_out = dict()
     for img_file in file_list:
-        dict_out[img_file] = read_image_file(path + "/" + img_file).view(1, self.dim, self.dim)
+        dict_out[img_file] = read_image_file(path + "/" + img_file).view(1, dim, dim)
 
     return dict_out
 
@@ -108,9 +108,7 @@ class DMSADataset(Dataset):
             dmsa_a = read_image_file(self.dmsa_dir + self.dmsa_a_file[index]).view(1, self.dim, self.dim)
             dmsa_p = read_image_file(self.dmsa_dir + self.dmsa_p_file[index]).view(1, self.dim, self.dim)
             ## make 2x256x256 tensor
-        output_tensor = torch.cat((dmsa_a, dmsa_p),0).float()
-
-
+            output_tensor = torch.cat((dmsa_a, dmsa_p),0).float()
             return input_tensor, output_tensor, out_label
 
         else:
@@ -135,8 +133,8 @@ class DMSADataset_PreloadImgs(Dataset):
         self.dim = args.dim
         self.dmsa_out = args.dmsa_out
 
-        self.us_dir = args.us_dir
-        self.dmsa_dir = args.dmsa_dir
+        # self.us_dir = args.us_dir
+        # self.dmsa_dir = args.dmsa_dir
 
         self.id = data_sheet['ID']
 
@@ -152,14 +150,14 @@ class DMSADataset_PreloadImgs(Dataset):
 
         uniq_files = list(set(all_files))
 
-        self.us_img_dict = make_img_dict(path=self.us_dir, file_list=uniq_files)
+        self.us_img_dict = make_img_dict(path=args.us_dir, file_list=uniq_files, dim=args.dim)
 
         if self.dmsa_out:
             self.dmsa_a_file = data_sheet['DMSA_A']
             self.dmsa_p_file = data_sheet['DMSA_P']
 
-            self.dmsa_img_dict_a = make_img_dict(path=self.dmsa_dir, file_list=self.dmsa_a_file)
-            self.dmsa_img_dict_p = make_img_dict(path=self.dmsa_dir, file_list=self.dmsa_p_file)
+            self.dmsa_img_dict_a = make_img_dict(path=args.dmsa_dir, file_list=self.dmsa_a_file, dim=args.dim)
+            self.dmsa_img_dict_p = make_img_dict(path=args.dmsa_dir, file_list=self.dmsa_p_file, dim=args.dim)
 
         if args.dichot:
             self.label = data_sheet['FUNC_DICH']#.to_numpy()
@@ -188,7 +186,6 @@ class DMSADataset_PreloadImgs(Dataset):
             dmsa_p = self.dmsa_img_dict_a[self.dmsa_p_file[index]]
             ## make 2x256x256 tensor
             output_tensor = torch.cat((dmsa_a, dmsa_p), 0)
-
             return input_tensor, output_tensor, out_label
 
         else:
@@ -304,61 +301,6 @@ class FuncModSiamese(nn.Module):
         #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
         # else:
         #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
-
-## args for debugging :)
-# class make_opt():
-#     def __init__(self):
-#         self.us_dir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-dmsa/'
-#         self.dmsa_dir = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/'
-#         self.dichot = False # for a 0/1 outcome, set to True
-#         # self.datasheet = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image organization Nov 2019/DMSA-datasheet-top3view.csv'
-#         self.datasheet = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-datasheet-top3view.csv'
-#         self.dim = 256
-
-## args for debugging :)
-class make_opt():
-    def __init__(self, split="train"):
-        self.us_dir = '/data/alexchang/mnt/all-jpgs-dmsa/'
-        self.dmsa_dir = '/data/alexchang/mnt/all-dmsa-cabs/dmsa-jpgs/'
-        self.dichot = False # for a 0/1 outcome, set to True
-        # self.datasheet = 'C:/Users/larun/Desktop/Data Science Core/Projects/Urology/Image organization Nov 2019/DMSA-datasheet-top3view.csv'
-        if split == "train":
-            
-            self.datasheet = '/data/alexchang/mnt/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv'
-
-            # self.datasheet = '/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-datasheet-top3view.csv'
-        elif split == "test":
-            self.datasheet = '/data/alexchang/mnt/data/load_training_test_sets/DMSA-val-datasheet-top2view.csv'
-        else:
-            raise Exception("Invalid split.")
-
-        self.dim = 256
-
-    def forward(self, x):
-        bs = x.shape[0]
-
-        for i in range(chan):
-
-            x_in = x[:, i, :, :]
-
-            x0 = self.conv0(x_in.float())
-            x1 = self.conv1(x0)
-            x2 = self.conv1(x1)
-            x3 = self.conv1(x2)
-            x4 = self.conv2(x3)
-
-            if i == 0:
-                x4_concat = x4.view([bs, 1, -1])
-            else:
-                x4_concat = torch.cat((x4_concat, x4.view([bs, 1, -1])),2)
-
-        x5_0 = self.linear0(x4_concat)
-        x5 = self.linear1(x5_0)
-        x6 = self.linear2(x5)
-
-        x7 = self.linear3(x6)
-
-        return x7
 
 ###
     ###
@@ -607,7 +549,7 @@ def main():
     parser.add_argument("-lr", default=0.005, help="Image dimensions")
     parser.add_argument("-mom", default=0.9, help="Image dimensions")
     parser.add_argument("-bs", default=128, help="Image dimensions")
-    parser.add_argument("-max_epochs", default=20, help="Image dimensions")
+    parser.add_argument("-max_epochs", default=6, help="Image dimensions")
 
     opt = parser.parse_args() ## comment for debug
 
@@ -623,8 +565,8 @@ def main():
     loss_df.to_csv(out_csvfile)
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
 
 ###
 ###  DEBUGGING
