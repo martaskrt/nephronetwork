@@ -9,6 +9,7 @@ from sklearn.utils import shuffle
 import importlib.machinery
 from collections import defaultdict
 from datetime import datetime
+import os
 # from torchvision import transforms
 # from sklearn.utils import class_weight
 # from torch import nn
@@ -26,8 +27,13 @@ from datetime import datetime
 SEED = 42
 local = True
 debug = True
+model_name = "SiameseCNNLstm_ResNet18_lr005"
+
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-resFile = "../../../results/lstmRes_"+timestamp+".txt"
+mainDir = "../../../results/" if local else "D:\\Sulagshan\\results\\"
+resFile = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_info.txt"
+resFile2 = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_auc.txt"
+resFile3 = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_summary.txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -37,6 +43,16 @@ if torch.cuda.is_available():
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
 
+def modifyArgs(args):
+    args.batch_size = 1
+    args.singleView = True
+    args.mvcnnSharedWeights = False
+    args.mvcnn = False
+    args.SiameseCNNLstm = True
+    args.BichannelCNNLstmNet = False
+    args.vgg_bn = False
+    args.resnet18 = True
+    args.densenet = False
 
 class KidneyDataset(torch.utils.data.Dataset):
 
@@ -58,16 +74,14 @@ class KidneyDataset(torch.utils.data.Dataset):
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     if not local:
         process_results = importlib.machinery.SourceFileLoader('process_results',
-                                                               args.git_dir + '/nephronetwork/2.Results/process_results.py').load_module()
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+                                                               '../../2.Results/process_results.py').load_module()
+        # sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+        # sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
     else:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                '/Users/sulagshan/Documents/Thesis/nephronetwork/2.Results/process_results.py').load_module()
         sys.path.insert(0, '/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network/')
         sys.path.insert(0, "/Users/sulagshan/Documents/Thesis/nephronetwork/1.Models/siamese_network")
-
-    checkpointNum = 0
 
     net = chooseNet(args)
 
@@ -83,7 +97,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
                                     weight_decay=hyperparams['weight_decay'])
 
-    args.batch_size = 1
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
@@ -92,7 +105,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=SEED)
     if debug:
         # pass
-        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[40:42], train_y[40:42], train_cov[40:42], test_X[10:12], test_y[10:12], test_cov[10:12]
+        train_X, train_y, train_cov, test_X, test_y, test_cov = train_X[1:5], train_y[1:5], train_cov[1:5], test_X[1:5], test_y[1:5], test_cov[1:5]
 
     training_set = KidneyDataset(train_X, train_y, train_cov)
     test_set = KidneyDataset(test_X, test_y, test_cov)
@@ -121,7 +134,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         loss_accum_test = 0
         loss_accum_val = 0
 
-
         all_targets_train = []
         all_pred_prob_train = []
         all_pred_label_train = []
@@ -136,8 +148,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         all_pred_prob_val = []
         all_pred_label_val = []
         all_patient_ID_val = []
-
-
 
         counter_train = 0
         counter_test = 0
@@ -250,68 +260,115 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         results_train = process_results.get_metrics(y_score=all_pred_prob_train_tensor.cpu().detach().numpy(),
                                                     y_true=all_targets_train_tensor.cpu().detach().numpy(),
                                                     y_pred=all_pred_label_train_tensor.cpu().detach().numpy())
-        print('TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
-                                                                     int(accurate_labels_train) / counter_train,
-                                                                     loss_accum_train / counter_train,
-                                                                     results_train['auc'],
-                                                                     results_train['auprc'],
-                                                                     results_train['tn'],
-                                                                     results_train['fp'], results_train['fn'],
-                                                                     results_train['tp']))
+        resTrainStr = 'TrainEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\tAUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
+                                                                                                                                     int(accurate_labels_train) / counter_train,
+                                                                                                                                     loss_accum_train / counter_train,
+                                                                                                                                     results_train['auc'],
+                                                                                                                                     results_train['auprc'],
+                                                                                                                                     results_train['tn'],
+                                                                                                                                     results_train['fp'],
+                                                                                                                                     results_train['fn'],
+                                                                                                                                     results_train['tp'])
         results_test = process_results.get_metrics(y_score=all_pred_prob_test_tensor.cpu().detach().numpy(),
                                                    y_true=all_targets_test_tensor.cpu().detach().numpy(),
                                                    y_pred=all_pred_label_test_tensor.cpu().detach().numpy())
-        print('TestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
-                                                                     int(accurate_labels_test) / counter_test,
-                                                                     loss_accum_test / counter_test,
-                                                                     results_test['auc'],
-                                                                     results_test['auprc'],
-                                                                     results_test['tn'],
-                                                                     results_test['fp'], results_test['fn'],
-                                                                     results_test['tp']))
-        results_test = process_results.get_metrics(y_score=all_pred_prob_val_tensor.cpu().detach().numpy(),
+        resTestStr = 'TestEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\tAUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
+                                                                                                                                   int(accurate_labels_test) / counter_test,
+                                                                                                                                   loss_accum_test / counter_test,
+                                                                                                                                   results_test['auc'],
+                                                                                                                                   results_test['auprc'],
+                                                                                                                                   results_test['tn'],
+                                                                                                                                   results_test['fp'],
+                                                                                                                                   results_test['fn'],
+                                                                                                                                   results_test['tp'])
+        results_val = process_results.get_metrics(y_score=all_pred_prob_val_tensor.cpu().detach().numpy(),
                                                    y_true=all_targets_val_tensor.cpu().detach().numpy(),
                                                    y_pred=all_pred_label_val_tensor.cpu().detach().numpy())
-        print('ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
-              'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
-                                                                     int(accurate_labels_test) / counter_test,
-                                                                     loss_accum_test / counter_test,
-                                                                     results_test['auc'],
-                                                                     results_test['auprc'],
-                                                                     results_test['tn'],
-                                                                     results_test['fp'], results_test['fn'],
-                                                                     results_test['tp']))
+        resValStr = 'ValEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\tAUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(epoch,
+                                                                                                                                 int(accurate_labels_val) / counter_val,
+                                                                                                                                 loss_accum_val / counter_val,
+                                                                                                                                 results_val['auc'],
+                                                                                                                                 results_val['auprc'],
+                                                                                                                                 results_val['tn'],
+                                                                                                                                 results_val['fp'],
+                                                                                                                                 results_val['fn'],
+                                                                                                                                 results_val['tp'])
+        if debug:
+            print(resTrainStr)
+            print(resTestStr)
+            print(resValStr)
 
-        if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
-            checkpointNum += 1
-            checkpoint = {'epoch': epoch,
-                          'loss': loss,
-                          'hyperparams': hyperparams,
-                          'args': args,
-                          # 'model_state_dict': net.state_dict(),
-                          # 'optimizer': optimizer.state_dict(),
-                          'loss_train': loss_accum_train / counter_train,
-                          'loss_test': loss_accum_test / counter_test,
-                          'accuracy_train': int(accurate_labels_train) / counter_train,
-                          'accuracy_test': int(accurate_labels_test) / counter_test,
-                          'results_train': results_train,
-                          'results_test': results_test,
-                          # 'all_pred_prob_train': all_pred_prob_train,
-                          'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
-                          'all_targets_train': [e.tolist() for e in all_targets_train],
-                          'all_patient_ID_train': all_patient_ID_train,
-                          # 'all_pred_prob_test': all_pred_prob_test,
-                          'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
-                          'all_targets_test': [e.tolist() for e in all_targets_test],
-                          'all_patient_ID_test': all_patient_ID_test,
-                          }
-            f = open(resFile,"a")
-            f.write("checkpoint"+str(checkpointNum)+"\n")
-            f.write(str(checkpoint))
-            f.close()
+        # if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
+        checkpoint = {'epoch': epoch,
+                      'loss': loss,
+                      'hyperparams': hyperparams,
+                      'args': args,
+                      # 'model_state_dict': net.state_dict(),
+                      # 'optimizer': optimizer.state_dict(),
+                      'loss_train': loss_accum_train / counter_train,
+                      'loss_test': loss_accum_test / counter_test,
+                      'loss_val': loss_accum_val / counter_val,
+                      'accuracy_train': int(accurate_labels_train) / counter_train,
+                      'accuracy_test': int(accurate_labels_test) / counter_test,
+                      'accuracy_val': int(accurate_labels_val) / counter_val,
+                      'results_train': results_train,
+                      'results_test': results_test,
+                      'results_val': results_val,
+                      'all_pred_label_train': [e.tolist() for e in all_pred_label_train],
+                      'all_pred_prob_train': [e.tolist() for e in all_pred_prob_train],
+                      'all_targets_train': [e.tolist() for e in all_targets_train],
+                      'all_pred_label_test': [e.tolist() for e in all_pred_label_test],
+                      'all_pred_prob_test': [e.tolist() for e in all_pred_prob_test],
+                      'all_targets_test': [e.tolist() for e in all_targets_test],
+                      'all_pred_label_val': [e.tolist() for e in all_pred_label_val],
+                      'all_pred_prob_val': [e.tolist() for e in all_pred_prob_val],
+                      'all_targets_val': [e.tolist() for e in all_targets_val],
+                      'all_patient_ID_train': all_patient_ID_train,
+                      'all_patient_ID_test': all_patient_ID_test,
+                      'all_patient_ID_val': all_patient_ID_val,
+                      }
+        auc_info = {
+            'train_tpr': results_train['tpr'],
+            'train_fpr': results_train['fpr'],
+            'train_auroc_thresholds': results_train['auroc_thresholds'],
+            'test_tpr': results_test['tpr'],
+            'test_fpr': results_test['fpr'],
+            'test_auroc_thresholds': results_test['auroc_thresholds'],
+            'val_tpr': results_val['tpr'],
+            'val_fpr': results_val['fpr'],
+            'val_auroc_thresholds': results_val['auroc_thresholds'],
+            'train_recall': results_train['recall'],
+            'train_precision': results_train['precision'],
+            'train_auprc_thresholds': results_train['auprc_thresholds'],
+            'test_recall': results_test['recall'],
+            'test_precision': results_test['precision'],
+            'test_auprc_thresholds': results_test['auprc_thresholds'],
+            'val_recall': results_val['recall'],
+            'val_precision': results_val['precision'],
+            'val_auprc_thresholds': results_val['auprc_thresholds'],
+        }
 
+        f = open(resFile,"a")
+        f.write("checkpoint"+"\n"+str(epoch)+"\n")
+        f.write(str(checkpoint)+"\n")
+        f.close()
+
+        f = open(resFile2, "a")
+        f.write("checkpoint" +"\n"+ str(epoch) + "\n")
+        f.write(str(auc_info)+"\n")
+        f.close()
+
+        f = open(resFile3,"a")
+        f.write("Epoch "+str(epoch)+"\n")
+        f.write(resTrainStr + "\n")
+        f.write(resTestStr + "\n")
+        f.write(resValStr + "\n")
+        f.close()
+
+        modelPath = mainDir+model_name+"_"+timestamp+"/model"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        optimizerPath = mainDir+model_name+"_"+timestamp+"/optimizer"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        torch.save(net.state_dict(), modelPath)
+        torch.save(optimizer.state_dict(), optimizerPath)
 
         # if not os.path.isdir(args.dir):
             # os.makedirs(args.dir)
@@ -329,40 +386,76 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
 def chooseNet(args):
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
-    if args.mvcnn:
-        from VGGResNetSiameseLSTM import MVCNNLstmNet1
+    if args.singleView:
+        # from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        from VGGResNetSiameseLSTM import SingleCNNLSTM
         if args.densenet:
-            print("importing MVCNNLstmNet1 densenet")
-            return MVCNNLstmNet1("densenet")
+            print("importing SingleCNNLSTM densenet")
+            return SingleCNNLSTM("densenet").to(device)
         elif args.resnet18:
-            print("importing MVCNNLstmNet1 resnet18")
-            return MVCNNLstmNet1("resnet18")
+            print("importing SingleCNNLSTM resnet18")
+            return SingleCNNLSTM("resnet18").to(device)
         elif args.resnet50:
-            print("importing MVCNNLstmNet1 resnet50")
-            return MVCNNLstmNet1("resnet50")
+            print("importing SingleCNNLSTM resnet50")
+            return SingleCNNLSTM("resnet50").to(device)
         elif args.vgg:
-            print("importing MVCNNLstmNet1 vgg")
-            return MVCNNLstmNet1("vgg")
+            print("importing SingleCNNLSTM vgg")
+            return SingleCNNLSTM("vgg").to(device)
         elif args.vgg_bn:
-            print("importing MVCNNLstmNet1 vgg_bn")
-            return MVCNNLstmNet1("vgg_bn")
+            print("importing SingleCNNLSTM vgg_bn")
+            return SingleCNNLSTM("vgg_bn").to(device)
+    elif args.mvcnn:
+        # from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        from VGGResNetSiameseLSTM import MVCNNLstmNet2
+        if args.densenet:
+            print("importing MVCNNLstmNet2 densenet")
+            return MVCNNLstmNet2("densenet", args.mvcnnSharedWeights).to(device)
+        elif args.resnet18:
+            print("importing MVCNNLstmNet2 resnet18")
+            return MVCNNLstmNet2("resnet18", args.mvcnnSharedWeights).to(device)
+        elif args.resnet50:
+            print("importing MVCNNLstmNet2 resnet50")
+            return MVCNNLstmNet2("resnet50", args.mvcnnSharedWeights).to(device)
+        elif args.vgg:
+            print("importing MVCNNLstmNet2 vgg")
+            return MVCNNLstmNet2("vgg", args.mvcnnSharedWeights).to(device)
+        elif args.vgg_bn:
+            print("importing MVCNNLstmNet2 vgg_bn")
+            return MVCNNLstmNet2("vgg_bn", args.mvcnnSharedWeights).to(device)
     elif args.BichannelCNNLstmNet:
         from VGGResNetSiameseLSTM import BichannelCNNLstmNet
         if args.densenet:
-            print("imp")
-            return BichannelCNNLstmNet("densenet")
+            print("importing BichannelCNNLstmNet densenet")
+            return BichannelCNNLstmNet("densenet").to(device)
         elif args.resnet18:
-            print("importing MVCNNLstmNet1 resnet18")
-            return BichannelCNNLstmNet("resnet18")
+            print("importing BichannelCNNLstmNet resnet18")
+            return BichannelCNNLstmNet("resnet18").to(device)
         elif args.resnet50:
-            print("importing MVCNNLstmNet1 resnet50")
-            return BichannelCNNLstmNet("resnet50")
+            print("importing BichannelCNNLstmNet resnet50")
+            return BichannelCNNLstmNet("resnet50").to(device)
         elif args.vgg:
-            print("importing MVCNNLstmNet1 vgg")
-            return BichannelCNNLstmNet("vgg")
+            print("importing BichannelCNNLstmNet vgg")
+            return BichannelCNNLstmNet("vgg").to(device)
         elif args.vgg_bn:
-            print("importing MVCNNLstmNet1 vgg_bn")
-            return BichannelCNNLstmNet("vgg_bn")
+            print("importing BichannelCNNLstmNet vgg_bn")
+            return BichannelCNNLstmNet("vgg_bn").to(device)
+    elif args.SiameseCNNLstm:
+        from VGGResNetSiameseLSTM import SiameseCNNLstm
+        if args.densenet:
+            print("importing SiameseCNNLstm densenet")
+            return SiameseCNNLstm("densenet").to(device)
+        elif args.resnet18:
+            print("importing SiameseCNNLstm resnet18")
+            return SiameseCNNLstm("resnet18").to(device)
+        elif args.resnet50:
+            print("importing SiameseCNNLstm resnet50")
+            return SiameseCNNLstm("resnet50").to(device)
+        elif args.vgg:
+            print("importing SiameseCNNLstm vgg")
+            return SiameseCNNLstm("vgg").to(device)
+        elif args.vgg_bn:
+            print("importing SiameseCNNLstm vgg_bn")
+            return SiameseCNNLstm("vgg_bn").to(device)
     # old import
     # from VGGResNetSiameseLSTM import RevisedResNetLstm
     # print("importing ResNet18 + LSTM")
@@ -379,8 +472,8 @@ def organizeDataForLstm(train_x, train_y, train_cov, test_x, test_y, test_cov):
     def group(t_x, t_y, t_cov):
         x, y, cov = defaultdict(list), defaultdict(list), defaultdict(list)
         for i in range(len(t_cov)):
-            # id = t_cov[i].split("_")[0] + t_cov[i].split("_")[4]  # split data per kidney e.g 5.0Left, 5.0Right, 6.0Left, ...
-            id = t_cov[i].split("_")[0] # split only on id e.g. 5.0, 6.0, 7.0, ...
+            id = t_cov[i].split("_")[0] + t_cov[i].split("_")[4]  # split data per kidney e.g 5.0Left, 5.0Right, 6.0Left, ...
+            # id = t_cov[i].split("_")[0] # split only on id e.g. 5.0, 6.0, 7.0, ...
             x[id].append(t_x[i])
             y[id].append(t_y[i])
             cov[id].append(t_cov[i])
@@ -410,7 +503,7 @@ def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs',         default=100,     type=int,   help="Number of epochs")
     parser.add_argument('--batch_size',     default=16,     type=int,   help="Batch size")
-    parser.add_argument('--lr',             default=0.001,  type=float, help="Learning rate")
+    parser.add_argument('--lr',             default=0.005,  type=float, help="Learning rate")
     parser.add_argument('--momentum',       default=0.9,    type=float, help="Momentum")
     parser.add_argument("--weight_decay",   default=5e-4,   type=float, help="Weight decay")
     parser.add_argument("--num_workers",    default=1,      type=int,   help="Number of CPU workers")
@@ -438,7 +531,9 @@ def parseArgs():
     return parser.parse_args()
 
 def main():
+    print(timestamp)
     args = parseArgs()
+    modifyArgs(args)
 
     if not local:
         datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
@@ -463,17 +558,17 @@ def main():
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
+    os.mkdir(mainDir + model_name + "_" + timestamp)
     f = open(resFile, "x")  # create the file using "x" arg
-    f.write("Description: debug") # write description to the first line here
+    f.write("Description:"+model_name+"\n") # write description to the first line here
+    f.close()
+    f = open(resFile2, "x")  # create the file using "x" arg
+    f.write("Description:"+model_name+"\n") # write description to the first line here
+    f.close()
+    f = open(resFile3, "x")  # create the file using "x" arg
+    f.write("Description:"+model_name+" summarized results"+"\n") # write description to the first line here
     f.close()
 
-    args.mvcnn = False
-    args.BichannelCNNLstmNet = True
-    # args.mvcnn = True
-    # args.BichannelCNNLstmNet = False
-    # args.vgg_bn = True
-    # args.resnet18 = True
-    args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")
