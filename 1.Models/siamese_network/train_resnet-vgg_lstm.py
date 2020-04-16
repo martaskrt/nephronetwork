@@ -26,15 +26,14 @@ import os
 
 SEED = 42
 local = True
-debug = False
-model_name = "DebugSiameseCNNLstmDenseNet"
+debug = True
+model_name = "SiameseCNNLstm_ResNet18_lr005"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-print(timestamp)
-os.mkdir("../../../results/"+model_name+"_"+timestamp)
-resFile = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_info.txt"
-resFile2 = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_auc.txt"
-resFile3 = "../../../results/"+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_summary.txt"
+mainDir = "../../../results/" if local else "D:\\Sulagshan\\results\\"
+resFile = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_info.txt"
+resFile2 = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_auc.txt"
+resFile3 = mainDir+model_name+"_"+timestamp+"/lstmRes_"+timestamp+"_"+model_name+"_summary.txt"
 # Set the random seed manually for reproducibility.
 np.random.seed(SEED)
 torch.manual_seed(SEED)
@@ -44,6 +43,16 @@ if torch.cuda.is_available():
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
 
+def modifyArgs(args):
+    args.batch_size = 1
+    args.singleView = True
+    args.mvcnnSharedWeights = False
+    args.mvcnn = False
+    args.SiameseCNNLstm = True
+    args.BichannelCNNLstmNet = False
+    args.vgg_bn = False
+    args.resnet18 = True
+    args.densenet = False
 
 class KidneyDataset(torch.utils.data.Dataset):
 
@@ -65,9 +74,9 @@ class KidneyDataset(torch.utils.data.Dataset):
 def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
     if not local:
         process_results = importlib.machinery.SourceFileLoader('process_results',
-                                                               args.git_dir + '/nephronetwork/2.Results/process_results.py').load_module()
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
-        sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+                                                               '../../2.Results/process_results.py').load_module()
+        # sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
+        # sys.path.insert(0, args.git_dir + '/nephronetwork/1.Models/siamese_network/')
     else:
         process_results = importlib.machinery.SourceFileLoader('process_results',
                                                                '/Users/sulagshan/Documents/Thesis/nephronetwork/2.Results/process_results.py').load_module()
@@ -88,7 +97,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
                                     weight_decay=hyperparams['weight_decay'])
 
-    args.batch_size = 1
     params = {'batch_size': args.batch_size,
               'shuffle': True,
               'num_workers': args.num_workers}
@@ -126,7 +134,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         loss_accum_test = 0
         loss_accum_val = 0
 
-
         all_targets_train = []
         all_pred_prob_train = []
         all_pred_label_train = []
@@ -141,8 +148,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         all_pred_prob_val = []
         all_pred_label_val = []
         all_patient_ID_val = []
-
-
 
         counter_train = 0
         counter_test = 0
@@ -360,8 +365,8 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         f.write(resValStr + "\n")
         f.close()
 
-        modelPath = "../../../results/"+model_name+"_"+timestamp+"/model"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
-        optimizerPath = "../../../results/"+model_name+"_"+timestamp+"/optimizer"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        modelPath = mainDir+model_name+"_"+timestamp+"/model"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
+        optimizerPath = mainDir+model_name+"_"+timestamp+"/optimizer"+timestamp+"_"+model_name+"_epoch"+str(epoch)+".pt"
         torch.save(net.state_dict(), modelPath)
         torch.save(optimizer.state_dict(), optimizerPath)
 
@@ -381,7 +386,25 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
 def chooseNet(args):
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
-    if args.mvcnn:
+    if args.singleView:
+        # from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        from VGGResNetSiameseLSTM import SingleCNNLSTM
+        if args.densenet:
+            print("importing SingleCNNLSTM densenet")
+            return SingleCNNLSTM("densenet").to(device)
+        elif args.resnet18:
+            print("importing SingleCNNLSTM resnet18")
+            return SingleCNNLSTM("resnet18").to(device)
+        elif args.resnet50:
+            print("importing SingleCNNLSTM resnet50")
+            return SingleCNNLSTM("resnet50").to(device)
+        elif args.vgg:
+            print("importing SingleCNNLSTM vgg")
+            return SingleCNNLSTM("vgg").to(device)
+        elif args.vgg_bn:
+            print("importing SingleCNNLSTM vgg_bn")
+            return SingleCNNLSTM("vgg_bn").to(device)
+    elif args.mvcnn:
         # from VGGResNetSiameseLSTM import MVCNNLstmNet1
         from VGGResNetSiameseLSTM import MVCNNLstmNet2
         if args.densenet:
@@ -480,7 +503,7 @@ def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs',         default=100,     type=int,   help="Number of epochs")
     parser.add_argument('--batch_size',     default=16,     type=int,   help="Batch size")
-    parser.add_argument('--lr',             default=0.01,  type=float, help="Learning rate")
+    parser.add_argument('--lr',             default=0.005,  type=float, help="Learning rate")
     parser.add_argument('--momentum',       default=0.9,    type=float, help="Momentum")
     parser.add_argument("--weight_decay",   default=5e-4,   type=float, help="Weight decay")
     parser.add_argument("--num_workers",    default=1,      type=int,   help="Number of CPU workers")
@@ -508,7 +531,9 @@ def parseArgs():
     return parser.parse_args()
 
 def main():
+    print(timestamp)
     args = parseArgs()
+    modifyArgs(args)
 
     if not local:
         datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
@@ -533,6 +558,7 @@ def main():
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
+    os.mkdir(mainDir + model_name + "_" + timestamp)
     f = open(resFile, "x")  # create the file using "x" arg
     f.write("Description:"+model_name+"\n") # write description to the first line here
     f.close()
@@ -543,13 +569,6 @@ def main():
     f.write("Description:"+model_name+" summarized results"+"\n") # write description to the first line here
     f.close()
 
-    args.mvcnnSharedWeights = False
-    args.SiameseCNNLstm = True
-    args.mvcnn = False
-    args.BichannelCNNLstmNet = False
-    args.vgg_bn = False
-    args.resnet18 = False
-    args.densenet = True
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print("len: train_X, train_y, train_cov, test_X, test_y, test_cov")

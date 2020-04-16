@@ -74,8 +74,8 @@ class MVCNNLstmNet1(nn.Module):
 
         seq = torch.stack(x_to_lstm).unsqueeze(0) # len 512
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process whole sequence through lstm
         lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
 
@@ -302,8 +302,8 @@ class MVCNNLstmNet2(nn.Module):
 
         seq = torch.stack(x_to_lstm).unsqueeze(0) # len 512
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process whole sequence through lstm
         lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
 
@@ -365,8 +365,8 @@ class BichannelCNNLstmNet(nn.Module):
 
         seq = torch.stack(x_to_lstm).unsqueeze(0)
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process whole sequence through lstm
         lstm_out, _ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
 
@@ -410,18 +410,66 @@ class CNN3(nn.Module):
     def forward(self, input):
         cnn =self.cnnLabel
         return self.model(input)
-        # if cnn == "densenet":
-        #     pass
-        # elif "resnet" in cnn:
-        #     if cnn == "resnet18":
-        #         pass
-        #     elif cnn == "resnet50":
-        #         pass
-        # elif "vgg" in cnn:
-        #     if cnn == "vgg":
-        #         pass
-        #     elif cnn == "vgg_bn":
-        #         pass
+
+class CNN4(nn.Module):
+    def __init__(self, cnn):
+        super(CNN4, self).__init__()
+        self.cnnLabel = cnn
+        if cnn == "densenet":
+            self.model = RevisedDenseNetSingle()
+        elif "resnet" in cnn:
+            if cnn == "resnet18":
+                self.model = RevisedResNetSingle()
+            elif cnn == "resnet50":
+                pass
+        elif "vgg" in cnn:
+            if cnn == "vgg":
+                pass
+            elif cnn == "vgg_bn":
+                self.model = RevisedVGG_bnSingle()
+    def forward(self, input):
+        cnn =self.cnnLabel
+        return self.model(input)
+
+class SingleCNNLSTM(nn.Module):
+    def __init__(self, cnn):
+        super(SingleCNNLSTM, self).__init__()
+        self.cnnLabel = cnn
+        self.classes = 2
+        self.num_inputs = 1  # not used kept here for mention
+        # lstm hyperparams
+        self.batch_size = 1
+        self.layer_dim = 1
+        self.hidden_dim = 256
+
+        self.cnn = CNN4(cnn)
+        self.lstm = nn.LSTM(input_size=256,               # dim of each input vector in seq
+                            hidden_size=self.hidden_dim,  # hyperparam
+                            num_layers=self.layer_dim,    # num of stacked LSTM Cells
+                            batch_first=True)             # put batch_size as first dim of input seq
+        self.out_layer = nn.Sequential(nn.Linear(256, self.classes, bias=True), nn.ReLU())
+
+    def forward(self, input):
+        # kidney is a seq of images for one kidney
+        # process all images through CNN then pass through lstm
+        x_to_lstm = []
+        # create lstm sequence by running images for kidney through CNN
+        for j in range(len(input)):
+            x = input[j]
+            cnn_out = self.cnn(x)  # 256 vector
+            x_to_lstm.append(cnn_out)
+
+        seq = torch.stack(x_to_lstm)
+        # init hidden and cell state for this seq of images
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        # process through lstm in a 1 batch of whole sequence
+        lstm_out,_ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
+        # squeeze out batch size
+        lstm_out = torch.squeeze(lstm_out, 0)
+        pred = self.out_layer(lstm_out)
+        # return a prediction that looks like e.g. [p1,p2,p3] where p is prob for each visit
+        return pred
 
 class SiameseCNNLstm(nn.Module):
     def __init__(self, cnn):
@@ -453,8 +501,8 @@ class SiameseCNNLstm(nn.Module):
 
         seq = torch.stack(x_to_lstm)
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process through lstm in a 1 batch of whole sequence
         lstm_out,_ = self.lstm(seq, (hidden_0.detach(), cellState_0.detach()))
         # squeeze out batch size
@@ -539,6 +587,84 @@ class RevisedDenseNet(nn.Module):
         comb_out2 = self.combo_layer(comb_out)
         return comb_out2
 
+
+class RevisedResNetSingle(nn.Module):
+    def __init__(self):
+        super(RevisedResNetSingle, self).__init__()
+        self.old_arch = torchvision.models.resnet18(pretrained=False)
+        self.old_arch.fc = nn.Linear(512, 256, bias=True)
+        self.combo_layer = nn.Sequential(nn.Linear(256, 256, bias=True), nn.ReLU())
+    def forward(self, x):
+        B, T, C, H = x.size()
+        x = x.transpose(0, 1)
+        x_list = []
+        curr_x = torch.unsqueeze(x[0], 1) # select first img i.e. sag/trans
+        curr_x = curr_x.expand(-1, 3, -1, -1)
+        input = torch.cuda.FloatTensor(curr_x.to(device)) if torch.cuda.is_available() else torch.FloatTensor(curr_x.to(device))
+        res_out = self.old_arch(input)
+        x_list.append(res_out)
+        comb_out = torch.cat(x_list, 1)
+        comb_out = comb_out.view(B, -1)
+        comb_out2 = self.combo_layer(comb_out)
+        return comb_out2
+
+class RevisedVGG_bnSingle(nn.Module):
+    def __init__(self):
+        super(RevisedVGG_bnSingle, self).__init__()
+        self.old_arch = torchvision.models.vgg16_bn(pretrained=False)
+        self.first_seq = nn.Sequential(*list(self.old_arch.children())[0][:]) ## Remove input conv and replace with my own
+        self.avg_pool = list(self.old_arch.children())[1]
+        self.final_seq = nn.Sequential(*list(self.old_arch.children())[2][:-4],
+                                       nn.Linear(in_features=4096, out_features=4096),
+                                       nn.ReLU(),
+                                       nn.Dropout(p=0.5),
+                                       nn.Linear(in_features=4096, out_features=256))
+        self.combo_layer = nn.Sequential(nn.Linear(256, 256, bias=True),
+                                         nn.ReLU())
+    def forward(self,x):
+        x = x.unsqueeze(1)
+        B, T, C, H = x.size()
+        x = x.transpose(0, 1)
+        x_list = []
+        curr_x = torch.unsqueeze(x[0], 1)
+        curr_x = curr_x.expand(-1, 3, -1, -1)
+        input = torch.cuda.FloatTensor(curr_x.to(device)) if torch.cuda.is_available() else torch.FloatTensor(curr_x.to(device))
+        out1 = self.first_seq(input)
+        out2 = self.avg_pool(out1)
+        out2_flat = out2.view(B, -1)
+        out3 = self.final_seq(out2_flat)
+        x_list.append(out3)
+        comb_out = torch.cat(x_list, 1)
+        comb_out2 = self.combo_layer(comb_out)
+        return comb_out2
+
+class RevisedDenseNetSingle(nn.Module):
+    def __init__(self):
+        super(RevisedDenseNetSingle, self).__init__()
+        self.old_arch = torchvision.models.densenet121(pretrained=False)
+        self.first_seq = list(self.old_arch.children())[0]
+        self.pool = nn.AvgPool2d(kernel_size=(5, 5),padding=(0, 0))
+        self.final_lin = nn.Linear(in_features=1024, out_features=256, bias=True)
+        self.combo_layer = nn.Sequential(nn.Linear(256, 256, bias=True),nn.ReLU())
+    def forward(self,x):
+        x = x.unsqueeze(1)
+        B, T, C, H = x.size()
+        x = x.transpose(0, 1)
+        x_list = []
+        curr_x = torch.unsqueeze(x[0], 1)
+        curr_x = curr_x.expand(-1, 3, -1, -1)
+        input = torch.cuda.FloatTensor(curr_x.to(device)) if torch.cuda.is_available() else torch.FloatTensor(curr_x.to(device))
+        out1 = self.first_seq(input)
+        out2 = self.pool(out1)
+        out2_flat = out2.view(B, -1)
+        out3 = self.final_lin(out2_flat)
+        x_list.append(out3)
+        comb_out = torch.cat(x_list, 1)
+        comb_out2 = self.combo_layer(comb_out)
+        return comb_out2
+
+
+
 class RevisedResNetLstm(nn.Module):
     def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedResNetLstm, self).__init__()
@@ -607,8 +733,8 @@ class RevisedResNetLstm(nn.Module):
 
         seq = torch.stack(x_to_lstm)
         # init hidden and cell state for this seq of images
-        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
-        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_()
+        hidden_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
+        cellState_0 = torch.zeros(self.layer_dim, self.batch_size, self.hidden_dim).requires_grad_().to(device)
         # process through lstm in a 1 batch of whole sequence
         lstm_out, hidden = self.lstm( seq, (hidden_0.detach(), cellState_0.detach()) )
 
