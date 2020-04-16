@@ -452,11 +452,10 @@ class SingleCNNLSTM(nn.Module):
     def forward(self, input):
         # kidney is a seq of images for one kidney
         # process all images through CNN then pass through lstm
-        input = input[0]
         x_to_lstm = []
         # create lstm sequence by running images for kidney through CNN
-        for j in range(len(kidney)):
-            x = kidney[j]
+        for j in range(len(input)):
+            x = input[j]
             cnn_out = self.cnn(x)  # 256 vector
             x_to_lstm.append(cnn_out)
 
@@ -591,16 +590,15 @@ class RevisedDenseNet(nn.Module):
 
 class RevisedResNetSingle(nn.Module):
     def __init__(self):
-        super(RevisedResNet, self).__init__()
+        super(RevisedResNetSingle, self).__init__()
         self.old_arch = torchvision.models.resnet18(pretrained=False)
         self.old_arch.fc = nn.Linear(512, 256, bias=True)
         self.combo_layer = nn.Sequential(nn.Linear(256, 256, bias=True), nn.ReLU())
     def forward(self, x):
-        x = x.unsqueeze(1)
         B, T, C, H = x.size()
         x = x.transpose(0, 1)
         x_list = []
-        curr_x = torch.unsqueeze(x[0], 1)
+        curr_x = torch.unsqueeze(x[0], 1) # select first img i.e. sag/trans
         curr_x = curr_x.expand(-1, 3, -1, -1)
         input = torch.cuda.FloatTensor(curr_x.to(device)) if torch.cuda.is_available() else torch.FloatTensor(curr_x.to(device))
         res_out = self.old_arch(input)
@@ -612,7 +610,7 @@ class RevisedResNetSingle(nn.Module):
 
 class RevisedVGG_bnSingle(nn.Module):
     def __init__(self):
-        super(RevisedVGG_bn, self).__init__()
+        super(RevisedVGG_bnSingle, self).__init__()
         self.old_arch = torchvision.models.vgg16_bn(pretrained=False)
         self.first_seq = nn.Sequential(*list(self.old_arch.children())[0][:]) ## Remove input conv and replace with my own
         self.avg_pool = list(self.old_arch.children())[1]
@@ -642,7 +640,7 @@ class RevisedVGG_bnSingle(nn.Module):
 
 class RevisedDenseNetSingle(nn.Module):
     def __init__(self):
-        super(RevisedDenseNet, self).__init__()
+        super(RevisedDenseNetSingle, self).__init__()
         self.old_arch = torchvision.models.densenet121(pretrained=False)
         self.first_seq = list(self.old_arch.children())[0]
         self.pool = nn.AvgPool2d(kernel_size=(5, 5),padding=(0, 0))

@@ -26,7 +26,7 @@ import os
 
 SEED = 42
 local = True
-debug = False
+debug = True
 model_name = "SiameseCNNLstm_ResNet18_lr005"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -45,6 +45,7 @@ softmax = torch.nn.Softmax(dim=1)
 
 def modifyArgs(args):
     args.batch_size = 1
+    args.singleView = True
     args.mvcnnSharedWeights = False
     args.mvcnn = False
     args.SiameseCNNLstm = True
