@@ -11,6 +11,7 @@ from collections import defaultdict
 from datetime import datetime
 import matplotlib.pyplot as plt
 import os
+import json
 
 SEED = 42
 local = True
@@ -176,8 +177,7 @@ def test(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
                                                y_pred=all_pred_label_val_tensor.cpu().detach().numpy())
 
     # if (epoch <= 40 and (epoch % 5) == 0) or (epoch > 40 and epoch % 10 == 0) or epoch == args.stop_epoch:
-    checkpoint = {'epoch': epoch,
-                  'loss': loss,
+    checkpoint = {'loss': loss,
                   'hyperparams': hyperparams,
                   'args': args,
                   'loss_test': loss_accum_test / counter_test,
@@ -223,20 +223,22 @@ def plotAucCurvesManual(checkpoint):
         fprs = []
         tprs = []
         ppvs = []
-        for thr in range(0,1,0.01):
+        for threshold in range(0,1001):
+            thr = threshold/1000
             tp, fp, tn, fn = 0,0,0,0
             for i in range(len(prob)):
-                p,t = prob[i], targets[i]
-                pred = 0 if p < thr else 1
-                tp += 1 if pred == 1 and t == 1 else 0
-                fp += 1 if pred == 1 and t == 0 else 0
-                tn += 1 if pred == 0 and t == 0 else 0
-                fn += 1 if pred == 0 and t == 1 else 0
-            tpr = tp/(tp+fn)
-            fpr = fp/(fp+tn)
-            ppv = tp/(tp+fp)
-            fprs.append(fpr)
+                for j in range(len(prob[i])):
+                    p,t = prob[i][j], targets[i][j]
+                    pred = 0 if p < thr else 1
+                    tp += 1 if pred == 1 and t == 1 else 0
+                    fp += 1 if pred == 1 and t == 0 else 0
+                    tn += 1 if pred == 0 and t == 0 else 0
+                    fn += 1 if pred == 0 and t == 1 else 0
+            tpr = tp/(tp+fn) if tp+fn != 0 else 0
+            fpr = fp/(fp+tn) if fp+fn != 0 else 0
+            ppv = tp/(tp+fp) if tp+fp != 0 else 0
             tprs.append(tpr)
+            fprs.append(fpr)
             ppvs.append(ppv)
         #show auroc
         plt.plot(fprs, tprs)
@@ -244,6 +246,22 @@ def plotAucCurvesManual(checkpoint):
         #show auprc
         plt.plot(tprs, ppvs)
         plt.show()
+
+        fprtpr = list(zip(fprs,tprs))
+        fprtpr.sort()
+        fpr,tpr = zip(*fprtpr)
+        auroc = 0
+        for i in range(len(tpr)-1, 0,-1):
+            auroc += tpr[i]*(fpr[i]-fpr[i-1])
+        print("AUROC is: "+ str(auroc))
+
+        tprppv = list(zip(tprs,ppvs))
+        tprppv.sort()
+        ppv,tpr = zip(*tprppv)
+        auprc = 0
+        for i in range(len(tpr)-1, 0,-1):
+            auprc += ppv[i]*(tpr[i]-tpr[i-1])
+        print("AUPRC is:" + str(auprc))
 
 def plotAucCurves(aucInfo):
     def plotAUROC(fpr, tpr):
@@ -427,25 +445,41 @@ def main():
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
     test(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
 
-if __name__ == '__main__':
-    main()
+def parseData(datapath, wantEpoch):
+    f = open(datapath).read()
+    parsed = f.split("{")
+    dataStr = "{" + parsed[wantEpoch+1].split("}")[0] + "}"
+    replace = {"'": '"',
+        "0.": "0.0", "1.": "1.0",
+        "\n": "",
+        " ": "",
+        "array(": "",
+        ")": "",
+        ",dtype=float32": "",
+        ",...":""}
+    for k,v in replace.items():
+        dataStr = dataStr.replace(k,v)
+    data = json.loads(dataStr)
+    return data
 
-# def parseData(datapath, wantEpoch):
-#     f = open(datapath).read()
-#     parsed = f.split("{")
-#     dataStr = "{" + parsed[wantEpoch+1].split("}")[0] + "}"
-#     replace = {"'": '"',
-#         "0.": "0.0", "1.": "1.0",
-#         "\n": "",
-#         " ": "",
-#         "array(": "",
-#         ")": "",
-#         ",dtype=float32": "",
-#         ",...":""}
-#     for k,v in replace.items():
-#         dataStr = dataStr.replace(k,v)
-#     data = json.loads(dataStr)
-#     return data
+import csv
+def writeToCsv():
+    dir = "/Users/sulagshan/Documents/Thesis/results/"
+    with open("siameseVggTestData", 'w', newline='') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        wr.writerow(mylist)
+
+    import pandas
+    df = pandas.DataFrame(data={"col1": list_1, "col2": list_2})
+    df.to_csv("./file.csv", sep=',', index=False)
+
+if __name__ == '__main__':
+    # main()
+    dir = "/Users/sulagshan/Documents/Thesis/results/"
+    filename = "lstmRes_2020_04_12_22_16_02_siameseCNNLstm_vggbn_lr001_info.txt"
+    parseData(dir+filename, 17)
+
+
 #
 # def plotAUROC(fpr, tpr, thresholds):
 #     plt.plot(fpr, tpr)

@@ -43,6 +43,15 @@ if torch.cuda.is_available():
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
 
+def modifyArgs(args):
+    args.batch_size = 1
+    args.mvcnnSharedWeights = False
+    args.mvcnn = False
+    args.SiameseCNNLstm = True
+    args.BichannelCNNLstmNet = False
+    args.vgg_bn = False
+    args.resnet18 = True
+    args.densenet = False
 
 class KidneyDataset(torch.utils.data.Dataset):
 
@@ -113,9 +122,6 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         training_generator.num_workers = 0
         test_generator.num_workers = 0
         val_generator.num_workers = 0
-
-    if torch.cuda.device_count() > 1:
-        net = nn.DataParallel(net)
 
     for epoch in range(args.stop_epoch + 1):
         print("Epoch " + str(epoch) + " started.")
@@ -379,7 +385,25 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
 def chooseNet(args):
     num_inputs = 1 if args.view != "siamese" else 2
     model_pretrain = args.pretrained if args.cv else False
-    if args.mvcnn:
+    if args.singleView:
+        # from VGGResNetSiameseLSTM import MVCNNLstmNet1
+        from VGGResNetSiameseLSTM import SingleCNNLSTM
+        if args.densenet:
+            print("importing SingleCNNLSTM densenet")
+            return SingleCNNLSTM("densenet").to(device)
+        elif args.resnet18:
+            print("importing SingleCNNLSTM resnet18")
+            return SingleCNNLSTM("resnet18").to(device)
+        elif args.resnet50:
+            print("importing SingleCNNLSTM resnet50")
+            return SingleCNNLSTM("resnet50").to(device)
+        elif args.vgg:
+            print("importing SingleCNNLSTM vgg")
+            return SingleCNNLSTM("vgg").to(device)
+        elif args.vgg_bn:
+            print("importing SingleCNNLSTM vgg_bn")
+            return SingleCNNLSTM("vgg_bn").to(device)
+    elif args.mvcnn:
         # from VGGResNetSiameseLSTM import MVCNNLstmNet1
         from VGGResNetSiameseLSTM import MVCNNLstmNet2
         if args.densenet:
@@ -505,17 +529,6 @@ def parseArgs():
     # parser.add_argument('--unet',         action="store_true", help="UNet architecthure")
     return parser.parse_args()
 
-def modifyArgs(args):
-    args.batch_size = 1
-    args.mvcnnSharedWeights = False
-    args.mvcnn = False
-    args.SiameseCNNLstm = True
-    args.BichannelCNNLstmNet = False
-    args.vgg_bn = False
-    args.resnet18 = True
-    args.densenet = False
-
-
 def main():
     print(timestamp)
     args = parseArgs()
@@ -544,7 +557,7 @@ def main():
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
-    os.mkdir("results/" + model_name + "_" + timestamp)
+    os.mkdir(mainDir + model_name + "_" + timestamp)
     f = open(resFile, "x")  # create the file using "x" arg
     f.write("Description:"+model_name+"\n") # write description to the first line here
     f.close()
