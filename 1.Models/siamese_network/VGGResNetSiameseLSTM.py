@@ -622,7 +622,6 @@ class RevisedVGG_bnSingle(nn.Module):
         self.combo_layer = nn.Sequential(nn.Linear(256, 256, bias=True),
                                          nn.ReLU())
     def forward(self,x):
-        x = x.unsqueeze(1)
         B, T, C, H = x.size()
         x = x.transpose(0, 1)
         x_list = []
@@ -647,7 +646,6 @@ class RevisedDenseNetSingle(nn.Module):
         self.final_lin = nn.Linear(in_features=1024, out_features=256, bias=True)
         self.combo_layer = nn.Sequential(nn.Linear(256, 256, bias=True),nn.ReLU())
     def forward(self,x):
-        x = x.unsqueeze(1)
         B, T, C, H = x.size()
         x = x.transpose(0, 1)
         x_list = []

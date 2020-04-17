@@ -220,8 +220,10 @@ def plotAucCurvesManual(checkpoint):
     valTargets = checkpoint['all_targets_val']
 
     def plotCurves(prob, targets):
+        # prob and targets are lists that look like [[0,1,0],[1,1],[0,0,0],...]
         fprs = []
         tprs = []
+        tprs2 = [] # just another list to hold tpr
         ppvs = []
         for threshold in range(0,1001):
             thr = threshold/1000
@@ -234,34 +236,52 @@ def plotAucCurvesManual(checkpoint):
                     fp += 1 if pred == 1 and t == 0 else 0
                     tn += 1 if pred == 0 and t == 0 else 0
                     fn += 1 if pred == 0 and t == 1 else 0
-            tpr = tp/(tp+fn) if tp+fn != 0 else 0
-            fpr = fp/(fp+tn) if fp+fn != 0 else 0
-            ppv = tp/(tp+fp) if tp+fp != 0 else 0
-            tprs.append(tpr)
-            fprs.append(fpr)
-            ppvs.append(ppv)
+            if tp+fn != 0 and fp+tn != 0:
+                fpr = fp / (fp + tn)
+                tpr = tp/(tp+fn)
+                fprs.append(fpr)
+                tprs.append(tpr)
+
+            if tp+fn != 0 and tp+fp != 0:
+                tpr = tp/(tp+fn)
+                ppv = tp / (tp + fp)
+                tprs2.append(tpr)
+                ppvs.append(ppv)
+
+            # tpr = tp/(tp+fn) if tp+fn != 0 else 0
+            # fpr = fp/(fp+tn) if fp+tn != 0 else 0
+            # ppv = tp/(tp+fp) if tp+fp != 0 else 0
+            # tprs.append(tpr)
+            # fprs.append(fpr)
+            # ppvs.append(ppv)
         #show auroc
         plt.plot(fprs, tprs)
         plt.show()
         #show auprc
-        plt.plot(tprs, ppvs)
+        plt.plot(tprs2, ppvs)
         plt.show()
 
-        fprtpr = list(zip(fprs,tprs))
-        fprtpr.sort()
-        fpr,tpr = zip(*fprtpr)
-        auroc = 0
-        for i in range(len(tpr)-1, 0,-1):
-            auroc += tpr[i]*(fpr[i]-fpr[i-1])
-        print("AUROC is: "+ str(auroc))
+        fprtpr = list(zip(fprs,tprs)) # pair lists into list of tuples [(fpr1,tpr1), ..]
+        fprtpr.sort() # sort list based on increasing fpr value since fpr is elem 0 of tuple
+        fpr,tpr = zip(*fprtpr) # unzip the list of tuples into two lists
+        auroc_left, auroc_right = 0, 0
+        for i in range(len(fpr)-1):
+            auroc_left += tpr[i]*(fpr[i+1]-fpr[i]) # approximate each point as a rectangle
+            auroc_right += tpr[i+1]*(fpr[i+1]-fpr[i])
+        print("AUROC is: left_"+str(auroc_left)+" right_"+str(auroc_right))
 
-        tprppv = list(zip(tprs,ppvs))
+        tprppv = list(zip(tprs2,ppvs))
         tprppv.sort()
         ppv,tpr = zip(*tprppv)
-        auprc = 0
-        for i in range(len(tpr)-1, 0,-1):
-            auprc += ppv[i]*(tpr[i]-tpr[i-1])
-        print("AUPRC is:" + str(auprc))
+        auprc_left, auprc_right = 0, 0
+        for i in range(len(tpr)-1):
+            auprc_left += ppv[i]*(tpr[i+1]-tpr[i])
+            auprc_right += ppv[i+1]*(tpr[i+1]-tpr[i])
+        print("AUPRC is: left_"+str(auprc_left)+" right_"+str(auprc_right))
+
+    plotCurves(testPredProb, testTargets)
+    plotCurves(valPredProb, valTargets)
+    plotCurves(testPredProb+valPredProb, testTargets+valTargets)
 
 def plotAucCurves(aucInfo):
     def plotAUROC(fpr, tpr):

@@ -27,7 +27,7 @@ import os
 SEED = 42
 local = True
 debug = True
-model_name = "SiameseCNNLstm_ResNet18_lr005"
+model_name = "SiameseCNNLstm_ResNet18_lr001"
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 mainDir = "../../../results/" if local else "D:\\Sulagshan\\results\\"
@@ -44,6 +44,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
 
 def modifyArgs(args):
+    args.lr = 0.001
     args.batch_size = 1
     args.singleView = True
     args.mvcnnSharedWeights = False
