@@ -1,6 +1,7 @@
 import sys
 import argparse
 import numpy as np
+from numpy import trapz
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -14,8 +15,7 @@ import os
 import json
 
 SEED = 42
-local = True
-model_name = "DebugSiameseCNNLstmDenseNet"
+local = False
 
 timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # Set the random seed manually for reproducibility.
@@ -26,6 +26,20 @@ if torch.cuda.is_available():
 # Set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 softmax = torch.nn.Softmax(dim=1)
+
+def modifyArgs(args):
+    args.batch_size = 1
+    args.mvcnnSharedWeights = False
+    args.SiameseCNNLstm = True
+    args.mvcnn = False
+    args.BichannelCNNLstmNet = False
+    args.vgg_bn = True
+    args.resnet18 = False
+    args.densenet = False
+    respath = "/Users/sulagshan/Documents/Thesis/results/" if local else "D:\\Sulagshan\\results\\siameseCNNLstm_vggbn_lr001_2020_04_12_22_16_02\\"
+    args.modelPath = respath + "model2020_04_12_22_16_02_siameseCNNLstm_vggbn_lr001_epoch17.pt"
+    args.title = "Siamese Resnet18 LSTM ROC and PRC"
+
 
 class KidneyDataset(torch.utils.data.Dataset):
 
@@ -210,14 +224,10 @@ def test(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
         'val_auprc_thresholds': results_val['auprc_thresholds'],
     }
 
-    plotAucCurves(auc_info)
-    plotAucCurvesManual(checkpoint)
+    # plotAucCurves(auc_info)
+    plotAucCurvesManual(checkpoint, args)
 
-def plotAucCurvesManual(checkpoint):
-    testPredProb = checkpoint['all_pred_prob_test']
-    testTargets = checkpoint['all_targets_test']
-    valPredProb = checkpoint['all_pred_prob_val']
-    valTargets = checkpoint['all_targets_val']
+def plotAucCurvesManual(checkpoint, args):
 
     def plotCurves(prob, targets):
         # prob and targets are lists that look like [[0,1,0],[1,1],[0,0,0],...]
@@ -241,47 +251,63 @@ def plotAucCurvesManual(checkpoint):
                 tpr = tp/(tp+fn)
                 fprs.append(fpr)
                 tprs.append(tpr)
-
             if tp+fn != 0 and tp+fp != 0:
                 tpr = tp/(tp+fn)
                 ppv = tp / (tp + fp)
                 tprs2.append(tpr)
                 ppvs.append(ppv)
+        return fprs, tprs, tprs2, ppvs
 
-            # tpr = tp/(tp+fn) if tp+fn != 0 else 0
-            # fpr = fp/(fp+tn) if fp+tn != 0 else 0
-            # ppv = tp/(tp+fp) if tp+fp != 0 else 0
-            # tprs.append(tpr)
-            # fprs.append(fpr)
-            # ppvs.append(ppv)
-        #show auroc
-        plt.plot(fprs, tprs)
+        # def computeArea(fprs, tprs, tprs2, ppvs):
+        #     fprtpr = list(zip(fprs,tprs)) # pair lists into list of tuples [(fpr1,tpr1), ..]
+        #     fprtpr.sort() # sort list based on increasing fpr value since fpr is elem 0 of tuple
+        #     fpr,tpr = zip(*fprtpr) # unzip the list of tuples into two lists
+        #
+        #     auroc = trapz(tpr, x=tpr)
+        #     auroc_left, auroc_right = 0, 0
+        #     for i in range(len(fpr)-1):
+        #         auroc_left += tpr[i]*(fpr[i+1]-fpr[i]) # approximate each point as a rectangle
+        #         auroc_right += tpr[i+1]*(fpr[i+1]-fpr[i])
+        #     print("AUROC is: left_"+str(auroc_left)+" right_"+str(auroc_right)+"_areaFxn"+str(auroc))
+        #
+        #     tprppv = list(zip(tprs2,ppvs))
+        #     tprppv.sort()
+        #     tpr,ppv = zip(*tprppv)
+        #
+        #     auprc = trapz(ppv, x = tpr)
+        #     auprc_left, auprc_right = 0, 0
+        #     for i in range(len(tpr)-1):
+        #         auprc_left += ppv[i]*(tpr[i+1]-tpr[i])
+        #         auprc_right += ppv[i+1]*(tpr[i+1]-tpr[i])
+        #     print("AUPRC is: left_"+str(auprc_left)+" right_"+str(auprc_right)+" areaFxn_"+str(auprc))
+
+    def createPlots(x1, y1, x2, y2, x3, y3, x4, y4):
+        # testROC:(x1,y1),valROC:(x2,y2),testPRC:(x3,y3),valPRC:(x4,y4)
+        plt.figure(figsize=(9, 3.5))
+        plt.subplot(121)
+        plt.plot(x1, y1)
+        plt.plot(x2, y2)
+        plt.xlabel("tpr")
+        plt.ylabel("fpr")
+        plt.legend(['test', 'val'], loc='upper left')
+        plt.subplot(122)
+        plt.plot(x3, y3)
+        plt.plot(x4, y4)
+        plt.ylabel("ppv")
+        plt.xlabel("tpr")
+        plt.legend(['test', 'val'], loc='upper left')
+        plt.suptitle(args.title)
         plt.show()
-        #show auprc
-        plt.plot(tprs2, ppvs)
-        plt.show()
 
-        fprtpr = list(zip(fprs,tprs)) # pair lists into list of tuples [(fpr1,tpr1), ..]
-        fprtpr.sort() # sort list based on increasing fpr value since fpr is elem 0 of tuple
-        fpr,tpr = zip(*fprtpr) # unzip the list of tuples into two lists
-        auroc_left, auroc_right = 0, 0
-        for i in range(len(fpr)-1):
-            auroc_left += tpr[i]*(fpr[i+1]-fpr[i]) # approximate each point as a rectangle
-            auroc_right += tpr[i+1]*(fpr[i+1]-fpr[i])
-        print("AUROC is: left_"+str(auroc_left)+" right_"+str(auroc_right))
+    testPredProb = checkpoint['all_pred_prob_test']
+    testTargets = checkpoint['all_targets_test']
+    valPredProb = checkpoint['all_pred_prob_val']
+    valTargets = checkpoint['all_targets_val']
+    tfprs, ttprs, ttprs2, tppvs = plotCurves(testPredProb, testTargets)
+    vfprs, vtprs, vtprs2, vppvs = plotCurves(valPredProb, valTargets)
+    createPlots(tfprs, ttprs, vfprs, vtprs, ttprs2, tppvs, vtprs2, vppvs)
 
-        tprppv = list(zip(tprs2,ppvs))
-        tprppv.sort()
-        ppv,tpr = zip(*tprppv)
-        auprc_left, auprc_right = 0, 0
-        for i in range(len(tpr)-1):
-            auprc_left += ppv[i]*(tpr[i+1]-tpr[i])
-            auprc_right += ppv[i+1]*(tpr[i+1]-tpr[i])
-        print("AUPRC is: left_"+str(auprc_left)+" right_"+str(auprc_right))
-
-    plotCurves(testPredProb, testTargets)
-    plotCurves(valPredProb, valTargets)
-    plotCurves(testPredProb+valPredProb, testTargets+valTargets)
+    # plotCurves(testPredProb+valPredProb, testTargets+valTargets)
 
 def plotAucCurves(aucInfo):
     def plotAUROC(fpr, tpr):
@@ -421,19 +447,6 @@ def parseArgs():
                         help="Use pretrained model with cross validation if cv requested")
     return parser.parse_args()
 
-
-def modifyArgs(args):
-    args.batch_size = 1
-    args.mvcnnSharedWeights = False
-    args.SiameseCNNLstm = True
-    args.mvcnn = False
-    args.BichannelCNNLstmNet = False
-    args.vgg_bn = True
-    args.resnet18 = False
-    args.densenet = False
-    respath = "/Users/sulagshan/Documents/Thesis/results/"
-    args.modelPath = respath + "model2020_04_12_22_16_02_siameseCNNLstm_vggbn_lr001_epoch17.pt"
-
 def main():
     print(timestamp)
     args = parseArgs()
@@ -463,6 +476,7 @@ def main():
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
     train_X, train_y, train_cov, test_X, test_y, test_cov = organizeDataForLstm(train_X, train_y, train_cov, test_X, test_y, test_cov)
+
     test(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
 
 def parseData(datapath, wantEpoch):
@@ -494,10 +508,10 @@ def writeToCsv():
     df.to_csv("./file.csv", sep=',', index=False)
 
 if __name__ == '__main__':
-    # main()
-    dir = "/Users/sulagshan/Documents/Thesis/results/"
-    filename = "lstmRes_2020_04_12_22_16_02_siameseCNNLstm_vggbn_lr001_info.txt"
-    parseData(dir+filename, 17)
+    main()
+    # dir = "/Users/sulagshan/Documents/Thesis/results/"
+    # filename = "lstmRes_2020_04_12_22_16_02_siameseCNNLstm_vggbn_lr001_info.txt"
+    # parseData(dir+filename, 17)
 
 
 #
