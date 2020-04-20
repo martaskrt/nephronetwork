@@ -260,7 +260,7 @@ def initialize_training(args, neural_net):
     # os.chdir(args.github_dir + '/nephronetwork/DMSA/vae_model/')
     # import model
 
-    model_module = import_module(args.github_dir + '/nephronetwork/DMSA/' + args.model_dir + '.model')
+    model_module = import_module(args.github_dir + '/nephronetwork/DMSA/Models/vae_model/model')
 
     os.chdir(args.github_dir)
     import VAE
