@@ -32,32 +32,34 @@ class US_labels_dataset(data.Dataset):
     ###
 
 class MyCNN(nn.Module):
-    def __init__(self, num_conv_filters=18):
+    def __init__(self, num_conv_filters=18, num_conv_layers = 3, num_labels = 6):
         super(MyCNN, self).__init__()
 
         self.in_channels = 1
-
+        self.num_conv_layers = num_conv_layers
+        self.num_labels = num_labels
 
         self.l1 = nn.Sequential(nn.Conv2d(self.in_channels, num_conv_filters,5),
                                 nn.ReLU(),
                                 nn.BatchNorm2d(num_conv_filters),
                                 nn.MaxPool2d(2))
-        self.lk = nn.Sequential(nn.Conv2d(num_conv_filters, num_conv_filters,5),
+        self.lk = nn.Sequential(nn.Conv2d(num_conv_filters, num_conv_filters, 5),
                                 nn.ReLU(),
                                 nn.BatchNorm2d(num_conv_filters),
                                 nn.MaxPool2d(2))
 
         self.lin1 = nn.Sequential(nn.Linear(in_size, 128),
                                   nn.ReLU())
-        self.lin2 = nn.Sequential(nn.Linear(128, 6))
+        self.lin2 = nn.Sequential(nn.Linear(128, self.num_labels))
 
     def forward(self, x):
         x1 = self.l1(x)
-        x2 = self.lk(x1)
-        x3 = self.lk(x2)
-        x4 = self.lk(x3)
 
-        x_flat = x4.view((1,-1))
+        x_in = x1
+        for i in range(self.num_conv_layers):
+            x_out = self.lk(x_in)
+
+        x_flat = x_out.view((1,-1))
 
         x5 = self.lin1(x_flat)
         out = self.lin2(x5)
@@ -77,7 +79,7 @@ def init_weights(m):
     if type(m) == nn.Linear:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
-    if type(m) == nn.Conv1d:
+    if type(m) == nn.Conv2d:
         torch.nn.init.xavier_uniform_(m.weight)
         m.bias.data.fill_(0.01)
 

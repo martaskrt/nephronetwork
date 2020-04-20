@@ -297,7 +297,6 @@ class RevisedVGG_bn(nn.Module):
         return pred
 
 
-
 class RevisedDenseNet(nn.Module):
     def __init__(self, pretrain=False, classes=2, num_inputs=2):
         super(RevisedDenseNet, self).__init__()
