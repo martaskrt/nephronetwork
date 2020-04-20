@@ -127,7 +127,6 @@ class DMSADataset(Dataset):
             return input_tensor, out_label
 
 
-
 class DMSADataset_PreloadImgs(Dataset):
     """ Data loader for DMSA data """
 
@@ -210,7 +209,7 @@ class DMSADataset_PreloadImgs(Dataset):
 
 
 class FCNet(nn.Module):
-    def __init__(self):
+    def __init__(self, args):
         super(FCNet, self).__init__()
 
         self.in_fc = nn.Sequential(nn.Linear(512, 256),
@@ -221,10 +220,15 @@ class FCNet(nn.Module):
                                     nn.BatchNorm1d(256),
                                     nn.ReLU(),
                                     nn.Dropout(0.5))
-        self.out_fc = nn.Sequential(nn.Linear(64, 1),
-                                    nn.BatchNorm1d(256),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
+
+        if args.dichot:
+            self.out_fc = nn.Sequential(nn.Linear(64, 2),
+                                        nn.BatchNorm1d(256),
+                                        nn.ReLU())
+        else:
+            self.out_fc = nn.Sequential(nn.Linear(64, 1),
+                                        nn.BatchNorm1d(256),
+                                        nn.ReLU())
 
     def forward(self, x):
 
@@ -345,8 +349,11 @@ def training_loop(args, network, file_lab):
 
             bs = us.shape[0]
 
-            loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
-            print("loss calculated")
+            if args.dichot:
+                loss = criterion(out.view([bs, 2]).to(device=args.device).float(), lab.to(args.device).squeeze().to(device=args.device).long())
+
+            else:
+                loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
         #
         #     # print("predicted vals: ")
         #     # print(out.view([bs, 1]).to(device=args.device))
@@ -376,7 +383,15 @@ def training_loop(args, network, file_lab):
     #             bs = us_val.shape[0]
     #
     #             out_val = net(us_val.to(args.device))
-    #             loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(), lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+    #             if args.dichot:
+    #                 loss_val = criterion(out_val.view([bs, 2]).to(device=args.device).float(),
+    #                                      lab_val.to(args.device).squeeze().to(device=args.device).long())
+    #
+    #             else:
+    #                 loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(),
+    #                                      lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
+
     #
     #             val_epoch_loss.append(loss_val.item())
     #
@@ -393,7 +408,14 @@ def training_loop(args, network, file_lab):
     #                 bs = us_test.shape[0]
     #
     #                 out_test = net(us_test.to(args.device))
-    #                 loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(), lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+                    # if args.dichot:
+                    #     loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
+                    #                           lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    #
+                    # else:
+                    #     loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
+                    #                           lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
     #
     #                 test_epoch_loss.append(loss_test.item())
     #
@@ -409,7 +431,14 @@ def training_loop(args, network, file_lab):
     #         if args.include_test:
     #             for idx, (us_test, dmsa_test, lab_test) in enumerate(test_dloader):
     #                 out_test = net(us_test.to(args.device))
-    #                 loss_test = criterion(out_test.squeeze().to(args.device), lab_test.squeeze().to(args.device))
+
+                    # if args.dichot:
+                    #     loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
+                    #                           lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    #
+                    # else:
+                    #     loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
+                    #                           lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
     #
     #                 test_epoch_loss.append(loss_test.item())
     #

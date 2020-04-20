@@ -569,7 +569,14 @@ def training_loop(args, network, file_lab):
             if args.include_test:
                 for idx, (us_test, dmsa_test, lab_test) in enumerate(test_dloader):
                     out_test = net(us_test.to(args.device))
-                    loss_test = criterion(out_test.squeeze().to(args.device), lab_test.squeeze().to(args.device))
+
+                    if args.dichot:
+                        loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
+                                         lab_test.to(args.device).squeeze().to(device=args.device).long())
+
+                    else:
+                        loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
+                                         lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                     test_epoch_loss.append(loss_test.item())
 
