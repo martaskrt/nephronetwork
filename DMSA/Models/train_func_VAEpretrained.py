@@ -329,7 +329,7 @@ def training_loop(args, network, file_lab):
                 out = net(us.to(args.device)) ## update this to have 2 outcomes function prediction + image prediction
 
             else:
-                vae_out = vae_mod.make_latent distribution(us.to(args.device))
+                vae_out = vae_mod.make_latent distributions(us.to(args.device))
                 out = net(vae_out)
 
             print(out.shape)

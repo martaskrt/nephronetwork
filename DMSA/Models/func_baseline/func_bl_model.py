@@ -482,7 +482,14 @@ def training_loop(args, network, file_lab):
             bs = us.shape[0]
 
             if args.dichot:
-                loss = criterion(out.view([bs, 2]).to(device=args.device), lab.to(args.device).view([bs, 1]).to(device=args.device))
+                # torch.max(labels, 1)[1]
+                print("lab: ")
+                print(lab)
+                print("out: ")
+                print(out)
+
+                loss = criterion(out.view([bs, 2]).to(device=args.device).float(), lab.to(args.device).squeeze().to(device=args.device).long())
+
             else:
                 loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
 
