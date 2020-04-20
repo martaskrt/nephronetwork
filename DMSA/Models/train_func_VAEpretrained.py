@@ -252,10 +252,10 @@ def initialize_training(args, neural_net):
     train_loader = DataLoader(train_dat, batch_size=args.bs, shuffle=True)
     test_loader = DataLoader(test_dat, batch_size=args.bs, shuffle=False)
 
-    os.chdir(args.github_dir + '/nephronetwork/DMSA/vae_model/')
-    import model
+    # os.chdir(args.github_dir + '/nephronetwork/DMSA/vae_model/')
+    # import model
 
-    import_module(args.github_dir + '/nephronetwork/DMSA/' + args.model_dir + '.model')
+    model_module = import_module(args.github_dir + '/nephronetwork/DMSA/' + args.model_dir + '.model')
 
     os.chdir(args.github_dir)
     import VAE
