@@ -252,8 +252,12 @@ def initialize_training(args, neural_net):
     train_loader = DataLoader(train_dat, batch_size=args.bs, shuffle=True)
     test_loader = DataLoader(test_dat, batch_size=args.bs, shuffle=False)
 
-    os.chdir(args.mount_folder + "/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/VAE/")
+    os.chdir(args.github_dir + '/nephronetwork/DMSA/vae_model/')
+    import model
 
+    import_module(args.github_dir + '/nephronetwork/DMSA/' + args.model_dir + '.model')
+
+    os.chdir(args.github_dir)
     import VAE
     from prob_utils import normal_parse_params
 
@@ -462,6 +466,8 @@ def training_loop(args, network, file_lab):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-mount_folder', default='',
+                        help="Directory of ultrasound images")
+    parser.add_argument('-github_dir', default='',
                         help="Directory of ultrasound images")
 
     parser.add_argument('-us_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-dmsa/',

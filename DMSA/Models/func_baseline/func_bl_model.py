@@ -483,11 +483,11 @@ def training_loop(args, network, file_lab):
 
             if args.dichot:
                 # torch.max(labels, 1)[1]
-                print("lab: ")
-                print(lab)
-                print("out: ")
-                print(out)
-
+                # print("lab: ")
+                # print(lab)
+                # print("out: ")
+                # print(out)
+                #
                 loss = criterion(out.view([bs, 2]).to(device=args.device).float(), lab.to(args.device).squeeze().to(device=args.device).long())
 
             else:
@@ -521,13 +521,20 @@ def training_loop(args, network, file_lab):
                 bs = us_val.shape[0]
 
                 out_val = net(us_val.to(args.device))
-                loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(), lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+                if args.dichot:
+                    loss_val = criterion(out_val.view([bs, 2]).to(device=args.device).float(),
+                                         lab_val.to(args.device).squeeze().to(device=args.device).long())
+
+                else:
+                    loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(),
+                                         lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                 val_epoch_loss.append(loss_val.item())
 
             val_mean_loss.append(np.mean(np.array(val_epoch_loss)))
             print('epoch: %d, val loss: %.3f' %
-                (epoch + 1, val_mean_loss[epoch]))
+                  (epoch + 1, val_mean_loss[epoch]))
 
             # epoch_val_pred.append(flatten_list(out_val.to("cpu").tolist()))
             # epoch_val_lab.append(flatten_list(lab_val.to("cpu").tolist()))
@@ -538,7 +545,14 @@ def training_loop(args, network, file_lab):
                     bs = us_test.shape[0]
 
                     out_test = net(us_test.to(args.device))
-                    loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(), lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+                    if args.dichot:
+                        loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
+                                         lab_test.to(args.device).squeeze().to(device=args.device).long())
+
+                    else:
+                        loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
+                                         lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                     test_epoch_loss.append(loss_test.item())
 
@@ -648,7 +662,7 @@ def main():
     parser.add_argument("-dim", default=256, help="Image dimensions")
     parser.add_argument('-device', default='cuda',help="device to run NN on")
 
-    parser.add_argument("-lr", default=0.005, help="Image dimensions")
+    parser.add_argument("-lr", default=0.001, help="Image dimensions")
     parser.add_argument("-mom", default=0.9, help="Image dimensions")
     parser.add_argument("-bs", default=32, help="Image dimensions")
     parser.add_argument("-max_epochs", default=35, help="Image dimensions")
