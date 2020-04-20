@@ -198,21 +198,15 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epoch
                 # 3. load the new state dict
                 net.load_state_dict(unet_dict)
         else:
-            #pretrained_dict = torch.load(args.checkpoint)
             pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
             model_dict = net.state_dict()
+            print("loading checkpoint..............")
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and k not in ["fc6c.fc7.weight","fc6c.fc7.bias", "fc7_new.fc7.weight", "fc7_new.fc7.bias", "classifier_new.fc8.weight", "classifier_new.fc8.bias"]}
 
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-            print("loading checkpoint........")
-            #pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-            #for k, v in model_dict.items():
-             #   if k not in pretrained_dict:
-              #      pretrained_dict[k] = model_dict[k]
-            # 2. overwrite entries in the existing state dict
+            pretrained_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv1.conv1_s1.weight'].mean(1).unsqueeze(1)
             model_dict.update(pretrained_dict)
-            # 3. load the new state dict
-            net.load_state_dict(pretrained_dict)
-            print("checkpoint loaded..........")
+            net.load_state_dict(model_dict)
+            print("Checkpoint loaded...............")
     if args.adam:
         optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
                                      weight_decay=hyperparams['weight_decay'])
