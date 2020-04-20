@@ -108,11 +108,8 @@ class DMSADataset(Dataset):
             dmsa_a = read_image_file(self.dmsa_dir + self.dmsa_a_file[index]).view(1, self.dim, self.dim)
             dmsa_p = read_image_file(self.dmsa_dir + self.dmsa_p_file[index]).view(1, self.dim, self.dim)
             ## make 2x256x256 tensor
-        output_tensor = torch.cat((dmsa_a, dmsa_p),0).float()
-
-
+            output_tensor = torch.cat((dmsa_a, dmsa_p),0).float()
             return input_tensor, output_tensor, out_label
-
         else:
             return input_tensor, out_label
 

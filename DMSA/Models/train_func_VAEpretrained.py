@@ -124,7 +124,8 @@ class DMSADataset(Dataset):
             return input_tensor, output_tensor, out_label
 
         else:
-            return input_tensor, out_labe
+            return input_tensor, out_label
+
 
 
 class DMSADataset_PreloadImgs(Dataset):
