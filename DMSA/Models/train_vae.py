@@ -238,21 +238,20 @@ for epoch in range(args.epochs):
 
 		(-vlb / vlb_scale_factor).backward()
 		optimizer.step()
+
 		# update running variational lower bound average
 		avg_vlb += (float(vlb) - avg_vlb) / (i + 1)
-
 
 
 	if verbose:
 		iterator.set_description('Train VLB: %g' % avg_vlb)
 	with torch.no_grad():
 		val_iwae, recs = get_validation_iwae(val_dataloader,
-									   batch_size * 5, model,
-									   args.validation_iwae_num_samples,
-									   verbose)
+											 batch_size * 5, model,
+											 args.validation_iwae_num_samples,
+											 verbose)
 		validation_iwae.append(val_iwae)
 		train_vlb.append(avg_vlb)
-	
 
 		make_checkpoint()
 

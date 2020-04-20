@@ -6,6 +6,7 @@ import torch.optim as optim
 # import torch.nn.functional as F
 # from torchvision import transforms
 # import importlib.machinery
+import torchvision.models as models
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import pandas as pd
@@ -208,7 +209,13 @@ class FuncMod(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
-        self.conv2 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
+        self.conv2 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+        self.conv3 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+        self.conv4 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
 
@@ -243,9 +250,9 @@ class FuncMod(nn.Module):
 
         x0 = self.conv0(x.float())
         x1 = self.conv1(x0)
-        x2 = self.conv1(x1)
-        x3 = self.conv1(x2)
-        x4 = self.conv2(x3)
+        x2 = self.conv2(x1)
+        x3 = self.conv3(x2)
+        x4 = self.conv4(x3)
 
         x4_flat = x4.view([bs, 1, -1])
         # print("x4_flat.shape")
@@ -302,12 +309,94 @@ class FuncModSiamese(nn.Module):
         # else:
         #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
 
+    def forward(self, x):
+        bs, chan, dim1, dim2 = x.shape
+
+        for i in range(chan):
+
+            x_in = x[:, i, :, :].view(bs,1,dim1,dim2)
+            # print("x shape: ")
+            # print(x.shape)
+
+            x0 = self.conv0(x_in.float())
+            x1 = self.conv1(x0)
+            x2 = self.conv1(x1)
+            x3 = self.conv1(x2)
+            x4 = self.conv2(x3)
+
+            if i == 0:
+                x4_concat = x4.view([bs, 1, -1])
+            else:
+                x4_concat = torch.cat((x4_concat, x4.view([bs, 1, -1])),2)
+
+        x5_0 = self.linear0(x4_concat)
+        x5 = self.linear1(x5_0)
+        x6 = self.linear2(x5)
+
+        x7 = self.linear3(x6)
+
+        return x7
+
+###
+
+##  PRETRAINED MODELS
+
+## -- RETURN TO THIS --
+class DenseNet(nn.Module):
+    def __init__(self, args):
+        super(DenseNet, self).__init__()
+
+        orig_dnet = models.densenet201(pretrained=False)
+
+        self.conv0 = nn.Conv2d(5, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+
+        self.dnet_pass = list(orig_dnet.children())[0][1:]
+
+        self.conv1 = nn.Sequential(nn.Conv2d(1920, 512, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
+                                   nn.ReLU())
+        self.conv2 = nn.Sequential(nn.Conv2d(512, 128, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
+                                   nn.ReLU())
+
+        self.dnet_fc0 = nn.Sequential(nn.Linear(512, 128),
+                                      nn.Dropout(0.5),
+                                      nn.ReLU())
+        self.dnet_fc1 = nn.Sequential(nn.Linear(128, 32),
+                                      nn.Dropout(0.5),
+                                      nn.ReLU())
+
+        if args.dichot:
+            self.dnet_fc2 = nn.Sequential(nn.Linear(32, 2))
+        else:
+            self.dnet_fc2 = nn.Sequential(nn.Linear(32, 1),
+                                          nn.Sigmoid())
+
+
+    def forward(self, x):
+
+        bs = x.shape[0]
+
+        x1 = self.conv0(x.float())
+        x2 = self.dnet_pass(x1)
+        x3 = self.conv1(x2)
+        x4 = self.conv2(x3)
+
+        ## flatten here ##
+
+        x4_flat = x4.view([bs, 1, -1])
+
+        x5 = self.dnet_fc0(x4_flat)
+        x6 = self.dnet_fc1(x5)
+        x7 = self.dnet_fc2(x6)
+
+        return x7
+
+
 ###
     ###
     ###        MODEL TRAINING FUNCTIONS
     ###
 
-def initialize_training(args,neural_net):
+def initialize_training(args, neural_net):
 
     train_datasheet = pd.read_csv(args.train_datasheet)
     test_datasheet = pd.read_csv(args.test_datasheet)
@@ -330,20 +419,7 @@ def initialize_training(args,neural_net):
     else:
         return net, train_loader, test_loader
 
-# def cross_entropy(pred, soft_targets):
-#     """
-#
-#     From: https://discuss.pytorch.org/t/how-should-i-implement-cross-entropy-loss-with-continuous-target-outputs/10720
-#
-#     :param pred: Predicted values
-#     :param soft_targets: True values
-#     :return: Cross-entropy loss
-#     """
-#
-#     logsigmoid = nn.LogSigmoid()
-#     return torch.mean(torch.sum(- soft_targets * logsigmoid(pred), 1))
-
-def training_loop(args, network, time_str):
+def training_loop(args, network, file_lab):
 
     if args.include_val:
         net, train_dloader, val_dloader, test_dloader = initialize_training(args, network)
@@ -353,9 +429,10 @@ def training_loop(args, network, time_str):
     # if args.save_net:
     #     torch.save(network)
 
-    # if args.dichot:
-    criterion = nn.BCELoss()
-    # else:
+    if args.dichot:
+        criterion = nn.CrossEntropyLoss()
+    else:
+        criterion = nn.BCELoss()
     #     criterion = nn.MSELoss()
 
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.mom)
@@ -368,6 +445,15 @@ def training_loop(args, network, time_str):
         train_epoch_loss = []
         val_epoch_loss = []
         test_epoch_loss = []
+
+        epoch_train_lab = []
+        epoch_train_pred = []
+
+        epoch_val_lab = []
+        epoch_val_pred = []
+
+        epoch_test_lab = []
+        epoch_test_pred = []
 
         split = 0
 
@@ -384,6 +470,9 @@ def training_loop(args, network, time_str):
 
             else:
                 out = net(us.to(args.device))
+                # print("densenet out shape: ")
+                # print(out)
+
             # print(out.shape)
             # print(out[:, :, 0].shape)
             # print(lab.shape)
@@ -392,7 +481,10 @@ def training_loop(args, network, time_str):
 
             bs = us.shape[0]
 
-            loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
+            if args.dichot:
+                loss = criterion(out.view([bs, 2]).to(device=args.device), lab.to(args.device).view([bs, 1]).to(device=args.device))
+            else:
+                loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
 
             # print("predicted vals: ")
             # print(out.view([bs, 1]).to(device=args.device))
@@ -409,6 +501,8 @@ def training_loop(args, network, time_str):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
+            # epoch_train_lab.append(lab.to("cpu").tolist())
+            # epoch_train_pred.append(out.to("cpu").tolist())
 
         train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
@@ -428,6 +522,9 @@ def training_loop(args, network, time_str):
             print('epoch: %d, val loss: %.3f' %
                 (epoch + 1, val_mean_loss[epoch]))
 
+            # epoch_val_pred.append(flatten_list(out_val.to("cpu").tolist()))
+            # epoch_val_lab.append(flatten_list(lab_val.to("cpu").tolist()))
+
             if args.include_test:
                 for idx, (us_test, lab_test) in enumerate(test_dloader):
 
@@ -441,7 +538,10 @@ def training_loop(args, network, time_str):
                 test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
-                    (epoch + 1, test_mean_loss[epoch]))
+                      (epoch + 1, test_mean_loss[epoch]))
+
+                # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
+                # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
 
         else:
             if args.include_test:
@@ -456,39 +556,32 @@ def training_loop(args, network, time_str):
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, test_mean_loss[epoch]))
 
+                # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
+                # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
+
     if args.save_pred:
-        train_pred = out.to("cpu").squeeze().float().tolist()
-        train_lab = lab.to("cpu").squeeze().float().tolist()
-        train_df = pd.DataFrame({"pred": train_pred, "lab": train_lab})
-        train_file = args.csv_outdir + "/TrainPred_LR" + str(args.lr) + "_MOM" + str(args.mom) + "_MAXEP" + str(args.max_epochs) + "_BS" + str(args.bs) + "_" + time_str + ".pth"
+        train_df = pd.DataFrame({"pred": epoch_train_pred, "lab": epoch_train_lab})
+        train_file = args.csv_outdir + "/TrainPred_" + file_lab + ".csv"
         train_df.to_csv(train_file)
 
         if args.include_val:
-            val_pred = out_val.to("cpu").squeeze().float().tolist()
-            val_lab = lab_val.to("cpu").squeeze().float().tolist()
-            val_df = pd.DataFrame({"pred": val_pred, "lab": val_lab})
-            val_file = args.csv_outdir + "/ValPred_LR" + str(args.lr) + "_MOM" + str(args.mom) + "_MAXEP" + str(args.max_epochs) + "_BS" + str(args.bs) + "_" + time_str + ".pth"
+            val_df = pd.DataFrame({"pred": epoch_val_pred, "lab": epoch_val_lab})
+            val_file = args.csv_outdir + "/ValPred_" + file_lab + ".csv"
             val_df.to_csv(val_file)
 
             if args.include_test:
-                test_pred = out_test.to("cpu").squeeze().float().tolist()
-                test_lab = lab_test.to("cpu").squeeze().float().tolist()
-                test_df = pd.DataFrame({"pred": test_pred, "lab": test_lab})
-                test_file = args.csv_outdir + "/TestPred_LR" + str(args.lr) + "_MOM" + str(args.mom) + "_MAXEP" + str(
-                    args.max_epochs) + "_BS" + str(args.bs) + "_" + time_str + ".pth"
+                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
         else:
             if args.include_test:
-                test_pred = out_test.to("cpu").squeeze().float().tolist()
-                test_lab = lab_test.to("cpu").squeeze().float().tolist()
-                test_df = pd.DataFrame({"pred": test_pred, "lab": test_lab})
-                test_file = args.csv_outdir + "/TestPred_LR" + str(args.lr) + "_MOM" + str(args.mom) + "_MAXEP" + str(
-                    args.max_epochs) + "_BS" + str(args.bs) + "_" + time_str + ".pth"
+                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
     if args.save_net:
-        net_file = args.csv_outdir + "/Loss_LR" + str(args.lr) + "_MOM" + str(args.mom) + "_MAXEP" + str(args.max_epochs) + "_BS" + str(args.bs) + "_" + time_str + ".pth"
+        net_file = args.csv_outdir + "/Net_" + file_lab + ".pth"
         print(net_file)
         torch.save(net, net_file)
         # torch.save(net, args.net_file)
@@ -514,7 +607,9 @@ def main():
     parser.add_argument('-dmsa_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/',
                         help="directory of DMSA images")
 
-    parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
+    parser.add_argument("-dichot", action='store_true', default=True, help="Use dichotomous (vs continuous) outcome")
+
+    parser.add_argument("-run_lab", default="DenseNet_Dichot", help="String to add to output files")
 
     parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv',
                         help="directory of DMSA images")
@@ -548,20 +643,21 @@ def main():
 
     parser.add_argument("-lr", default=0.005, help="Image dimensions")
     parser.add_argument("-mom", default=0.9, help="Image dimensions")
-    parser.add_argument("-bs", default=128, help="Image dimensions")
-    parser.add_argument("-max_epochs", default=6, help="Image dimensions")
+    parser.add_argument("-bs", default=32, help="Image dimensions")
+    parser.add_argument("-max_epochs", default=35, help="Image dimensions")
 
     opt = parser.parse_args() ## comment for debug
 
-    my_net = FuncMod
+    my_net = DenseNet
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
+    file_labs = opt.run_lab + "_AUC_LR" + str(opt.lr) + "_MOM" + str(opt.mom) + "_MAXEP" + str(opt.max_epochs) + "_BS" + str(opt.bs) + "_" + analysis_time
 
-    loss_dict = training_loop(opt, my_net, analysis_time)
-
+    loss_dict = training_loop(opt, my_net, file_labs)
+    #
     loss_df = pd.DataFrame(loss_dict)
 
-    out_csvfile = opt.csv_outdir + "/Loss_AUC_LR" + str(opt.lr) + "_MOM" + str(opt.mom) + "_MAXEP" + str(opt.max_epochs) + "_BS" + str(opt.bs) + "_" + analysis_time + ".csv"
+    out_csvfile = opt.csv_outdir + "/Loss_" + file_labs + ".csv"
     loss_df.to_csv(out_csvfile)
 
 

@@ -305,6 +305,32 @@ class FuncModSiamese(nn.Module):
         # else:
         #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
 
+    def forward(self, x):
+        bs = x.shape[0]
+
+        for i in range(chan):
+
+            x_in = x[:, i, :, :]
+
+            x0 = self.conv0(x_in.float())
+            x1 = self.conv1(x0)
+            x2 = self.conv1(x1)
+            x3 = self.conv1(x2)
+            x4 = self.conv2(x3)
+
+            if i == 0:
+                x4_concat = x4.view([bs, 1, -1])
+            else:
+                x4_concat = torch.cat((x4_concat, x4.view([bs, 1, -1])),2)
+
+        x5_0 = self.linear0(x4_concat)
+        x5 = self.linear1(x5_0)
+        x6 = self.linear2(x5)
+
+        x7 = self.linear3(x6)
+
+        return x7
+
 ## args for debugging :)
 # class make_opt():
 #     def __init__(self):
@@ -334,31 +360,6 @@ class make_opt():
 
         self.dim = 256
 
-    def forward(self, x):
-        bs = x.shape[0]
-
-        for i in range(chan):
-
-            x_in = x[:, i, :, :]
-
-            x0 = self.conv0(x_in.float())
-            x1 = self.conv1(x0)
-            x2 = self.conv1(x1)
-            x3 = self.conv1(x2)
-            x4 = self.conv2(x3)
-
-            if i == 0:
-                x4_concat = x4.view([bs, 1, -1])
-            else:
-                x4_concat = torch.cat((x4_concat, x4.view([bs, 1, -1])),2)
-
-        x5_0 = self.linear0(x4_concat)
-        x5 = self.linear1(x5_0)
-        x6 = self.linear2(x5)
-
-        x7 = self.linear3(x6)
-
-        return x7
 
 ###
     ###

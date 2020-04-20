@@ -1,5 +1,4 @@
 import math
-
 import torch
 from torch.distributions import kl_divergence
 from torch.nn import Module
