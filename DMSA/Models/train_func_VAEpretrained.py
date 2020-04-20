@@ -242,8 +242,8 @@ class FCNet(nn.Module):
 
 def initialize_training(args, neural_net):
 
-    train_datasheet = pd.read_csv(args.mount_folder + args.train_datasheet)
-    test_datasheet = pd.read_csv(args.mount_folder + args.test_datasheet)
+    train_datasheet = pd.read_csv(args.train_datasheet)
+    test_datasheet = pd.read_csv(args.test_datasheet)
 
     net = neural_net(args).to(args.device)
 
@@ -529,7 +529,7 @@ def main():
     #
     # loss_df = pd.DataFrame(loss_dict)
     #
-    # out_csvfile = opt.mount_folder + "/" + opt.csv_outdir + "/Loss_" + file_labs + ".csv"
+    # out_csvfile = opt.csv_outdir + "/Loss_" + file_labs + ".csv"
     # loss_df.to_csv(out_csvfile)
 
 
