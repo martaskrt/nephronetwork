@@ -419,6 +419,7 @@ def initialize_training(args, neural_net):
     else:
         return net, train_loader, test_loader
 
+
 def training_loop(args, network, file_lab):
 
     if args.include_val:

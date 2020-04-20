@@ -531,3 +531,7 @@ def main():
     #
     # out_csvfile = opt.mount_folder + "/" + opt.csv_outdir + "/Loss_" + file_labs + ".csv"
     # loss_df.to_csv(out_csvfile)
+
+
+if __name__ == "__main__":
+    main()
