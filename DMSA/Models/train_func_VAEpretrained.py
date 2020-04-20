@@ -471,26 +471,26 @@ def main():
     parser.add_argument('-github_dir', default='',
                         help="Directory of ultrasound images")
 
-    parser.add_argument('-us_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-dmsa/',
+    parser.add_argument('-us_dir', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/all-jpgs-dmsa/',
                         help="Directory of ultrasound images")
-    parser.add_argument('-dmsa_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/',
+    parser.add_argument('-dmsa_dir', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/all-dmsa-cabs/dmsa-jpgs/',
                         help="directory of DMSA images")
 
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
 
     parser.add_argument("-run_lab", default="VAEfc_V1", help="String to add to output files")
 
-    parser.add_argument('-train_datasheet', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv',
+    parser.add_argument('-train_datasheet', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-val_datasheet', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top2view.csv',
+    parser.add_argument('-val_datasheet', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/DMSA-val-datasheet-top2view.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-test_datasheet', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top2view.csv',
+    parser.add_argument('-test_datasheet', default='/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/DMSA-test-datasheet-top2view.csv',
                         help="directory of DMSA images")
 
     parser.add_argument('-csv_outdir', default='/home/marta/lauren/',
                         help="directory of DMSA images")
 
-    parser.add_argument('-checkpoint', default="/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/VAE/best_beta=1,lr=0.0002.tar",
+    parser.add_argument('-checkpoint', default="/home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/VAE/best_beta=1,lr=0.0002.tar",
                         help="directory of DMSA images")
 
     parser.add_argument("-include_val", action='store_true', default=True,
