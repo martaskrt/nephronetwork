@@ -269,11 +269,21 @@ def initialize_training(args, neural_net):
     import VAE
     # from prob_utils import normal_parse_params
     sys.path.append(args.github_dir + '/nephronetwork/DMSA/Models/vae_model/')
-    import model
 
-    vae_model = VAE(model.reconstruction_log_prob,
-                    model.prior_network,
-                    model.generative_network)
+    # import model
+    #
+    # vae_model = VAE(model.reconstruction_log_prob,
+    #                 model.prior_network,
+    #                 model.generative_network,
+    #                 )
+
+    from model import reconstruction_log_prob
+    from model import prior_network
+    from model import generative_network
+
+    vae_model = VAE(reconstruction_log_prob,
+                    prior_network,
+                    generative_network)
 
     # load the last checkpoint, if it exists
     checkpoint = torch.load(args.checkpoint, map_location=args.device)
