@@ -287,6 +287,7 @@ def initialize_training(args, neural_net):
 
     # load the last checkpoint, if it exists
     checkpoint = torch.load(args.checkpoint, map_location=args.device)
+    print(checkpoint)
     vae_model.load_state_dict(checkpoint['model_state_dict'])
     # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     # validation_iwae = checkpoint['validation_iwae']
@@ -356,8 +357,8 @@ def training_loop(args, network, file_lab):
                 vae_out = vae_mod.make_latent_distributions(us.to(args.device))
                 out = net(vae_out)
 
-            print(out.shape)
-            print(out.shape)
+            # print(out.shape)
+            # print(out.shape)
             # print(lab.shape)
             # print(lab.squeeze())
             # print(out.squeeze())
@@ -376,130 +377,134 @@ def training_loop(args, network, file_lab):
         #     # print("true vals: ")
         #     # print(lab.view([bs, 1]).to(device=args.device))
         #
-        #     optimizer.zero_grad()
-        #     loss.backward()
-        #     optimizer.step()
-        #
-        #     train_epoch_loss.append(loss.item())
-        #     split = split + 1
-        #     # print('epoch: %d, split: %d, train loss: %.3f' %
-        #     #       (epoch + 1, split, loss.item()))
-        #
-        #     epoch_train_lab.append(lab.to("cpu").squeeze().float().tolist())
-        #     epoch_train_pred.append(out.to("cpu").squeeze().float().tolist())
-        #
-        # train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
-        # print('epoch: %d, train loss: %.3f' %
-        #       (epoch + 1, train_mean_loss[epoch]))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
-    #     if args.include_val:
-    #         for idx, (us_val, lab_val) in enumerate(val_dloader):
-    #
-    #             bs = us_val.shape[0]
-    #
-    #             out_val = net(us_val.to(args.device))
+            train_epoch_loss.append(loss.item())
+            split = split + 1
+            # print('epoch: %d, split: %d, train loss: %.3f' %
+            #       (epoch + 1, split, loss.item()))
 
-    #             if args.dichot:
-    #                 loss_val = criterion(out_val.view([bs, 2]).to(device=args.device).float(),
-    #                                      lab_val.to(args.device).squeeze().to(device=args.device).long())
-    #
-    #             else:
-    #                 loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(),
-    #                                      lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
+            ## NEEDS TO BE FIXED
+            epoch_train_lab.append(lab.to("cpu").squeeze().float().tolist())
+            epoch_train_pred.append(out.to("cpu").squeeze().float().tolist())
 
-    #
-    #             val_epoch_loss.append(loss_val.item())
-    #
-    #         val_mean_loss.append(np.mean(np.array(val_epoch_loss)))
-    #         print('epoch: %d, val loss: %.3f' %
-    #               (epoch + 1, val_mean_loss[epoch]))
-    #
-    #         epoch_val_pred.append(out_val.to("cpu").squeeze().float().tolist())
-    #         epoch_val_lab.append(lab_val.to("cpu").squeeze().float().tolist())
-    #
-    #         if args.include_test:
-    #             for idx, (us_test, lab_test) in enumerate(test_dloader):
-    #
-    #                 bs = us_test.shape[0]
-    #
-    #                 out_test = net(us_test.to(args.device))
+        train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
+        print('epoch: %d, train loss: %.3f' %
+              (epoch + 1, train_mean_loss[epoch]))
 
-                    # if args.dichot:
-                    #     loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
-                    #                           lab_test.to(args.device).squeeze().to(device=args.device).long())
-                    #
-                    # else:
-                    #     loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
-                    #                           lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
-    #
-    #                 test_epoch_loss.append(loss_test.item())
-    #
-    #             test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
-    #
-    #             print('epoch: %d, test loss: %.3f' %
-    #                   (epoch + 1, test_mean_loss[epoch]))
-    #
-    #             epoch_test_lab.append(lab_test.to("cpu").squeeze().float().tolist())
-    #             epoch_test_pred.append(out_test.to("cpu").squeeze().float().tolist())
-    #
-    #     else:
-    #         if args.include_test:
-    #             for idx, (us_test, dmsa_test, lab_test) in enumerate(test_dloader):
-    #                 out_test = net(us_test.to(args.device))
+        if args.include_val:
+            for idx, (us_val, lab_val) in enumerate(val_dloader):
 
-                    # if args.dichot:
-                    #     loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
-                    #                           lab_test.to(args.device).squeeze().to(device=args.device).long())
-                    #
-                    # else:
-                    #     loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
-                    #                           lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
-    #
-    #                 test_epoch_loss.append(loss_test.item())
-    #
-    #             test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
-    #
-    #             print('epoch: %d, test loss: %.3f' %
-    #                   (epoch + 1, test_mean_loss[epoch]))
-    #
-    #             epoch_test_lab.append(lab_test.to("cpu").squeeze().float().tolist())
-    #             epoch_test_pred.append(out_test.to("cpu").squeeze().float().tolist())
-    #
-    # if args.save_pred:
-    #     train_df = pd.DataFrame({"pred": epoch_train_pred, "lab": epoch_train_lab})
-    #     train_file = args.csv_outdir + "/TrainPred_" + file_lab + ".csv"
-    #     train_df.to_csv(train_file)
-    #
-    #     if args.include_val:
-    #         val_df = pd.DataFrame({"pred": epoch_val_pred, "lab": epoch_val_lab})
-    #         val_file = args.csv_outdir + "/ValPred_" + file_lab + ".csv"
-    #         val_df.to_csv(val_file)
-    #
-    #         if args.include_test:
-    #             test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
-    #             test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
-    #             test_df.to_csv(test_file)
-    #
-    #     else:
-    #         if args.include_test:
-    #             test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
-    #             test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
-    #             test_df.to_csv(test_file)
-    #
-    # if args.save_net:
-    #     net_file = args.csv_outdir + "/Net_" + file_lab + ".pth"
-    #     print(net_file)
-    #     torch.save(net, net_file)
-    #     # torch.save(net, args.net_file)
-    #
-    # if args.include_val:
-    #     if args.include_test:
-    #         return {"train_loss": train_mean_loss, "val_loss": val_mean_loss, "test_loss": test_mean_loss}
-    # else:
-    #     if args.include_test:
-    #         return {"train_loss": train_mean_loss, "test_loss": test_mean_loss}
-    #     else:
-    #         return {"train_loss": train_mean_loss}
+                bs = us_val.shape[0]
+
+                out_val = net(us_val.to(args.device))
+
+                if args.dichot:
+                    loss_val = criterion(out_val.view([bs, 2]).to(device=args.device).float(),
+                                         lab_val.to(args.device).squeeze().to(device=args.device).long())
+
+                else:
+                    loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(),
+                                         lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+
+                val_epoch_loss.append(loss_val.item())
+
+            val_mean_loss.append(np.mean(np.array(val_epoch_loss)))
+            print('epoch: %d, val loss: %.3f' %
+                  (epoch + 1, val_mean_loss[epoch]))
+
+            ## NEEDS TO BE FIXED
+            epoch_val_pred.append(out_val.to("cpu").squeeze().float().tolist())
+            epoch_val_lab.append(lab_val.to("cpu").squeeze().float().tolist())
+
+            if args.include_test:
+                for idx, (us_test, lab_test) in enumerate(test_dloader):
+
+                    bs = us_test.shape[0]
+
+                    out_test = net(us_test.to(args.device))
+
+                    if args.dichot:
+                        loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
+                                              lab_test.to(args.device).squeeze().to(device=args.device).long())
+
+                    else:
+                        loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
+                                              lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+                    test_epoch_loss.append(loss_test.item())
+
+                test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
+
+                print('epoch: %d, test loss: %.3f' %
+                      (epoch + 1, test_mean_loss[epoch]))
+
+                ## NEEDS TO BE FIXED
+                epoch_test_lab.append(lab_test.to("cpu").squeeze().float().tolist())
+                epoch_test_pred.append(out_test.to("cpu").squeeze().float().tolist())
+
+        else:
+            if args.include_test:
+                for idx, (us_test, dmsa_test, lab_test) in enumerate(test_dloader):
+                    out_test = net(us_test.to(args.device))
+
+                    if args.dichot:
+                        loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
+                                              lab_test.to(args.device).squeeze().to(device=args.device).long())
+
+                    else:
+                        loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
+                                              lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+                    test_epoch_loss.append(loss_test.item())
+
+                test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
+
+                print('epoch: %d, test loss: %.3f' %
+                      (epoch + 1, test_mean_loss[epoch]))
+
+                    ## NEEDS TO BE FIXED
+                # epoch_test_lab.append(lab_test.to("cpu").squeeze().float().tolist())
+                # epoch_test_pred.append(out_test.to("cpu").squeeze().float().tolist())
+
+    if args.save_pred:
+        train_df = pd.DataFrame({"pred": epoch_train_pred, "lab": epoch_train_lab})
+        train_file = args.csv_outdir + "/TrainPred_" + file_lab + ".csv"
+        train_df.to_csv(train_file)
+
+        if args.include_val:
+            val_df = pd.DataFrame({"pred": epoch_val_pred, "lab": epoch_val_lab})
+            val_file = args.csv_outdir + "/ValPred_" + file_lab + ".csv"
+            val_df.to_csv(val_file)
+
+            if args.include_test:
+                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
+                test_df.to_csv(test_file)
+
+        else:
+            if args.include_test:
+                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
+                test_df.to_csv(test_file)
+
+    if args.save_net:
+        net_file = args.csv_outdir + "/Net_" + file_lab + ".pth"
+        print(net_file)
+        torch.save(net, net_file)
+        # torch.save(net, args.net_file)
+
+    if args.include_val:
+        if args.include_test:
+            return {"train_loss": train_mean_loss, "val_loss": val_mean_loss, "test_loss": test_mean_loss}
+    else:
+        if args.include_test:
+            return {"train_loss": train_mean_loss, "test_loss": test_mean_loss}
+        else:
+            return {"train_loss": train_mean_loss}
 
 
 ###
