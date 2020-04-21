@@ -20,6 +20,7 @@ import numpy as np
 import random
 from PIL import Image
 from dmsa_model_v0 import *
+import os
 
 # import wandb
 
@@ -260,15 +261,18 @@ def initialize_training(args, neural_net):
     # os.chdir(args.github_dir + '/nephronetwork/DMSA/vae_model/')
     # import model
 
-    model_module = import_module(args.github_dir + '/nephronetwork/DMSA/Models/vae_model/model')
+    # model_module = import_module(args.github_dir + '/nephronetwork/DMSA/Models/vae_model/model')
 
-    os.chdir(args.github_dir)
+    # os.chdir(args.github_dir)
+    sys.path.append(args.github_dir + '/nephronetwork/DMSA/Models/')
     import VAE
-    from prob_utils import normal_parse_params
+    # from prob_utils import normal_parse_params
+    sys.path.append(args.github_dir + '/nephronetwork/DMSA/Models/vae_model/')
+    import model
 
-    vae_model = VAE(model_module.reconstruction_log_prob,
-                model_module.prior_network,
-                model_module.generative_network)
+    vae_model = VAE(model.reconstruction_log_prob,
+                    model.prior_network,
+                    model.generative_network)
 
     # load the last checkpoint, if it exists
     checkpoint = torch.load(args.checkpoint, map_location=args.device)

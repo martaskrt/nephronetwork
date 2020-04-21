@@ -433,8 +433,8 @@ def training_loop(args, network, file_lab):
     if args.dichot:
         criterion = nn.CrossEntropyLoss()
     else:
-        criterion = nn.BCELoss()
-    #     criterion = nn.MSELoss()
+        # criterion = nn.BCELoss()
+        criterion = nn.MSELoss()
 
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.mom)
 
@@ -636,9 +636,9 @@ def main():
     parser.add_argument('-dmsa_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/',
                         help="directory of DMSA images")
 
-    parser.add_argument("-dichot", action='store_true', default=True, help="Use dichotomous (vs continuous) outcome")
+    parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
 
-    parser.add_argument("-run_lab", default="DenseNet_Dichot", help="String to add to output files")
+    parser.add_argument("-run_lab", default="DenseNet_MSE", help="String to add to output files")
 
     parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv',
                         help="directory of DMSA images")
