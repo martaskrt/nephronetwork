@@ -281,9 +281,9 @@ def initialize_training(args, neural_net):
     from model import prior_network
     from model import generative_network
 
-    vae_model = VAE(reconstruction_log_prob,
-                    prior_network,
-                    generative_network)
+    vae_model = VAE.VAE(reconstruction_log_prob,
+                        prior_network,
+                        generative_network)
 
     # load the last checkpoint, if it exists
     checkpoint = torch.load(args.checkpoint, map_location=args.device)
