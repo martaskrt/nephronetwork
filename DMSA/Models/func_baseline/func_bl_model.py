@@ -704,9 +704,9 @@ def main():
     parser.add_argument('-dmsa_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/',
                         help="directory of DMSA images")
 
-    parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
+    parser.add_argument("-dichot", action='store_true', default=True, help="Use dichotomous (vs continuous) outcome")
 
-    parser.add_argument("-run_lab", default="DenseNet_MSE_top3", help="String to add to output files")
+    parser.add_argument("-run_lab", default="DenseNet_top2USFunc_dichot", help="String to add to output files")
 
     parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top2view-USfunc.csv',
                         help="directory of DMSA images")
@@ -736,12 +736,12 @@ def main():
     #                     help="File to save NN to")
 
     parser.add_argument("-dim", default=256, help="Image dimensions")
-    parser.add_argument('-device', default='cuda',help="device to run NN on")
+    parser.add_argument('-device', default='cuda', help="device to run NN on")
 
     parser.add_argument("-lr", default=0.001, help="Image dimensions")
     parser.add_argument("-mom", default=0.9, help="Image dimensions")
     parser.add_argument("-bs", default=32, help="Image dimensions")
-    parser.add_argument("-max_epochs", default=10, help="Image dimensions")
+    parser.add_argument("-max_epochs", default=15, help="Image dimensions")
 
     opt = parser.parse_args() ## comment for debug
 
