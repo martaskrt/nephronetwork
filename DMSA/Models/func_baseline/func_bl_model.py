@@ -42,7 +42,7 @@ def make_img_dict(path,file_list,dim):
 
     dict_out = dict()
     for img_file in file_list:
-        dict_out[img_file] = read_image_file(path + "/" + img_file).view([1, dim, dim])
+        dict_out[str(img_file)] = read_image_file(str(path) + "/" + str(img_file)).view([1, dim, dim])
 
     return dict_out
 
