@@ -217,22 +217,12 @@ class KidneyLab(nn.Module):
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
 
-        # self.linear1 = nn.Sequential(nn.Linear(64,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        # self.linear2 = nn.Sequential(nn.Linear(32,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        #
-        # self.linear3 = nn.Sequential(nn.Linear(32, 2, bias=True),
-        #                              nn.Sigmoid())
-
         self.linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
+                                     nn.ReLU(),
+                                     nn.Dropout(0.5))
         self.linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
+                                     nn.ReLU(),
+                                     nn.Dropout(0.5))
 
         self.linear3 = nn.Sequential(nn.Linear(64, 6, bias=True),
                                      nn.Sigmoid())
@@ -255,77 +245,6 @@ class KidneyLab(nn.Module):
         return x7
 
 
-class STStack_FuncMod(nn.Module):
-    def __init__(self, args):
-        super(FuncMod, self).__init__()
-
-        # self.dichot = args.dichot
-
-        self.stconv0 = nn.Sequential(nn.Conv2d(5, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-
-        self.conv0 = nn.Sequential(nn.Conv2d(5, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv1 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv2 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv3 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv4 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-
-        # self.linear1 = nn.Sequential(nn.Linear(64,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        # self.linear2 = nn.Sequential(nn.Linear(32,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        #
-        # self.linear3 = nn.Sequential(nn.Linear(32, 2, bias=True),
-        #                              nn.Sigmoid())
-
-        self.linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-        self.linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-
-        self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                     nn.Sigmoid())
-
-        # if self.dichot:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
-        # else:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
-
-    def forward(self, x):
-
-        bs = x.shape[0]
-
-        x0 = self.conv0(x.float())
-        x1 = self.conv1(x0)
-        x2 = self.conv2(x1)
-        x3 = self.conv3(x2)
-        x4 = self.conv4(x3)
-
-        x4_flat = x4.view([bs, 1, -1])
-        # print("x4_flat.shape")
-        # print(x4_flat.shape)
-
-        x5 = self.linear1(x4_flat)
-        x6 = self.linear2(x5)
-
-        x7 = self.linear3(x6)
-
-        return x7
 
 
 ## FUNCTION MODELS
@@ -526,16 +445,63 @@ class DenseNet(nn.Module):
 ##  VIEW LABEL + FUNCTION MODEL
 
 class LabFuncMod(nn.Module):
-    def __init__(self):
+    def __init__(self, args):
         super(LabFuncMod, self).__init__()
 
         self.kid_labs = KidneyLab()
 
-        self.func_mod = FuncMod()
+        conv0 = nn.Sequential(nn.Conv2d(1, 32, 5, padding=2),
+                              nn.MaxPool2d(2),
+                              nn.ReLU())
+        conv1 = nn.Sequential(nn.BatchNorm2d(64),
+                              nn.Conv2d(32, 64, 5, padding=2),
+                              nn.MaxPool2d(2),
+                              nn.ReLU())
+        conv2 = nn.Sequential(nn.BatchNorm2d(32),
+                              nn.Conv2d(64, 32, 5, padding=2),
+                              nn.MaxPool2d(2),
+                              nn.ReLU())
 
-    def forward(self, x):
+        self.in_conv = nn.Sequential(conv0, conv1, conv2)
+
+        linear1 = nn.Sequential(nn.BatchNorm1d(2048),
+                                nn.Linear(2048, 512, bias=True),
+                                nn.ReLU(),
+                                nn.Dropout(0.5))
+        linear2 = nn.Sequential(nn.BatchNorm1d(512),
+                                nn.Linear(512, 64, bias=True),
+                                nn.ReLU(),
+                                nn.Dropout(0.5))
+
+        if args.dichot:
+            self.linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
+        else:
+            self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True))
+
+        self.out_fc = nn.Sequential(linear1, linear2, linear3)
+
+    def forward(self, x, lab_out=False):
+
+        bs = x.shape[0] ## top predicted views stacked as a batch
 
         my_kid_labs = self.kid_labs(x)
+
+        if lab_out:
+            return my_kid_labs
+        else:
+            my_kid_convs = self.in_conv(x)
+            my_kid_convs_flat = my_kid_convs.view([bs,1,-1]).squeeze()
+            my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
+
+            kid_labs_wts = my_kid_labs[:, :, 0:5].squeeze()
+
+            weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([bs, 1, -1])
+
+            lin1 = self.linear1(weight_embed)
+            lin2 = self.linear2(lin1)
+            func_out = self.linear3(lin2)
+
+            return func_out
 
         ## multiply x*normalized "my_kid_labs"
 

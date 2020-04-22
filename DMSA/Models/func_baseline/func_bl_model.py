@@ -197,6 +197,7 @@ class DMSADataset_PreloadImgs(Dataset):
     ###        MODELS
     ###
 
+
 class FuncMod(nn.Module):
     def __init__(self, args):
         super(FuncMod, self).__init__()
@@ -265,6 +266,7 @@ class FuncMod(nn.Module):
 
         return x7
 
+
 class FuncModSiamese(nn.Module):
     def __init__(self, args):
         super(FuncModSiamese, self).__init__()
@@ -331,6 +333,69 @@ class FuncModSiamese(nn.Module):
 
         x5_0 = self.linear0(x4_concat)
         x5 = self.linear1(x5_0)
+        x6 = self.linear2(x5)
+
+        x7 = self.linear3(x6)
+
+        return x7
+
+## COME BACK TO THIS BASED ON HOW OTHER MODS DO
+class STStack_FuncMod(nn.Module):
+    def __init__(self, args):
+        super(FuncMod, self).__init__()
+
+        # self.dichot = args.dichot
+
+        self.stconv0 = nn.Sequential(nn.Conv2d(5, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+
+        self.conv0 = nn.Sequential(nn.Conv2d(5, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+        self.conv1 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+        self.conv2 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+        self.conv3 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+        self.conv4 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
+
+        self.linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
+                                    nn.ReLU(),
+                                    nn.Dropout(0.5))
+        self.linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
+                                    nn.ReLU(),
+                                    nn.Dropout(0.5))
+
+        self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+                                     nn.Sigmoid())
+
+        # if self.dichot:
+        #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
+        # else:
+        #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
+
+    def forward(self, x):
+
+        bs = x.shape[0]
+
+        x0 = self.conv0(x.float())
+        x1 = self.conv1(x0)
+        x2 = self.conv2(x1)
+        x3 = self.conv3(x2)
+        x4 = self.conv4(x3)
+
+        x4_flat = x4.view([bs, 1, -1])
+        # print("x4_flat.shape")
+        # print(x4_flat.shape)
+
+        x5 = self.linear1(x4_flat)
         x6 = self.linear2(x5)
 
         x7 = self.linear3(x6)
@@ -509,8 +574,8 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-            # epoch_train_lab.append(lab.to("cpu").tolist())
-            # epoch_train_pred.append(out.to("cpu").tolist())
+            epoch_train_lab.append(lab.to("cpu").squeeze().tolist())
+            epoch_train_pred.append(out.to("cpu").squeeze().tolist())
 
         train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
@@ -537,8 +602,8 @@ def training_loop(args, network, file_lab):
             print('epoch: %d, val loss: %.3f' %
                   (epoch + 1, val_mean_loss[epoch]))
 
-            # epoch_val_pred.append(flatten_list(out_val.to("cpu").tolist()))
-            # epoch_val_lab.append(flatten_list(lab_val.to("cpu").tolist()))
+            epoch_val_pred.append(out_val.to("cpu").squeeze().tolist())
+            epoch_val_lab.append(lab_val.to("cpu").squeeze().tolist())
 
             if args.include_test:
                 for idx, (us_test, lab_test) in enumerate(test_dloader):
@@ -562,8 +627,8 @@ def training_loop(args, network, file_lab):
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, test_mean_loss[epoch]))
 
-                # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
-                # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
+                epoch_test_lab.append(lab_test.to("cpu").squeeze().tolist())
+                epoch_test_pred.append(out_test.to("cpu").squeeze().tolist())
 
         else:
             if args.include_test:
@@ -585,27 +650,27 @@ def training_loop(args, network, file_lab):
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, test_mean_loss[epoch]))
 
-                # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
-                # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
+                epoch_test_lab.append(lab_test.to("cpu").squeeze().tolist())
+                epoch_test_pred.append(out_test.to("cpu").squeeze().tolist())
 
     if args.save_pred:
-        train_df = pd.DataFrame({"pred": epoch_train_pred, "lab": epoch_train_lab})
+        train_df = pd.DataFrame({"pred": flatten_list(epoch_train_pred), "lab": flatten_list(epoch_train_lab)})
         train_file = args.csv_outdir + "/TrainPred_" + file_lab + ".csv"
         train_df.to_csv(train_file)
 
         if args.include_val:
-            val_df = pd.DataFrame({"pred": epoch_val_pred, "lab": epoch_val_lab})
+            val_df = pd.DataFrame({"pred": flatten_list(epoch_val_pred), "lab": flatten_list(epoch_val_lab)})
             val_file = args.csv_outdir + "/ValPred_" + file_lab + ".csv"
             val_df.to_csv(val_file)
 
             if args.include_test:
-                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_df = pd.DataFrame({"pred": flatten_list(epoch_test_pred), "lab": flatten_list(epoch_test_lab)})
                 test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
         else:
             if args.include_test:
-                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_df = pd.DataFrame({"pred": flatten_list(epoch_test_pred), "lab": flatten_list(epoch_test_lab)})
                 test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
@@ -640,11 +705,11 @@ def main():
 
     parser.add_argument("-run_lab", default="DenseNet_MSE_top3", help="String to add to output files")
 
-    parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top3view.csv',
+    parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top4view.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top3view.csv',
+    parser.add_argument('-val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top4view.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top3view.csv',
+    parser.add_argument('-test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top4view.csv',
                         help="directory of DMSA images")
 
     parser.add_argument('-csv_outdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/',
@@ -673,7 +738,7 @@ def main():
     parser.add_argument("-lr", default=0.001, help="Image dimensions")
     parser.add_argument("-mom", default=0.9, help="Image dimensions")
     parser.add_argument("-bs", default=32, help="Image dimensions")
-    parser.add_argument("-max_epochs", default=15, help="Image dimensions")
+    parser.add_argument("-max_epochs", default=10, help="Image dimensions")
 
     opt = parser.parse_args() ## comment for debug
 
