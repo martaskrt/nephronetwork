@@ -194,6 +194,49 @@ class DMSADataset_PreloadImgs(Dataset):
             return input_tensor, out_label
 
 
+class USFuncDataset(Dataset):
+    """ Data loader for DMSA data """
+
+    def __init__(self, data_sheet, args):
+        """
+        data_sheet: csv spreadsheet with 1 column for each US view image file ("SR","SL","TR","TL","B"),
+            1 column for each DMSA view image file (A/P) ("DMSA_A" and "DMSA_P"),
+            2 label columns: 1 dichotomous and 1 continuous ("FUNC_DICH" and "FUNC_CONT"), and
+            1 column for the instance id "ID"
+
+        args: argument dictionary
+            args.dichot: if set to True, a binary 0/1 value will be used as the label
+            else if set to False, a continuous value for left function will be used as the label
+        """
+
+        self.dim = args.dim
+
+        # self.us_dir = args.us_dir
+        # self.dmsa_dir = args.dmsa_dir
+
+        self.id = data_sheet['ID']
+
+        self.sr_file = data_sheet['SR']
+        self.sl_file = data_sheet['SL']
+        self.tr_file = data_sheet['TR']
+        self.tl_file = data_sheet['TL']
+        self.b_file = data_sheet['B']
+
+        all_files = flatten_list([data_sheet['SR'].tolist(), data_sheet['SL'].tolist(),
+                                  data_sheet['TR'].tolist(), data_sheet['TL'].tolist(),
+                                  data_sheet['B'].tolist()])
+
+        uniq_files = list(set(all_files))
+
+        self.us_img_dict = make_img_dict(path=args.us_dir, file_list=uniq_files, dim=args.dim)
+
+        if args.dichot:
+            self.label = data_sheet['FUNC_DICH']#.to_numpy()
+        else:
+            self.label = data_sheet['FUNC_CONT']#.to_numpy()
+
+
+
 ###
     ###
     ###        MODELS
@@ -243,8 +286,6 @@ class KidneyLab(nn.Module):
         x7 = self.linear3(x6)
 
         return x7
-
-
 
 
 ## FUNCTION MODELS
@@ -316,6 +357,7 @@ class FuncMod(nn.Module):
 
         return x7
 
+
 class FuncModSiamese(nn.Module):
     def __init__(self, args):
         super(FuncModSiamese, self).__init__()
@@ -365,7 +407,7 @@ class FuncModSiamese(nn.Module):
 
         for i in range(chan):
 
-            x_in = x[:, i, :, :].view(bs,1,dim1,dim2)
+            x_in = x[:, i, :, :].view([bs, 1, dim1, dim2])
             # print("x shape: ")
             # print(x.shape)
 
@@ -443,7 +485,6 @@ class DenseNet(nn.Module):
 
 
 ##  VIEW LABEL + FUNCTION MODEL
-
 class LabFuncMod(nn.Module):
     def __init__(self, args):
         super(LabFuncMod, self).__init__()
@@ -474,15 +515,16 @@ class LabFuncMod(nn.Module):
                                 nn.Dropout(0.5))
 
         if args.dichot:
-            self.linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
+            linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
         else:
-            self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True))
+            linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+                                         nn.Sigmoid())
 
         self.out_fc = nn.Sequential(linear1, linear2, linear3)
 
     def forward(self, x, lab_out=False):
 
-        bs = x.shape[0] ## top predicted views stacked as a batch
+        bs = x.shape[0]
 
         my_kid_labs = self.kid_labs(x)
 
@@ -493,7 +535,8 @@ class LabFuncMod(nn.Module):
             my_kid_convs_flat = my_kid_convs.view([bs,1,-1]).squeeze()
             my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
 
-            kid_labs_wts = my_kid_labs[:, :, 0:5].squeeze()
+            softmax = nn.Softmax(1)
+            kid_labs_wts = softmax(my_kid_labs[:, :, 0:5].squeeze())
 
             weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([bs, 1, -1])
 
@@ -503,9 +546,6 @@ class LabFuncMod(nn.Module):
 
             return func_out
 
-        ## multiply x*normalized "my_kid_labs"
-
-        ## run through func_mod
 ###
     ###
     ###        MODEL TRAINING FUNCTIONS

@@ -28,6 +28,7 @@ def read_image_file(file_name):
     """
     return torch.from_numpy(np.asarray(Image.open(file_name).convert('L')))
 
+
 def flatten_list(in_list):
     flat_list = []
     for sublist in in_list:
@@ -35,6 +36,7 @@ def flatten_list(in_list):
             flat_list.append(item)
 
     return flat_list
+
 
 def make_img_dict(path,file_list,dim):
 
@@ -49,6 +51,7 @@ def make_img_dict(path,file_list,dim):
     ###
     ###        DATASET
     ###
+
 
 class DMSADataset(Dataset):
     """ Data loader for DMSA data """
@@ -705,11 +708,11 @@ def main():
 
     parser.add_argument("-run_lab", default="DenseNet_MSE_top3", help="String to add to output files")
 
-    parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top4view.csv',
+    parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top2view-USfunc.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top4view.csv',
+    parser.add_argument('-val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top2view-USfunc.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top4view.csv',
+    parser.add_argument('-test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top2view-USfunc.csv',
                         help="directory of DMSA images")
 
     parser.add_argument('-csv_outdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/',
