@@ -38,11 +38,14 @@ def flatten_list(in_list):
     return flat_list
 
 
-def make_img_dict(path,file_list,dim):
+def make_img_dict(path, file_list, dim):
 
     dict_out = dict()
     for img_file in file_list:
-        dict_out[str(img_file)] = read_image_file(str(path) + "/" + str(img_file)).view([1, dim, dim])
+        try:
+            dict_out[str(img_file)] = read_image_file(str(path) + "/" + str(img_file)).view([1, dim, dim])
+        except FileNotFoundError:
+            pass
 
     return dict_out
 
