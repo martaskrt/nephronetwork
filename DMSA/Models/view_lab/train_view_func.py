@@ -382,6 +382,8 @@ def training_loop(args, network, file_lab):
         for idx, (lab_us, view_lab) in enumerate(lab_train_dloader):
 
             lab_out = net(lab_us.to(args.device).float(), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
+            print(lab_out.to(device=args.device).squeeze().float())
+            print(view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
 
