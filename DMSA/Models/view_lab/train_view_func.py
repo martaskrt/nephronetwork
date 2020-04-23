@@ -260,6 +260,11 @@ class LabFuncMod(nn.Module):
 
             softmax = nn.Softmax(1)
             kid_labs_wts = softmax(my_kid_labs[:, :, 0:5].squeeze())
+            print("kid_lab_wts shape: ")
+            print(kid_labs_wts)
+
+            print("my_kid_convs_transp shape: ")
+            print(my_kid_convs_transp.shape)
 
             weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([bs, 1, -1])
 
