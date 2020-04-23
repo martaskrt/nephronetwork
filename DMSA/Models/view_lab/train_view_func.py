@@ -473,7 +473,7 @@ def training_loop(args, network, file_lab):
         for idx, (func_us, func_lab) in enumerate(func_train_dloader):
             print(func_us.to(args.device).float().squeeze().shape)
 
-            if len(func_us.to(args.device).float().squeeze().shape) > 1:
+            if len(func_us.to(args.device).float().squeeze().shape) > 2:
                 bs = func_us.to(args.device).float().squeeze().shape[0]
             else:
                 bs = 1
