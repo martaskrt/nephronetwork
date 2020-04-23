@@ -231,7 +231,7 @@ class LabFuncMod(nn.Module):
                               nn.MaxPool2d(2),
                               nn.ReLU())
 
-        self.in_conv = nn.Sequential(conv0, conv1, conv2, conv3)
+        self.in_conv = nn.Sequential(self.conv0, self.conv1, self.conv2, self.conv3)
 
         linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
                                 nn.ReLU(),
@@ -275,9 +275,7 @@ class LabFuncMod(nn.Module):
             else:
                 weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 3, -1])
 
-            lin1 = self.linear1(weight_embed)
-            lin2 = self.linear2(lin1)
-            func_out = self.linear3(lin2)
+            func_out = self.out_fc(weight_embed)
 
             if self.get_kid_labs:
                 return func_out, my_kid_labs
