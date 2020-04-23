@@ -250,9 +250,10 @@ class LabFuncMod(nn.Module):
 
     def forward(self, x, lab_out=False):
 
-        bs = x.shape[0]
+        bs = x.squeeze().shape[0]
+        dim = x.shape[len(x.shape)-1]
 
-        my_kid_labs = self.kid_labs(x)
+        my_kid_labs = self.kid_labs(x.view([bs, 1, dim, dim]))
 
         if lab_out:
             return my_kid_labs
