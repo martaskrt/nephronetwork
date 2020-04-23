@@ -277,8 +277,8 @@ class LabFuncMod(nn.Module):
 
 def initialize_training(args, neural_net):
 
-    func_train_datasheet = pd.read_csv(args.train_datasheet)
-    func_test_datasheet = pd.read_csv(args.test_datasheet)
+    func_train_datasheet = pd.read_csv(args.func_train_datasheet)
+    func_test_datasheet = pd.read_csv(args.func_test_datasheet)
 
     lab_train_datasheet = pd.read_csv(args.lab_train_datasheet)
     lab_test_datasheet = pd.read_csv(args.lab_test_datasheet)
