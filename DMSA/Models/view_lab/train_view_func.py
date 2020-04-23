@@ -220,12 +220,10 @@ class LabFuncMod(nn.Module):
         conv0 = nn.Sequential(nn.Conv2d(1, 32, 5, padding=2),
                               nn.MaxPool2d(2),
                               nn.ReLU())
-        conv1 = nn.Sequential(nn.BatchNorm2d(64),
-                              nn.Conv2d(32, 64, 5, padding=2),
+        conv1 = nn.Sequential(nn.Conv2d(32, 64, 5, padding=2),
                               nn.MaxPool2d(2),
                               nn.ReLU())
-        conv2 = nn.Sequential(nn.BatchNorm2d(32),
-                              nn.Conv2d(64, 32, 5, padding=2),
+        conv2 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
                               nn.MaxPool2d(2),
                               nn.ReLU())
 
