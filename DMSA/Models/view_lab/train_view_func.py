@@ -216,6 +216,7 @@ class LabFuncMod(nn.Module):
 
         self.kid_labs = KidneyLab(args)
         self.get_kid_labs = args.get_kid_labels
+        self.RL = args.RL
 
         conv0 = nn.Sequential(nn.Conv2d(1, 128, 7, padding=2),
                               nn.MaxPool2d(2),
@@ -269,7 +270,7 @@ class LabFuncMod(nn.Module):
             print("my_kid_convs_transp shape: ")
             print(my_kid_convs_transp.shape)
 
-            if args.RL:
+            if self.RL:
                 weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 5, -1])
             else:
                 weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 3, -1])
