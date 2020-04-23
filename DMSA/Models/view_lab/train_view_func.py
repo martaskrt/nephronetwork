@@ -473,7 +473,10 @@ def training_loop(args, network, file_lab):
         for idx, (func_us, func_lab) in enumerate(func_train_dloader):
             print(func_us.to(args.device).float().squeeze().shape)
 
-            bs = func_us.to(args.device).float().squeeze().shape[0]
+            if len(func_us.to(args.device).float().squeeze().shape) > 1:
+                bs = func_us.to(args.device).float().squeeze().shape[0]
+            else:
+                bs = 1
 
             func_out = net(func_us.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
