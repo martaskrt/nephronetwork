@@ -385,7 +385,8 @@ def training_loop(args, network, file_lab):
             # print(lab_out.to(device=args.device).squeeze().float())
             # print(view_lab.to(args.device).squeeze().to(device=args.device).long())
 
-            loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
+            loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(),
+                                 view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             optimizer.zero_grad()
             loss.backward()
@@ -406,7 +407,7 @@ def training_loop(args, network, file_lab):
 
                 lab_out_val = net(lab_us_val.to(args.device).float(), lab_out=True)
 
-                loss_val = lab_criterion(lab_out_val.to(device=args.device).float(),
+                loss_val = lab_criterion(lab_out_val.to(device=args.device).squeeze().float(),
                                      view_lab_val.to(args.device).squeeze().to(device=args.device).long())
 
                 lab_val_epoch_loss.append(loss_val.item())
@@ -425,7 +426,7 @@ def training_loop(args, network, file_lab):
 
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
-                    loss_test = lab_criterion(lab_out_test.to(device=args.device).float(),
+                    loss_test = lab_criterion(lab_out_test.to(device=args.device).squeeze().float(),
                                      view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
@@ -444,7 +445,7 @@ def training_loop(args, network, file_lab):
 
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
-                    loss_test = lab_criterion(lab_out_test.to(device=args.device).float(),
+                    loss_test = lab_criterion(lab_out_test.to(device=args.device).squeeze().float(),
                                               view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
@@ -466,11 +467,15 @@ def training_loop(args, network, file_lab):
             func_out = net(func_us.to(args.device).float(), lab_out=False)
 
             if args.dichot:
-                loss = criterion(func_out.to(device=args.device).float(),
+                loss = criterion(func_out.to(device=args.device).squeeze().float(),
                                  func_lab.to(args.device).squeeze().to(device=args.device).long())
             else:
                 loss = criterion(func_out.to(device=args.device).float(),
                                  func_lab.to(args.device).to(device=args.device).float())
+
+                func_epoch_train_lab.append(func_lab.to("cpu").tolist())
+                func_epoch_train_pred.append(func_out.to("cpu").tolist())
+
 
             optimizer.zero_grad()
             loss.backward()
@@ -481,9 +486,6 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-            func_epoch_train_lab.append(func_lab.to("cpu").tolist())
-            func_epoch_train_pred.append(func_out.to("cpu").tolist())
-
         func_train_mean_loss.append(np.mean(np.array(func_train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
               (epoch + 1, func_train_mean_loss[epoch]))
@@ -493,7 +495,7 @@ def training_loop(args, network, file_lab):
 
                 func_out_val = net(func_us_val.to(args.device).float(), lab_out=False)
 
-                loss_val = criterion(func_out_val.view([bs, 2]).to(device=args.device).float(),
+                loss_val = criterion(func_out_val.squeeze().to(device=args.device).float(),
                                      func_lab_val.to(args.device).squeeze().to(device=args.device).long())
 
                 func_val_epoch_loss.append(loss_val.item())
@@ -510,7 +512,7 @@ def training_loop(args, network, file_lab):
 
                     func_out_test = net(func_us_test.to(args.device), lab_out=False)
 
-                    loss_test = criterion(func_out_test.to(device=args.device).float(),
+                    loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
                                           func_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     func_test_epoch_loss.append(loss_test.item())
@@ -523,15 +525,13 @@ def training_loop(args, network, file_lab):
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, func_test_mean_loss[epoch]))
 
-
-
         else:
             if args.include_test:
                 for idx, (func_us_test, func_lab_test) in enumerate(func_test_dloader):
 
                     func_out_test = net(func_us_test.to(args.device), lab_out=False)
 
-                    loss_test = criterion(func_out_test.to(device=args.device).float(),
+                    loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
                                           func_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     func_test_epoch_loss.append(loss_test.item())
