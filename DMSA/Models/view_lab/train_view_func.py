@@ -171,6 +171,9 @@ class KidneyLab(nn.Module):
         self.conv3 = nn.Sequential(nn.Conv2d(64, 32, 7, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
+	self.conv4 = nn.Sequential(nn.Conv2d(32,16, 7, padding=2),
+                                   nn.MaxPool2d(2),
+                                   nn.ReLU())
 
         self.linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
                                      nn.ReLU(),
@@ -195,12 +198,13 @@ class KidneyLab(nn.Module):
         x2 = self.conv1(x1)
         x3 = self.conv2(x2)
         x4 = self.conv3(x3)
+        x5 = self.conv4(x4)
 
-        x4_flat = x4.view([bs, 1, -1])
+        x5_flat = x5.view([bs, 1, -1])
 
-        x5 = self.linear1(x4_flat)
-        x6 = self.linear2(x5)
-        x7 = self.linear3(x6)
+        x6 = self.linear1(x5_flat)
+        x7 = self.linear2(x6)
+        x8 = self.linear3(x7)
 
         return x7
 
@@ -377,7 +381,7 @@ def training_loop(args, network, file_lab):
 
         for idx, (lab_us, view_lab) in enumerate(lab_train_dloader):
 
-            lab_out = net(lab_us.to(args.device), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
+            lab_out = net(lab_us.to(args.device).float(), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
 
             loss = lab_criterion(lab_out.to(device=args.device).float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
 
@@ -395,7 +399,7 @@ def training_loop(args, network, file_lab):
         if args.include_val:
             for idx, (lab_us_val, view_lab_val) in enumerate(lab_val_dloader):
 
-                lab_out_val = net(lab_us_val.to(args.device), lab_out=True)
+                lab_out_val = net(lab_us_val.to(args.device).float(), lab_out=True)
 
                 loss_val = criterion(lab_out_val.to(device=args.device).float(),
                                      view_lab_val.to(args.device).squeeze().to(device=args.device).long())
@@ -412,7 +416,7 @@ def training_loop(args, network, file_lab):
             if args.include_test:
                 for idx, (lab_us_test, view_lab_test) in enumerate(lab_test_dloader):
 
-                    lab_out_test = net(lab_us_test.to(args.device), lab_out=True)
+                    lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
                     loss_test = criterion(lab_out_test.to(device=args.device).float(),
                                      view_lab_test.to(args.device).squeeze().to(device=args.device).long())
@@ -431,7 +435,7 @@ def training_loop(args, network, file_lab):
             if args.include_test:
                 for idx, (lab_us_test, view_lab_test) in enumerate(lab_test_dloader):
 
-                    lab_out_test = net(lab_us_test.to(args.device), lab_out=True)
+                    lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
                     loss_test = criterion(lab_out_test.to(device=args.device).float(),
                                      view_lab_test.to(args.device).squeeze().to(device=args.device).long())
@@ -452,7 +456,7 @@ def training_loop(args, network, file_lab):
 
         for idx, (func_us, func_lab) in enumerate(func_train_dloader):
 
-            func_out = net(func_us.to(args.device), lab_out=False)
+            func_out = net(func_us.to(args.device).float(), lab_out=False)
 
             if args.dichot:
                 loss = criterion(func_out.to(device=args.device).float(),
@@ -480,7 +484,7 @@ def training_loop(args, network, file_lab):
         if args.include_val:
             for idx, (func_us_val, func_lab_val) in enumerate(func_val_dloader):
 
-                func_out_val = net(func_us_val.to(args.device), lab_out=False)
+                func_out_val = net(func_us_val.to(args.device).float(), lab_out=False)
 
                 loss_val = criterion(func_out_val.view([bs, 2]).to(device=args.device).float(),
                                      func_lab_val.to(args.device).squeeze().to(device=args.device).long())
@@ -635,6 +639,8 @@ def main():
 
     opt = parser.parse_args() ## comment for debug
 
+    print(opt)
+    
     my_net = LabFuncMod
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
