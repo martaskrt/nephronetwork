@@ -466,7 +466,7 @@ def training_loop(args, network, file_lab):
 
         for idx, (func_us, func_lab) in enumerate(func_train_dloader):
 
-            func_out = net(func_us.to(args.device).float(), lab_out=False)
+            func_out = net(func_us.to(args.device).float().squeeze(), lab_out=False)
 
             if args.dichot:
                 loss = criterion(func_out.to(device=args.device).squeeze().float(),
