@@ -382,8 +382,8 @@ def training_loop(args, network, file_lab):
         for idx, (lab_us, view_lab) in enumerate(lab_train_dloader):
 
             lab_out = net(lab_us.to(args.device).float(), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
-            print(lab_out.to(device=args.device).squeeze().float())
-            print(view_lab.to(args.device).squeeze().to(device=args.device).long())
+            # print(lab_out.to(device=args.device).squeeze().float())
+            # print(view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
 
@@ -406,7 +406,7 @@ def training_loop(args, network, file_lab):
 
                 lab_out_val = net(lab_us_val.to(args.device).float(), lab_out=True)
 
-                loss_val = criterion(lab_out_val.to(device=args.device).float(),
+                loss_val = lab_criterion(lab_out_val.to(device=args.device).float(),
                                      view_lab_val.to(args.device).squeeze().to(device=args.device).long())
 
                 lab_val_epoch_loss.append(loss_val.item())
@@ -425,7 +425,7 @@ def training_loop(args, network, file_lab):
 
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
-                    loss_test = criterion(lab_out_test.to(device=args.device).float(),
+                    loss_test = lab_criterion(lab_out_test.to(device=args.device).float(),
                                      view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
@@ -444,8 +444,8 @@ def training_loop(args, network, file_lab):
 
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
-                    loss_test = criterion(lab_out_test.to(device=args.device).float(),
-                                          view_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    loss_test = lab_criterion(lab_out_test.to(device=args.device).float(),
+                                              view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
 
@@ -470,7 +470,7 @@ def training_loop(args, network, file_lab):
                                  func_lab.to(args.device).squeeze().to(device=args.device).long())
             else:
                 loss = criterion(func_out.to(device=args.device).float(),
-                                 func_lab.to(args.device).view([bs, 1]).to(device=args.device).float())
+                                 func_lab.to(args.device).to(device=args.device).float())
 
             optimizer.zero_grad()
             loss.backward()
@@ -599,7 +599,7 @@ def main():
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
     parser.add_argument("-RL", action='store_true', default=True, help="Include r/l labels or only build model on 4 labels")
 
-    parser.add_argument("-run_lab", default="DenseNet_MSE", help="String to add to output files")
+    parser.add_argument("-run_lab", default="MSE_Modelv1", help="String to add to output files")
 
     parser.add_argument('-func_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
