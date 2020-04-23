@@ -171,11 +171,11 @@ class KidneyLab(nn.Module):
         self.conv3 = nn.Sequential(nn.Conv2d(64, 32, 7, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
-        self.conv4 = nn.Sequential(nn.Conv2d(32,16, 7, padding=2),
+        self.conv4 = nn.Sequential(nn.Conv2d(32, 16, 7, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
 
-        self.linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
+        self.linear1 = nn.Sequential(nn.Linear(576, 512, bias=True),
                                      nn.ReLU(),
                                      nn.Dropout(0.5))
         self.linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
