@@ -193,8 +193,9 @@ class KidneyLab(nn.Module):
     def forward(self, x):
 
         bs = x.shape[0]
+        dim = x.shape[len(x.shape)-1]
 
-        x1 = self.conv0(x)
+        x1 = self.conv0(x.view([bs, 1, dim, dim]))
         x2 = self.conv1(x1)
         x3 = self.conv2(x2)
         x4 = self.conv3(x3)
