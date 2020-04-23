@@ -231,12 +231,10 @@ class LabFuncMod(nn.Module):
 
         self.in_conv = nn.Sequential(conv0, conv1, conv2)
 
-        linear1 = nn.Sequential(nn.BatchNorm1d(2048),
-                                nn.Linear(2048, 512, bias=True),
+        linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
                                 nn.ReLU(),
                                 nn.Dropout(0.5))
-        linear2 = nn.Sequential(nn.BatchNorm1d(512),
-                                nn.Linear(512, 64, bias=True),
+        linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
                                 nn.ReLU(),
                                 nn.Dropout(0.5))
 
