@@ -175,10 +175,10 @@ class KidneyLab(nn.Module):
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
 
-        self.linear1 = nn.Sequential(nn.Linear(576, 512, bias=True),
+        self.linear1 = nn.Sequential(nn.Linear(576, 256, bias=True),
                                      nn.ReLU(),
                                      nn.Dropout(0.5))
-        self.linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
+        self.linear2 = nn.Sequential(nn.Linear(256, 64, bias=True),
                                      nn.ReLU(),
                                      nn.Dropout(0.5))
 
@@ -383,7 +383,7 @@ def training_loop(args, network, file_lab):
 
             lab_out = net(lab_us.to(args.device).float(), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
 
-            loss = lab_criterion(lab_out.to(device=args.device).float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
+            loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             optimizer.zero_grad()
             loss.backward()
@@ -589,7 +589,7 @@ def main():
                         help="Directory of ultrasound images")
 
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
-    parser.add_argument("-RL", action='store_true', default=False, help="Include r/l labels or only build model on 4 labels")
+    parser.add_argument("-RL", action='store_true', default=True, help="Include r/l labels or only build model on 4 labels")
 
     parser.add_argument("-run_lab", default="DenseNet_MSE", help="String to add to output files")
 
