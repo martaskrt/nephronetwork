@@ -36,13 +36,33 @@ def flatten_list(in_list):
 
     return flat_list
 
-def make_img_dict(path,file_list,dim):
+
+def make_img_dict(path, file_list, dim):
 
     dict_out = dict()
     for img_file in file_list:
         dict_out[img_file] = read_image_file(path + "/" + img_file).view(1, dim, dim)
 
     return dict_out
+
+
+def make_seq_dict(datasheet, opt):
+
+    lab_out = dict()
+    seq_out = dict()
+    datasheet.set_index('SEQ_ID')
+    my_seqs = list(set(list(datasheet['SEQ_ID'])))
+
+    for seq in my_seqs:
+        seq_list = list(datasheet.loc[datasheet['SEQ_ID'] == seq, 'US_FILE'])
+        seq_out[seq] = make_img_dict(path=opt.us_dir, file_list=seq_list, dim=opt.dim)
+
+        if opt.dichot:
+            lab_out[seq] = list(set(list(datasheet.loc[datasheet['SEQ_ID'] == seq, 'FUNC_DICH'])))[0]
+        else:
+            lab_out[seq] = list(set(list(datasheet.loc[datasheet['SEQ_ID'] == seq, 'FUNC_CONT'])))[0]
+
+    return seq_out, lab_out
 
 ###
 
@@ -51,154 +71,48 @@ def make_img_dict(path,file_list,dim):
     ###
 
 
-class DMSADataset(Dataset):
-    """ Data loader for DMSA data """
-
-    def __init__(self, data_sheet, args):
-        """
-        data_sheet: csv spreadsheet with 1 column for each US view image file ("SR","SL","TR","TL","B"),
-            1 column for each DMSA view image file (A/P) ("DMSA_A" and "DMSA_P"),
-            2 label columns: 1 dichotomous and 1 continuous ("FUNC_DICH" and "FUNC_CONT"), and
-            1 column for the instance id "ID"
-
-        args: argument dictionary
-            args.dichot: if set to True, a binary 0/1 value will be used as the label
-            else if set to False, a continuous value for left function will be used as the label
-        """
-
-        self.dim = args.dim
-        self.dmsa_out = args.dmsa_out
-
-        self.us_dir = args.us_dir
-        self.dmsa_dir = args.dmsa_dir
-
-        self.id = data_sheet['ID']
-
-        self.sr_file = data_sheet['SR']
-        self.sl_file = data_sheet['SL']
-        self.tr_file = data_sheet['TR']
-        self.tl_file = data_sheet['TL']
-        self.b_file = data_sheet['B']
-
-        if self.dmsa_out:
-            self.dmsa_a_file = data_sheet['DMSA_A']
-            self.dmsa_p_file = data_sheet['DMSA_P']
-
-        if args.dichot:
-            self.label = data_sheet['FUNC_DICH']#.to_numpy()
-        else:
-            self.label = data_sheet['FUNC_CONT']#.to_numpy()
-
-    def __len__(self):
-        return len(self.id)
-
-    def __getitem__(self, index):
-            ## Maybe add file path as argument to init? Maybe "opt"?
-        sr = read_image_file(self.us_dir + self.sr_file[index]).view(1, self.dim, self.dim)
-        sl = read_image_file(self.us_dir + self.sl_file[index]).view(1, self.dim, self.dim)
-        tr = read_image_file(self.us_dir + self.tr_file[index]).view(1, self.dim, self.dim)
-        tl = read_image_file(self.us_dir + self.tl_file[index]).view(1, self.dim, self.dim)
-        b = read_image_file(self.us_dir + self.b_file[index]).view(1, self.dim, self.dim)
-            ## make 5x256x256 tensor
-        input_tensor = torch.cat((sr, sl, tr, tl, b), 0).float()
-
-        out_label = torch.tensor(self.label)[index]
-        # print("out_label")
-        # print(out_label)
-
-        if self.dmsa_out:
-            dmsa_a = read_image_file(self.dmsa_dir + self.dmsa_a_file[index]).view(1, self.dim, self.dim)
-            dmsa_p = read_image_file(self.dmsa_dir + self.dmsa_p_file[index]).view(1, self.dim, self.dim)
-            ## make 2x256x256 tensor
-            output_tensor = torch.cat((dmsa_a, dmsa_p),0).float()
-            return input_tensor, output_tensor, out_label
-
-        else:
-            return input_tensor, out_label
-
-
-class DMSADataset_PreloadImgs(Dataset):
-    """ Data loader for DMSA data """
-
-    def __init__(self, data_sheet, args):
-        """
-        data_sheet: csv spreadsheet with 1 column for each US view image file ("SR","SL","TR","TL","B"),
-            1 column for each DMSA view image file (A/P) ("DMSA_A" and "DMSA_P"),
-            2 label columns: 1 dichotomous and 1 continuous ("FUNC_DICH" and "FUNC_CONT"), and
-            1 column for the instance id "ID"
-
-        args: argument dictionary
-            args.dichot: if set to True, a binary 0/1 value will be used as the label
-            else if set to False, a continuous value for left function will be used as the label
-        """
-
-        self.dim = args.dim
-        self.dmsa_out = args.dmsa_out
-
-        # self.us_dir = args.us_dir
-        # self.dmsa_dir = args.dmsa_dir
-
-        self.id = data_sheet['ID']
-
-        self.sr_file = data_sheet['SR']
-        self.sl_file = data_sheet['SL']
-        self.tr_file = data_sheet['TR']
-        self.tl_file = data_sheet['TL']
-        self.b_file = data_sheet['B']
-
-        all_files = flatten_list([data_sheet['SR'].tolist(), data_sheet['SL'].tolist(),
-                                  data_sheet['TR'].tolist(), data_sheet['TL'].tolist(),
-                                  data_sheet['B'].tolist()])
-
-        uniq_files = list(set(all_files))
-
-        self.us_img_dict = make_img_dict(path=args.us_dir, file_list=uniq_files, dim=args.dim)
-
-        if self.dmsa_out:
-            self.dmsa_a_file = data_sheet['DMSA_A']
-            self.dmsa_p_file = data_sheet['DMSA_P']
-
-            self.dmsa_img_dict_a = make_img_dict(path=args.dmsa_dir, file_list=self.dmsa_a_file, dim=args.dim)
-            self.dmsa_img_dict_p = make_img_dict(path=args.dmsa_dir, file_list=self.dmsa_p_file, dim=args.dim)
-
-        if args.dichot:
-            self.label = data_sheet['FUNC_DICH']#.to_numpy()
-        else:
-            self.label = data_sheet['FUNC_CONT']#.to_numpy()
-
-    def __len__(self):
-        return len(self.id)
-
-    def __getitem__(self, index):
-            ## Maybe add file path as argument to init? Maybe "opt"?
-        sr = self.us_img_dict[self.sr_file[index]]
-        sl = self.us_img_dict[self.sl_file[index]]
-        tr = self.us_img_dict[self.tr_file[index]]
-        tl = self.us_img_dict[self.tl_file[index]]
-        b = self.us_img_dict[self.b_file[index]]
-            ## make 5x256x256 tensor
-        input_tensor = torch.cat((sr, sl, tr, tl, b), 0)
-
-        out_label = torch.tensor(self.label)[index]
-        # print("out_label")
-        # print(out_label)
-
-        if self.dmsa_out:
-            dmsa_a = self.dmsa_img_dict_a[self.dmsa_a_file[index]]
-            dmsa_p = self.dmsa_img_dict_a[self.dmsa_p_file[index]]
-            ## make 2x256x256 tensor
-            output_tensor = torch.cat((dmsa_a, dmsa_p), 0)
-            return input_tensor, output_tensor, out_label
-
-        else:
-            return input_tensor, out_label
-
-
 class USFuncDataset(Dataset):
     """ Data loader for DMSA data """
 
     def __init__(self, data_sheet, args):
         """
+        data_sheet: csv spreadsheet with 1 column US files ("US_FILE")
+            1 column for the sequence ID ("SEQ_ID")
+            2 label columns: 1 dichotomous and 1 continuous ("FUNC_DICH" and "FUNC_CONT"), and
+
+        args: argument dictionary
+            args.dichot: if set to True, a binary 0/1 value will be used as the label
+            else if set to False, a continuous value for left function will be used as the label
+        """
+
+        self.dim = args.dim
+
+        self.id = list(set(list(data_sheet['SEQ_ID'])))
+
+        self.us_seq_dict, self.us_lab_dict = make_seq_dict(datasheet=data_sheet, opt=args)
+
+    def __len__(self):
+        return len(self.id)
+
+    def __getitem__(self, index):
+            ## Maybe add file path as argument to init? Maybe "opt"?
+        seq_id = self.id[index]
+        for i, file_name in enumerate(self.us_seq_dict[seq_id].keys()):
+            if i == 0:
+                seq_imgs = self.us_seq_dict[seq_id][file_name].unsqueeze(0)
+            else:
+                seq_imgs = torch.cat((seq_imgs,self.us_seq_dict[seq_id][file_name].unsqueeze(0)),0)
+
+        label = torch.tensor(self.us_lab_dict[seq_id])
+
+        return seq_imgs, label
+
+
+class KidLabDataset(Dataset):
+    """ Data loader for DMSA data """
+
+    def __init__(self, data_sheet, args):
+        """
         data_sheet: csv spreadsheet with 1 column for each US view image file ("SR","SL","TR","TL","B"),
             1 column for each DMSA view image file (A/P) ("DMSA_A" and "DMSA_P"),
             2 label columns: 1 dichotomous and 1 continuous ("FUNC_DICH" and "FUNC_CONT"), and
@@ -211,30 +125,28 @@ class USFuncDataset(Dataset):
 
         self.dim = args.dim
 
-        # self.us_dir = args.us_dir
-        # self.dmsa_dir = args.dmsa_dir
+        self.id = data_sheet['img_id']
 
-        self.id = data_sheet['ID']
+        self.img_files = data_sheet['image_name']
 
-        self.sr_file = data_sheet['SR']
-        self.sl_file = data_sheet['SL']
-        self.tr_file = data_sheet['TR']
-        self.tl_file = data_sheet['TL']
-        self.b_file = data_sheet['B']
+        self.us_img_dict = make_img_dict(path=args.lab_us_dir, file_list=self.img_files, dim=args.dim)
 
-        all_files = flatten_list([data_sheet['SR'].tolist(), data_sheet['SL'].tolist(),
-                                  data_sheet['TR'].tolist(), data_sheet['TL'].tolist(),
-                                  data_sheet['B'].tolist()])
-
-        uniq_files = list(set(all_files))
-
-        self.us_img_dict = make_img_dict(path=args.us_dir, file_list=uniq_files, dim=args.dim)
-
-        if args.dichot:
-            self.label = data_sheet['FUNC_DICH']#.to_numpy()
+        if args.RL:
+            self.label = data_sheet['NUM_LAB6']
         else:
-            self.label = data_sheet['FUNC_CONT']#.to_numpy()
+            self.label = data_sheet['NUM_LAB4']
 
+    def __len__(self):
+        return len(self.id)
+
+    def __getitem__(self, index):
+        input_tensor = self.us_img_dict[self.img_files[index]]
+
+        out_label = torch.tensor(self.label)[index]
+        # print("out_label")
+        # print(out_label)
+
+        return input_tensor, out_label
 
 
 ###
@@ -244,7 +156,7 @@ class USFuncDataset(Dataset):
 
 ##  VIEW LABEL MODELS
 class KidneyLab(nn.Module):
-    def __init__(self):
+    def __init__(self, args):
         super(KidneyLab, self).__init__()
 
         self.conv0 = nn.Sequential(nn.Conv2d(1, 64, 7, padding=2),
@@ -267,8 +179,13 @@ class KidneyLab(nn.Module):
                                      nn.ReLU(),
                                      nn.Dropout(0.5))
 
-        self.linear3 = nn.Sequential(nn.Linear(64, 6, bias=True),
-                                     nn.Sigmoid())
+        if args.RL:
+            self.linear3 = nn.Sequential(nn.Linear(64, 6, bias=True),
+                                         nn.Sigmoid())
+        else:
+            self.linear3 = nn.Sequential(nn.Linear(64, 4, bias=True),
+                                         nn.Sigmoid())
+
 
     def forward(self, x):
 
@@ -287,209 +204,13 @@ class KidneyLab(nn.Module):
 
         return x7
 
-
-## FUNCTION MODELS
-class FuncMod(nn.Module):
-    def __init__(self, args):
-        super(FuncMod, self).__init__()
-
-        # self.dichot = args.dichot
-
-        self.conv0 = nn.Sequential(nn.Conv2d(5, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv1 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv2 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv3 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv4 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-
-        # self.linear1 = nn.Sequential(nn.Linear(64,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        # self.linear2 = nn.Sequential(nn.Linear(32,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        #
-        # self.linear3 = nn.Sequential(nn.Linear(32, 2, bias=True),
-        #                              nn.Sigmoid())
-
-        self.linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-        self.linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-
-        self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                     nn.Sigmoid())
-
-        # if self.dichot:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
-        # else:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
-
-    def forward(self, x):
-
-        bs = x.shape[0]
-
-        x0 = self.conv0(x.float())
-        x1 = self.conv1(x0)
-        x2 = self.conv2(x1)
-        x3 = self.conv3(x2)
-        x4 = self.conv4(x3)
-
-        x4_flat = x4.view([bs, 1, -1])
-        # print("x4_flat.shape")
-        # print(x4_flat.shape)
-
-        x5 = self.linear1(x4_flat)
-        x6 = self.linear2(x5)
-
-        x7 = self.linear3(x6)
-
-        return x7
-
-
-class FuncModSiamese(nn.Module):
-    def __init__(self, args):
-        super(FuncModSiamese, self).__init__()
-
-        # self.dichot = args.dichot
-
-        self.conv0 = nn.Sequential(nn.Conv2d(1, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv1 = nn.Sequential(nn.Conv2d(64, 64, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-        self.conv2 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
-                                   nn.MaxPool2d(2),
-                                   nn.ReLU())
-
-        # self.linear1 = nn.Sequential(nn.Linear(64,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        # self.linear2 = nn.Sequential(nn.Linear(32,32,bias=True),
-        #                             nn.ReLU(),
-        #                             nn.Dropout(0.5))
-        #
-        # self.linear3 = nn.Sequential(nn.Linear(32, 2, bias=True),
-        #                              nn.Sigmoid())
-
-        self.linear0 = nn.Sequential(nn.Linear(2048*5,2048,bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-        self.linear1 = nn.Sequential(nn.Linear(2048,512,bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-        self.linear2 = nn.Sequential(nn.Linear(512,64,bias=True),
-                                    nn.ReLU(),
-                                    nn.Dropout(0.5))
-
-        self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                     nn.Sigmoid())
-
-        # if self.dichot:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
-        # else:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
-
-    def forward(self, x):
-        bs, chan, dim1, dim2 = x.shape
-
-        for i in range(chan):
-
-            x_in = x[:, i, :, :].view([bs, 1, dim1, dim2])
-            # print("x shape: ")
-            # print(x.shape)
-
-            x0 = self.conv0(x_in.float())
-            x1 = self.conv1(x0)
-            x2 = self.conv1(x1)
-            x3 = self.conv1(x2)
-            x4 = self.conv2(x3)
-
-            if i == 0:
-                x4_concat = x4.view([bs, 1, -1])
-            else:
-                x4_concat = torch.cat((x4_concat, x4.view([bs, 1, -1])),2)
-
-        x5_0 = self.linear0(x4_concat)
-        x5 = self.linear1(x5_0)
-        x6 = self.linear2(x5)
-
-        x7 = self.linear3(x6)
-
-        return x7
-
-###
-
-##  PRETRAINED MODELS
-
-## -- RETURN TO THIS --
-class DenseNet(nn.Module):
-    def __init__(self, args):
-        super(DenseNet, self).__init__()
-
-        orig_dnet = models.densenet201(pretrained=False)
-
-        self.conv0 = nn.Conv2d(5, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-
-        self.dnet_pass = list(orig_dnet.children())[0][1:]
-
-        self.conv1 = nn.Sequential(nn.Conv2d(1920, 512, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
-                                   nn.ReLU())
-        self.conv2 = nn.Sequential(nn.Conv2d(512, 128, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
-                                   nn.ReLU())
-
-        self.dnet_fc0 = nn.Sequential(nn.Linear(512, 128),
-                                      nn.Dropout(0.5),
-                                      nn.ReLU())
-        self.dnet_fc1 = nn.Sequential(nn.Linear(128, 32),
-                                      nn.Dropout(0.5),
-                                      nn.ReLU())
-
-        if args.dichot:
-            self.dnet_fc2 = nn.Sequential(nn.Linear(32, 2))
-        else:
-            self.dnet_fc2 = nn.Sequential(nn.Linear(32, 1),
-                                          nn.Sigmoid())
-
-
-    def forward(self, x):
-
-        bs = x.shape[0]
-
-        x1 = self.conv0(x.float())
-        x2 = self.dnet_pass(x1)
-        x3 = self.conv1(x2)
-        x4 = self.conv2(x3)
-
-        ## flatten here ##
-
-        x4_flat = x4.view([bs, 1, -1])
-
-        x5 = self.dnet_fc0(x4_flat)
-        x6 = self.dnet_fc1(x5)
-        x7 = self.dnet_fc2(x6)
-
-        return x7
-
-
 ##  VIEW LABEL + FUNCTION MODEL
 class LabFuncMod(nn.Module):
     def __init__(self, args):
         super(LabFuncMod, self).__init__()
 
-        self.kid_labs = KidneyLab()
+        self.kid_labs = KidneyLab(args)
+        self.get_kid_labs = args.get_kid_labels
 
         conv0 = nn.Sequential(nn.Conv2d(1, 32, 5, padding=2),
                               nn.MaxPool2d(2),
@@ -544,7 +265,10 @@ class LabFuncMod(nn.Module):
             lin2 = self.linear2(lin1)
             func_out = self.linear3(lin2)
 
-            return func_out
+            if self.get_kid_labs:
+                return func_out, my_kid_labs
+            else:
+                return func_out
 
 ###
     ###
@@ -553,37 +277,52 @@ class LabFuncMod(nn.Module):
 
 def initialize_training(args, neural_net):
 
-    train_datasheet = pd.read_csv(args.train_datasheet)
-    test_datasheet = pd.read_csv(args.test_datasheet)
+    func_train_datasheet = pd.read_csv(args.train_datasheet)
+    func_test_datasheet = pd.read_csv(args.test_datasheet)
+
+    lab_train_datasheet = pd.read_csv(args.lab_train_datasheet)
+    lab_test_datasheet = pd.read_csv(args.lab_test_datasheet)
 
     net = neural_net(args).to(args.device)
 
-    train_dat = DMSADataset_PreloadImgs(train_datasheet, args)
-    test_dat = DMSADataset_PreloadImgs(test_datasheet, args)
+    func_train_dat = USFuncDataset(func_train_datasheet, args)
+    func_test_dat = USFuncDataset(func_test_datasheet, args)
 
-    train_loader = DataLoader(train_dat, batch_size=args.bs, shuffle=True)
-    test_loader = DataLoader(test_dat, batch_size=args.bs, shuffle=False)
+    lab_train_dat = KidLabDataset(lab_train_datasheet, args)
+    lab_test_dat = KidLabDataset(lab_test_datasheet, args)
+
+    func_train_loader = DataLoader(func_train_dat, batch_size=1, shuffle=True)
+    func_test_loader = DataLoader(func_test_dat, batch_size=1, shuffle=False)
+
+    lab_train_loader = DataLoader(lab_train_dat, batch_size=args.bs, shuffle=True)
+    lab_test_loader = DataLoader(lab_test_dat, batch_size=args.bs, shuffle=False)
 
     if args.include_val:
-        val_datasheet = pd.read_csv(args.val_datasheet)
-        val_dat = DMSADataset_PreloadImgs(val_datasheet, args)
-        val_loader = DataLoader(val_dat, batch_size=args.bs, shuffle=False)
+        func_val_datasheet = pd.read_csv(args.func_val_datasheet)
+        func_val_dat = USFuncDataset(func_val_datasheet, args)
+        func_val_loader = DataLoader(func_val_dat, batch_size=args.bs, shuffle=False)
 
-        return net, train_loader, val_loader, test_loader
+        lab_val_datasheet = pd.read_csv(args.lab_val_datasheet)
+        lab_val_dat = KidLabDataset(lab_val_datasheet, args)
+        lab_val_loader = DataLoader(lab_val_dat, batch_size=args.bs, shuffle=False)
+
+        return net, func_train_loader, func_val_loader, func_test_loader, lab_train_loader, lab_val_loader, lab_test_loader
 
     else:
-        return net, train_loader, test_loader
+        return net, func_train_loader, func_test_loader, lab_train_loader, lab_test_loader
 
 
 def training_loop(args, network, file_lab):
 
     if args.include_val:
-        net, train_dloader, val_dloader, test_dloader = initialize_training(args, network)
+        net, func_train_dloader, func_val_dloader, func_test_dloader, lab_train_dloader, lab_val_dloader, lab_test_dloader = initialize_training(args, network)
     else:
-        net, train_dloader, test_dloader = initialize_training(args, network)
+        net, func_train_dloader, func_test_dloader, lab_train_dloader, lab_test_dloader = initialize_training(args, network)
 
     # if args.save_net:
     #     torch.save(network)
+
+    lab_criterion = nn.CrossEntropyLoss()
 
     if args.dichot:
         criterion = nn.CrossEntropyLoss()
@@ -593,174 +332,228 @@ def training_loop(args, network, file_lab):
 
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.mom)
 
-    train_mean_loss = []
-    val_mean_loss = []
-    test_mean_loss = []
+    lab_train_mean_loss = []
+    lab_val_mean_loss = []
+    lab_test_mean_loss = []
+
+    func_train_mean_loss = []
+    func_val_mean_loss = []
+    func_test_mean_loss = []
 
     for epoch in range(args.max_epochs):
-        train_epoch_loss = []
-        val_epoch_loss = []
-        test_epoch_loss = []
+        ## label output
+        lab_train_epoch_loss = []
+        lab_val_epoch_loss = []
+        lab_test_epoch_loss = []
 
-        epoch_train_lab = []
-        epoch_train_pred = []
+        lab_epoch_train_lab = []
+        lab_epoch_train_pred = []
 
-        epoch_val_lab = []
-        epoch_val_pred = []
+        lab_epoch_val_lab = []
+        lab_epoch_val_pred = []
 
-        epoch_test_lab = []
-        epoch_test_pred = []
+        lab_epoch_test_lab = []
+        lab_epoch_test_pred = []
+
+        ## function output
+        func_train_epoch_loss = []
+        func_val_epoch_loss = []
+        func_test_epoch_loss = []
+
+        func_epoch_train_lab = []
+        func_epoch_train_pred = []
+
+        func_epoch_val_lab = []
+        func_epoch_val_pred = []
+
+        func_epoch_test_lab = []
+        func_epoch_test_pred = []
 
         split = 0
 
-        for idx, (us, lab) in enumerate(train_dloader):
+        ##
+        ## LABEL LOOP
+        ##
 
-            # print("input dim")
-            # print(us.shape)
-            #
-            # print("dmsa dim")
-            # print(dmsa.shape)
+        for idx, (lab_us, view_lab) in enumerate(lab_train_dloader):
 
-            if args.dmsa_out:
-                out = net(us.to(args.device)) ## update this to have 2 outcomes function prediction + image prediction
+            lab_out = net(lab_us.to(args.device), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
 
-            else:
-                out = net(us.to(args.device))
-                # print("densenet out shape: ")
-                # print(out)
-
-            # print(out.shape)
-            # print(out[:, :, 0].shape)
-            # print(lab.shape)
-            # print(lab.squeeze())
-            # print(out.squeeze())
-
-            bs = us.shape[0]
-
-            if args.dichot:
-                # torch.max(labels, 1)[1]
-                # print("lab: ")
-                # print(lab)
-                # print("out: ")
-                # print(out)
-                #
-                loss = criterion(out.view([bs, 2]).to(device=args.device).float(), lab.to(args.device).squeeze().to(device=args.device).long())
-
-            else:
-                loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
-
-            # print("predicted vals: ")
-            # print(out.view([bs, 1]).to(device=args.device))
-            #
-            # print("true vals: ")
-            # print(lab.view([bs, 1]).to(device=args.device))
+            loss = lab_criterion(lab_out.to(device=args.device).float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            train_epoch_loss.append(loss.item())
+            lab_train_epoch_loss.append(loss.item())
             split = split + 1
-            # print('epoch: %d, split: %d, train loss: %.3f' %
-            #       (epoch + 1, split, loss.item()))
 
-            # epoch_train_lab.append(lab.to("cpu").tolist())
-            # epoch_train_pred.append(out.to("cpu").tolist())
-
-        train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
+        lab_train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
-              (epoch + 1, train_mean_loss[epoch]))
+              (epoch + 1, lab_train_mean_loss[epoch]))
 
         if args.include_val:
-            for idx, (us_val, lab_val) in enumerate(val_dloader):
+            for idx, (lab_us_val, view_lab_val) in enumerate(lab_val_dloader):
 
-                bs = us_val.shape[0]
+                lab_out_val = net(lab_us_val.to(args.device), lab_out=True)
 
-                out_val = net(us_val.to(args.device))
+                loss_val = criterion(lab_out_val.to(device=args.device).float(),
+                                     view_lab_val.to(args.device).squeeze().to(device=args.device).long())
 
-                if args.dichot:
-                    loss_val = criterion(out_val.view([bs, 2]).to(device=args.device).float(),
-                                         lab_val.to(args.device).squeeze().to(device=args.device).long())
+                lab_val_epoch_loss.append(loss_val.item())
 
-                else:
-                    loss_val = criterion(out_val.view([bs, 1]).to(device=args.device).float(),
-                                         lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
-
-                val_epoch_loss.append(loss_val.item())
-
-            val_mean_loss.append(np.mean(np.array(val_epoch_loss)))
+            lab_val_mean_loss.append(np.mean(np.array(lab_val_epoch_loss)))
             print('epoch: %d, val loss: %.3f' %
-                  (epoch + 1, val_mean_loss[epoch]))
+                  (epoch + 1, lab_val_mean_loss[epoch]))
 
             # epoch_val_pred.append(flatten_list(out_val.to("cpu").tolist()))
             # epoch_val_lab.append(flatten_list(lab_val.to("cpu").tolist()))
 
             if args.include_test:
-                for idx, (us_test, lab_test) in enumerate(test_dloader):
+                for idx, (lab_us_test, view_lab_test) in enumerate(lab_test_dloader):
 
-                    bs = us_test.shape[0]
+                    lab_out_test = net(lab_us_test.to(args.device), lab_out=True)
 
-                    out_test = net(us_test.to(args.device))
+                    loss_test = criterion(lab_out_test.to(device=args.device).float(),
+                                     view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
-                    if args.dichot:
-                        loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
-                                         lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    lab_test_epoch_loss.append(loss_test.item())
 
-                    else:
-                        loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
-                                         lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
-
-                    test_epoch_loss.append(loss_test.item())
-
-                test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
+                lab_test_mean_loss.append(np.mean(np.array(lab_test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
-                      (epoch + 1, test_mean_loss[epoch]))
+                      (epoch + 1, lab_test_mean_loss[epoch]))
 
                 # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
                 # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
 
         else:
             if args.include_test:
-                for idx, (us_test, dmsa_test, lab_test) in enumerate(test_dloader):
-                    out_test = net(us_test.to(args.device))
+                for idx, (lab_us_test, view_lab_test) in enumerate(lab_test_dloader):
 
-                    if args.dichot:
-                        loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
-                                         lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    lab_out_test = net(lab_us_test.to(args.device), lab_out=True)
 
-                    else:
-                        loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
-                                         lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+                    loss_test = criterion(lab_out_test.to(device=args.device).float(),
+                                     view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
-                    test_epoch_loss.append(loss_test.item())
+                    lab_test_epoch_loss.append(loss_test.item())
 
-                test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
+                lab_test_mean_loss.append(np.mean(np.array(lab_test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
-                      (epoch + 1, test_mean_loss[epoch]))
+                      (epoch + 1, lab_test_mean_loss[epoch]))
 
                 # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
                 # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
 
+        ##
+        ## FUNCTION LOOP
+        ##
+
+        for idx, (func_us, func_lab) in enumerate(func_train_dloader):
+
+            func_out = net(func_us.to(args.device), lab_out=False)
+
+            if args.dichot:
+                loss = criterion(func_out.to(device=args.device).float(),
+                                 func_lab.to(args.device).squeeze().to(device=args.device).long())
+            else:
+                loss = criterion(func_out.to(device=args.device).float(),
+                                 func_lab.to(args.device).view([bs, 1]).to(device=args.device).float())
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            func_train_epoch_loss.append(loss.item())
+            split = split + 1
+            # print('epoch: %d, split: %d, train loss: %.3f' %
+            #       (epoch + 1, split, loss.item()))
+
+            func_epoch_train_lab.append(lab.to("cpu").tolist())
+            func_epoch_train_pred.append(out.to("cpu").tolist())
+
+        func_train_mean_loss.append(np.mean(np.array(func_train_epoch_loss)))
+        print('epoch: %d, train loss: %.3f' %
+              (epoch + 1, func_train_mean_loss[epoch]))
+
+        if args.include_val:
+            for idx, (func_us_val, func_lab_val) in enumerate(func_val_dloader):
+
+                func_out_val = net(func_us_val.to(args.device), lab_out=False)
+
+                loss_val = criterion(func_out_val.view([bs, 2]).to(device=args.device).float(),
+                                     func_lab_val.to(args.device).squeeze().to(device=args.device).long())
+
+                func_val_epoch_loss.append(loss_val.item())
+
+            func_val_mean_loss.append(np.mean(np.array(func_val_epoch_loss)))
+            print('epoch: %d, val loss: %.3f' %
+                  (epoch + 1, func_val_mean_loss[epoch]))
+
+            func_epoch_val_pred.append(func_out_val.to("cpu").tolist())
+            func_epoch_val_lab.append(func_lab_val.to("cpu").tolist())
+
+            if args.include_test:
+                for idx, (func_us_test, func_lab_test) in enumerate(func_test_dloader):
+
+                    func_out_test = net(func_us_test.to(args.device), lab_out=False)
+
+                    loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                          func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+
+                    func_test_epoch_loss.append(loss_test.item())
+
+                func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
+
+                print('epoch: %d, test loss: %.3f' %
+                      (epoch + 1, func_test_mean_loss[epoch]))
+
+                func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
+                func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
+
+
+        else:
+            if args.include_test:
+                for idx, (func_us_test, func_lab_test) in enumerate(func_test_dloader):
+
+                    func_out_test = net(func_us_test.to(args.device), lab_out=False)
+
+                    loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                          func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+
+                    func_test_epoch_loss.append(loss_test.item())
+
+                func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
+
+                print('epoch: %d, test loss: %.3f' %
+                      (epoch + 1, func_test_mean_loss[epoch]))
+
+                func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
+                func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
+
     if args.save_pred:
-        train_df = pd.DataFrame({"pred": epoch_train_pred, "lab": epoch_train_lab})
+        train_df = pd.DataFrame({"pred": flatten_list(func_epoch_train_pred),
+                                 "lab": flatten_list(func_epoch_train_lab)})
         train_file = args.csv_outdir + "/TrainPred_" + file_lab + ".csv"
         train_df.to_csv(train_file)
 
         if args.include_val:
-            val_df = pd.DataFrame({"pred": epoch_val_pred, "lab": epoch_val_lab})
+            val_df = pd.DataFrame({"pred": flatten_list(func_epoch_val_pred),
+                                   "lab": flatten_list(func_epoch_val_lab)})
             val_file = args.csv_outdir + "/ValPred_" + file_lab + ".csv"
             val_df.to_csv(val_file)
 
             if args.include_test:
-                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_df = pd.DataFrame({"pred": flatten_list(epoch_test_pred),
+                                        "lab": flatten_list(epoch_test_lab)})
                 test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
         else:
             if args.include_test:
-                test_df = pd.DataFrame({"pred": epoch_test_pred, "lab": epoch_test_lab})
+                test_df = pd.DataFrame({"pred": flatten_list(epoch_test_pred),
+                                        "lab": flatten_list(epoch_test_lab)})
                 test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
@@ -772,12 +565,12 @@ def training_loop(args, network, file_lab):
 
     if args.include_val:
         if args.include_test:
-            return {"train_loss": train_mean_loss, "val_loss": val_mean_loss, "test_loss": test_mean_loss}
+            return {"train_loss": func_train_mean_loss, "val_loss": func_val_mean_loss, "test_loss": func_test_mean_loss}
     else:
         if args.include_test:
-            return {"train_loss": train_mean_loss, "test_loss": test_mean_loss}
+            return {"train_loss": func_train_mean_loss, "test_loss": func_test_mean_loss}
         else:
-            return {"train_loss": train_mean_loss}
+            return {"train_loss": func_train_mean_loss}
 
 ###
     ###
@@ -788,18 +581,26 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-us_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-jpgs-dmsa/',
                         help="Directory of ultrasound images")
-    parser.add_argument('-dmsa_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/all-dmsa-cabs/dmsa-jpgs/',
-                        help="directory of DMSA images")
+    parser.add_argument('-lab_us_dir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/label_img/',
+                        help="Directory of ultrasound images")
 
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
+    parser.add_argument("-RL", action='store_true', default=False, help="Include r/l labels or only build model on 4 labels")
 
     parser.add_argument("-run_lab", default="DenseNet_MSE", help="String to add to output files")
 
-    parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top2view.csv',
+    parser.add_argument('-func_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top2view.csv',
+    parser.add_argument('-func_val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-val-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top2view.csv',
+    parser.add_argument('-func_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top3view-USfunc-noVlab.csv',
+                        help="directory of DMSA images")
+
+    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423.csv',
+                        help="directory of DMSA images")
+    parser.add_argument('-lab_val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/val-view_label_df_20200423.csv',
+                        help="directory of DMSA images")
+    parser.add_argument('-lab_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/test-view_label_df_20200423.csv',
                         help="directory of DMSA images")
 
     parser.add_argument('-csv_outdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/',
@@ -818,6 +619,8 @@ def main():
                         help="Save NN?")
     parser.add_argument("-save_pred", action='store_true', default=True,
                         help="Save NN?")
+    parser.add_argument("-get_kid_labels", action='store_true', default=True,
+                        help="Save NN?")
 
     # parser.add_argument("-net_file", default='my_net.pth',
     #                     help="File to save NN to")
@@ -832,7 +635,7 @@ def main():
 
     opt = parser.parse_args() ## comment for debug
 
-    my_net = DenseNet
+    my_net = LabFuncMod
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
     file_labs = opt.run_lab + "_AUC_LR" + str(opt.lr) + "_MOM" + str(opt.mom) + "_MAXEP" + str(opt.max_epochs) + "_BS" + str(opt.bs) + "_" + analysis_time
