@@ -142,13 +142,11 @@ class KidLabDataset(Dataset):
     def __getitem__(self, index):
         input_tensor = self.us_img_dict[self.img_files[index]]
 
-        bs = len(self.us_img_dict[self.img_files[index]])
-
         out_label = torch.tensor(self.label)[index]
         # print("out_label")
         # print(out_label)
 
-        return input_tensor.view([bs, 1, self.dim, self.dim]), out_label
+        return input_tensor.view([self.dim, self.dim]), out_label
 
 
 ###
