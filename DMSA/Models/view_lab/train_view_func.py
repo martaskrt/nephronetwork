@@ -171,7 +171,7 @@ class KidneyLab(nn.Module):
         self.conv3 = nn.Sequential(nn.Conv2d(64, 32, 7, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
-	self.conv4 = nn.Sequential(nn.Conv2d(32,16, 7, padding=2),
+        self.conv4 = nn.Sequential(nn.Conv2d(32,16, 7, padding=2),
                                    nn.MaxPool2d(2),
                                    nn.ReLU())
 
@@ -206,7 +206,7 @@ class KidneyLab(nn.Module):
         x7 = self.linear2(x6)
         x8 = self.linear3(x7)
 
-        return x7
+        return x8
 
 ##  VIEW LABEL + FUNCTION MODEL
 class LabFuncMod(nn.Module):
