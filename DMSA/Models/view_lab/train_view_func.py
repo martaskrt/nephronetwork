@@ -264,11 +264,11 @@ class LabFuncMod(nn.Module):
 
             softmax = nn.Softmax(1)
             kid_labs_wts = softmax(my_kid_labs[:, :, 0:5].squeeze())
-            print("kid_lab_wts shape: ")
-            print(kid_labs_wts)
-
-            print("my_kid_convs_transp shape: ")
-            print(my_kid_convs_transp.shape)
+            # print("kid_lab_wts shape: ")
+            # print(kid_labs_wts)
+            #
+            # print("my_kid_convs_transp shape: ")
+            # print(my_kid_convs_transp.shape)
 
             if self.RL:
                 weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 5, -1])
@@ -582,7 +582,7 @@ def training_loop(args, network, file_lab):
 
     if args.save_net:
         net_file = args.csv_outdir + "/Net_" + file_lab + ".pth"
-        print(net_file)
+        # print(net_file)
         torch.save(net, net_file)
         # torch.save(net, args.net_file)
 
