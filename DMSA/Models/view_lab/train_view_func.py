@@ -127,7 +127,7 @@ class KidLabDataset(Dataset):
 
         self.id = data_sheet['img_id']
 
-        self.img_files = data_sheet['image_name']
+        self.img_files = data_sheet['IMG_FILE']
 
         self.us_img_dict = make_img_dict(path=args.lab_us_dir, file_list=self.img_files, dim=args.dim)
 
