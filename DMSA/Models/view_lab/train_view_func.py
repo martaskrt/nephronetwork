@@ -382,6 +382,8 @@ def training_loop(args, network, file_lab):
         for idx, (lab_us, view_lab) in enumerate(lab_train_dloader):
 
             lab_out = net(lab_us.to(args.device).float(), lab_out=True) ## update this to have 2 outcomes function prediction + image prediction
+            print(lab_out.to(device=args.device).squeeze().float())
+            print(view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(), view_lab.to(args.device).squeeze().to(device=args.device).long())
 
@@ -392,7 +394,10 @@ def training_loop(args, network, file_lab):
             lab_train_epoch_loss.append(loss.item())
             split = split + 1
 
-        lab_train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
+            lab_epoch_train_pred.append(lab_out.to("cpu").tolist())
+            lab_epoch_train_lab.append(view_lab.to("cpu").tolist())
+
+        lab_train_mean_loss.append(np.mean(np.array(lab_train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
               (epoch + 1, lab_train_mean_loss[epoch]))
 
@@ -406,12 +411,14 @@ def training_loop(args, network, file_lab):
 
                 lab_val_epoch_loss.append(loss_val.item())
 
+                lab_epoch_val_pred.append(lab_out_val.to("cpu").tolist())
+                lab_epoch_val_lab.append(view_lab_val.to("cpu").tolist())
+
+
             lab_val_mean_loss.append(np.mean(np.array(lab_val_epoch_loss)))
             print('epoch: %d, val loss: %.3f' %
                   (epoch + 1, lab_val_mean_loss[epoch]))
 
-            # epoch_val_pred.append(flatten_list(out_val.to("cpu").tolist()))
-            # epoch_val_lab.append(flatten_list(lab_val.to("cpu").tolist()))
 
             if args.include_test:
                 for idx, (lab_us_test, view_lab_test) in enumerate(lab_test_dloader):
@@ -423,13 +430,13 @@ def training_loop(args, network, file_lab):
 
                     lab_test_epoch_loss.append(loss_test.item())
 
+                    lab_epoch_test_lab.append(view_lab_test.to("cpu").tolist())
+                    lab_epoch_test_pred.append(lab_out_test.to("cpu").tolist())
+
                 lab_test_mean_loss.append(np.mean(np.array(lab_test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, lab_test_mean_loss[epoch]))
-
-                # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
-                # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
 
         else:
             if args.include_test:
@@ -438,17 +445,17 @@ def training_loop(args, network, file_lab):
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
                     loss_test = criterion(lab_out_test.to(device=args.device).float(),
-                                     view_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                          view_lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
+
+                    lab_epoch_test_lab.append(view_lab_test.to("cpu").tolist())
+                    lab_epoch_test_pred.append(lab_out_test.to("cpu").tolist())
 
                 lab_test_mean_loss.append(np.mean(np.array(lab_test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, lab_test_mean_loss[epoch]))
-
-                # epoch_test_lab.append(flatten_list(lab_test.to("cpu").tolist()))
-                # epoch_test_pred.append(flatten_list(out_test.to("cpu").tolist()))
 
         ##
         ## FUNCTION LOOP
@@ -474,8 +481,8 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-            func_epoch_train_lab.append(lab.to("cpu").tolist())
-            func_epoch_train_pred.append(out.to("cpu").tolist())
+            func_epoch_train_lab.append(func_lab.to("cpu").tolist())
+            func_epoch_train_pred.append(func_out.to("cpu").tolist())
 
         func_train_mean_loss.append(np.mean(np.array(func_train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
@@ -508,13 +515,14 @@ def training_loop(args, network, file_lab):
 
                     func_test_epoch_loss.append(loss_test.item())
 
+                    func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
+                    func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
+
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, func_test_mean_loss[epoch]))
 
-                func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
-                func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
 
 
         else:
@@ -528,13 +536,13 @@ def training_loop(args, network, file_lab):
 
                     func_test_epoch_loss.append(loss_test.item())
 
+                    func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
+                    func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
+
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, func_test_mean_loss[epoch]))
-
-                func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
-                func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
 
     if args.save_pred:
         train_df = pd.DataFrame({"pred": flatten_list(func_epoch_train_pred),
@@ -549,15 +557,15 @@ def training_loop(args, network, file_lab):
             val_df.to_csv(val_file)
 
             if args.include_test:
-                test_df = pd.DataFrame({"pred": flatten_list(epoch_test_pred),
-                                        "lab": flatten_list(epoch_test_lab)})
+                test_df = pd.DataFrame({"pred": flatten_list(func_epoch_test_pred),
+                                        "lab": flatten_list(func_epoch_test_lab)})
                 test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
         else:
             if args.include_test:
-                test_df = pd.DataFrame({"pred": flatten_list(epoch_test_pred),
-                                        "lab": flatten_list(epoch_test_lab)})
+                test_df = pd.DataFrame({"pred": flatten_list(func_epoch_test_pred),
+                                        "lab": flatten_list(func_epoch_test_lab)})
                 test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
                 test_df.to_csv(test_file)
 
