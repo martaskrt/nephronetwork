@@ -217,17 +217,20 @@ class LabFuncMod(nn.Module):
         self.kid_labs = KidneyLab(args)
         self.get_kid_labs = args.get_kid_labels
 
-        conv0 = nn.Sequential(nn.Conv2d(1, 32, 5, padding=2),
+        conv0 = nn.Sequential(nn.Conv2d(1, 128, 7, padding=2),
                               nn.MaxPool2d(2),
                               nn.ReLU())
-        conv1 = nn.Sequential(nn.Conv2d(32, 64, 5, padding=2),
+        conv1 = nn.Sequential(nn.Conv2d(128, 64, 7, padding=2),
                               nn.MaxPool2d(2),
                               nn.ReLU())
-        conv2 = nn.Sequential(nn.Conv2d(64, 32, 5, padding=2),
+        conv2 = nn.Sequential(nn.Conv2d(64, 32, 7, padding=2),
+                              nn.MaxPool2d(2),
+                              nn.ReLU())
+        conv3 = nn.Sequential(nn.Conv2d(32, 16, 7, padding=2),
                               nn.MaxPool2d(2),
                               nn.ReLU())
 
-        self.in_conv = nn.Sequential(conv0, conv1, conv2)
+        self.in_conv = nn.Sequential(conv0, conv1, conv2, conv3)
 
         linear1 = nn.Sequential(nn.Linear(2048, 512, bias=True),
                                 nn.ReLU(),
@@ -255,7 +258,7 @@ class LabFuncMod(nn.Module):
             return my_kid_labs
         else:
             my_kid_convs = self.in_conv(x)
-            my_kid_convs_flat = my_kid_convs.view([bs,1,-1]).squeeze()
+            my_kid_convs_flat = my_kid_convs.view([bs, 1, -1]).squeeze()
             my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
 
             softmax = nn.Softmax(1)
@@ -266,7 +269,10 @@ class LabFuncMod(nn.Module):
             print("my_kid_convs_transp shape: ")
             print(my_kid_convs_transp.shape)
 
-            weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([bs, 1, -1])
+            if args.RL:
+                weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 5, -1])
+            else:
+                weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 3, -1])
 
             lin1 = self.linear1(weight_embed)
             lin2 = self.linear2(lin1)
