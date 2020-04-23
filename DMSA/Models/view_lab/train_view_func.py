@@ -642,7 +642,7 @@ def main():
                         help="Save NN?")
     parser.add_argument("-save_pred", action='store_true', default=True,
                         help="Save NN?")
-    parser.add_argument("-get_kid_labels", action='store_true', default=True,
+    parser.add_argument("-get_kid_labels", action='store_true', default=False,
                         help="Save NN?")
 
     # parser.add_argument("-net_file", default='my_net.pth',
