@@ -103,9 +103,11 @@ class USFuncDataset(Dataset):
             else:
                 seq_imgs = torch.cat((seq_imgs, self.us_seq_dict[seq_id][file_name].unsqueeze(0)), 0)
 
+        bs = len(self.us_seq_dict[seq_id].keys())
+
         label = torch.tensor(self.us_lab_dict[seq_id])
 
-        return seq_imgs, label
+        return seq_imgs.view([bs, 1, self.dim, self.dim]), label
 
 
 class KidLabDataset(Dataset):
