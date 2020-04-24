@@ -684,7 +684,7 @@ def main():
     parser.add_argument('-func_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
 
-    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423.csv',
+    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423-10024CUT.csv',
                         help="directory of DMSA images")
     parser.add_argument('-lab_val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/val-view_label_df_20200423.csv',
                         help="directory of DMSA images")
@@ -716,15 +716,18 @@ def main():
     parser.add_argument("-dim", default=256, help="Image dimensions")
     parser.add_argument('-device', default='cuda',help="device to run NN on")
 
-    parser.add_argument("-lr", default=0.01, help="Image dimensions")
-    parser.add_argument("-mom", default=0.9, help="Image dimensions")
-    parser.add_argument("-bs", default=32, help="Image dimensions")
-    parser.add_argument("-max_epochs", default=200, help="Image dimensions")
+    parser.add_argument("-lr", default=0.01, help="Learning rate")
+    parser.add_argument("-mom", default=0.9, help="Momentum")
+    parser.add_argument("-bs", default=32, help="Batch size")
+    parser.add_argument("-max_epochs", default=200, help="Maximum number of epochs")
 
     opt = parser.parse_args() ## comment for debug
 
     print(opt)
-    
+
+    opt.lr = float(opt.lr)
+    opt.mom = float(opt.mom)
+
     my_net = LabFuncMod
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
