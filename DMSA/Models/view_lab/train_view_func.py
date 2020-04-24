@@ -432,7 +432,7 @@ def training_loop(args, network, file_lab):
                 lab_out_val = net(lab_us_val.to(args.device).float(), lab_out=True)
 
                 loss_val = lab_criterion(lab_out_val.to(device=args.device).squeeze().float(),
-                                     view_lab_val.to(args.device).squeeze().to(device=args.device).long())
+                                         view_lab_val.to(args.device).squeeze().to(device=args.device).long())
 
                 lab_val_epoch_loss.append(loss_val.item())
 
@@ -506,7 +506,6 @@ def training_loop(args, network, file_lab):
                 func_epoch_train_lab.append(func_lab.to("cpu").tolist())
                 func_epoch_train_pred.append(func_out.to("cpu").tolist())
 
-
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -530,8 +529,12 @@ def training_loop(args, network, file_lab):
 
                 func_out_val = net(func_us_val.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                loss_val = criterion(func_out_val.squeeze().to(device=args.device).float(),
-                                     func_lab_val.to(args.device).squeeze().to(device=args.device).long())
+                if args.dichot:
+                    loss_val = criterion(func_out_val.to(device=args.device).squeeze().float(),
+                                         func_lab_val.to(args.device).squeeze().to(device=args.device).long())
+                else:
+                    loss_val = criterion(func_out_val.to(device=args.device).float(),
+                                         func_lab_val.to(args.device).to(device=args.device).float())
 
                 func_val_epoch_loss.append(loss_val.item())
 
@@ -552,8 +555,12 @@ def training_loop(args, network, file_lab):
 
                     func_out_test = net(func_us_test.to(args.device).view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                    loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
-                                          func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    if args.dichot:
+                        loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
+                                              func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    else:
+                        loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                              func_lab_test.to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
@@ -575,8 +582,12 @@ def training_loop(args, network, file_lab):
                         bs = 1
                     func_out_test = net(func_us_test.to(args.device).view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                    loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
-                                          func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    if args.dichot:
+                        loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
+                                              func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                    else:
+                        loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                              func_lab_test.to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
