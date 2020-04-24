@@ -328,7 +328,7 @@ def initialize_training(args, neural_net):
     if args.include_val:
         func_val_datasheet = pd.read_csv(args.func_val_datasheet)
         func_val_dat = USFuncDataset(func_val_datasheet, args)
-        func_val_loader = DataLoader(func_val_dat, batch_size=args.bs, shuffle=False)
+        func_val_loader = DataLoader(func_val_dat, batch_size=1, shuffle=False)
 
         lab_val_datasheet = pd.read_csv(args.lab_val_datasheet)
         lab_val_dat = KidLabDataset(lab_val_datasheet, args)
