@@ -272,7 +272,7 @@ class LabFuncMod(nn.Module):
 
             softmax = nn.Softmax(1)
 
-            if args.RL:
+            if self.RL:
                 kid_labs_in = my_kid_labs.view([bs, 6])[:, 0:5]
             else:
                 kid_labs_in = my_kid_labs.view([bs, 4])[:, 0:3]
