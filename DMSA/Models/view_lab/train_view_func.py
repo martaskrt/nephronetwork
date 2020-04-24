@@ -105,7 +105,7 @@ class USFuncDataset(Dataset):
 
         bs = len(self.us_seq_dict[seq_id].keys())
 
-        label = torch.tensor(self.us_lab_dict[seq_id])
+        label = self.us_lab_dict[seq_id]
 
         return seq_imgs.view([bs, 1, self.dim, self.dim]), label
 
@@ -144,7 +144,7 @@ class KidLabDataset(Dataset):
     def __getitem__(self, index):
         input_tensor = self.us_img_dict[self.img_files[index]]
 
-        out_label = torch.tensor(self.label)[index]
+        out_label = self.label[index]
         # print("out_label")
         # print(out_label)
 
@@ -214,6 +214,7 @@ class KidneyLab(nn.Module):
         x8 = self.linear3(x7)
 
         return x8
+
 
 ##  VIEW LABEL + FUNCTION MODEL
 class LabFuncMod(nn.Module):
@@ -410,7 +411,7 @@ def training_loop(args, network, file_lab):
             # print(view_lab.to(args.device).squeeze().to(device=args.device).long())
 
             loss = lab_criterion(lab_out.to(device=args.device).squeeze().float(),
-                                 view_lab.to(args.device).squeeze().to(device=args.device).long())
+                                 torch.tensor(view_lab).to(args.device).squeeze().to(device=args.device).long())
 
             optimizer.zero_grad()
             loss.backward()
@@ -432,7 +433,7 @@ def training_loop(args, network, file_lab):
                 lab_out_val = net(lab_us_val.to(args.device).float(), lab_out=True)
 
                 loss_val = lab_criterion(lab_out_val.to(device=args.device).squeeze().float(),
-                                         view_lab_val.to(args.device).squeeze().to(device=args.device).long())
+                                         torch.tensor(view_lab_val).to(args.device).squeeze().to(device=args.device).long())
 
                 lab_val_epoch_loss.append(loss_val.item())
 
@@ -451,7 +452,7 @@ def training_loop(args, network, file_lab):
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
                     loss_test = lab_criterion(lab_out_test.to(device=args.device).squeeze().float(),
-                                     view_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                     torch.tensor(view_lab_test).to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
 
@@ -470,7 +471,7 @@ def training_loop(args, network, file_lab):
                     lab_out_test = net(lab_us_test.to(args.device).float(), lab_out=True)
 
                     loss_test = lab_criterion(lab_out_test.to(device=args.device).squeeze().float(),
-                                              view_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                              torch.tensor(view_lab_test).to(args.device).squeeze().to(device=args.device).long())
 
                     lab_test_epoch_loss.append(loss_test.item())
 
@@ -498,10 +499,10 @@ def training_loop(args, network, file_lab):
 
             if args.dichot:
                 loss = criterion(func_out.to(device=args.device).squeeze().float(),
-                                 func_lab.to(args.device).squeeze().to(device=args.device).long())
+                                 torch.tensor(func_lab).to(args.device).squeeze().to(device=args.device).long())
             else:
                 loss = criterion(func_out.to(device=args.device).float(),
-                                 func_lab.to(args.device).to(device=args.device).float())
+                                 torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
                 func_epoch_train_lab.append(func_lab.to("cpu").tolist())
                 func_epoch_train_pred.append(func_out.to("cpu").tolist())
@@ -531,10 +532,10 @@ def training_loop(args, network, file_lab):
 
                 if args.dichot:
                     loss_val = criterion(func_out_val.to(device=args.device).squeeze().float(),
-                                         func_lab_val.to(args.device).squeeze().to(device=args.device).long())
+                                         torch.tensor(func_lab_val).to(args.device).squeeze().to(device=args.device).long())
                 else:
                     loss_val = criterion(func_out_val.to(device=args.device).float(),
-                                         func_lab_val.to(args.device).to(device=args.device).float())
+                                         torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
 
                 func_val_epoch_loss.append(loss_val.item())
 
@@ -557,10 +558,10 @@ def training_loop(args, network, file_lab):
 
                     if args.dichot:
                         loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
-                                              func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                              torch.tensor(func_lab_test).to(args.device).squeeze().to(device=args.device).long())
                     else:
                         loss_test = criterion(func_out_test.to(device=args.device).float(),
-                                              func_lab_test.to(args.device).to(device=args.device).float())
+                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
@@ -584,10 +585,10 @@ def training_loop(args, network, file_lab):
 
                     if args.dichot:
                         loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
-                                              func_lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                              torch.tensor(func_lab_test).to(args.device).squeeze().to(device=args.device).long())
                     else:
                         loss_test = criterion(func_out_test.to(device=args.device).float(),
-                                              func_lab_test.to(args.device).to(device=args.device).float())
+                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
