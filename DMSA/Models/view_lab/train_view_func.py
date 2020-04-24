@@ -521,7 +521,12 @@ def training_loop(args, network, file_lab):
         if args.include_val:
             for idx, (func_us_val, func_lab_val) in enumerate(func_val_dloader):
 
-                func_out_val = net(func_us_val.to(args.device).float(), lab_out=False)
+                if len(func_us_val.to(args.device).float().squeeze().shape) > 2:
+                    bs = func_us_val.to(args.device).float().squeeze().shape[0]
+                else:
+                    bs = 1
+
+                func_out_val = net(func_us_val.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
                 loss_val = criterion(func_out_val.squeeze().to(device=args.device).float(),
                                      func_lab_val.to(args.device).squeeze().to(device=args.device).long())
@@ -538,7 +543,12 @@ def training_loop(args, network, file_lab):
             if args.include_test:
                 for idx, (func_us_test, func_lab_test) in enumerate(func_test_dloader):
 
-                    func_out_test = net(func_us_test.to(args.device), lab_out=False)
+                    if len(func_us_test.to(args.device).float().squeeze().shape) > 2:
+                        bs = func_us_test.to(args.device).float().squeeze().shape[0]
+                    else:
+                        bs = 1
+
+                    func_out_test = net(func_us_test.to(args.device).view([bs, 1, args.dim, args.dim]), lab_out=False)
 
                     loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
                                           func_lab_test.to(args.device).squeeze().to(device=args.device).long())
@@ -557,7 +567,11 @@ def training_loop(args, network, file_lab):
             if args.include_test:
                 for idx, (func_us_test, func_lab_test) in enumerate(func_test_dloader):
 
-                    func_out_test = net(func_us_test.to(args.device), lab_out=False)
+                    if len(func_us_test.to(args.device).float().squeeze().shape) > 2:
+                        bs = func_us_test.to(args.device).float().squeeze().shape[0]
+                    else:
+                        bs = 1
+                    func_out_test = net(func_us_test.to(args.device).view([bs, 1, args.dim, args.dim]), lab_out=False)
 
                     loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
                                           func_lab_test.to(args.device).squeeze().to(device=args.device).long())
