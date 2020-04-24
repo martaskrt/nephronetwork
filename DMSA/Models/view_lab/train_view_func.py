@@ -267,8 +267,8 @@ class LabFuncMod(nn.Module):
             return my_kid_labs
         else:
             my_kid_convs = self.in_conv(x)
-            my_kid_convs_flat = my_kid_convs.view([bs, 1, -1]).squeeze()
-            my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
+            my_kid_convs_flat = my_kid_convs.view([-1, bs])
+            # my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
 
             softmax = nn.Softmax(1)
             kid_labs_wts = softmax(my_kid_labs[:, :, 0:5].squeeze())
@@ -279,7 +279,7 @@ class LabFuncMod(nn.Module):
             # print(my_kid_convs_transp.shape)
 
             if self.RL:
-                weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 5, -1])
+                weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 5, -1])
             else:
                 weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 3, -1])
 
