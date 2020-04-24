@@ -553,7 +553,7 @@ def training_loop(args, network, file_lab):
                     else:
                         bs = 1
 
-                    func_out_test = net(func_us_test.to(args.device).view([bs, 1, args.dim, args.dim]), lab_out=False)
+                    func_out_test = net(func_us_test.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
                     if args.dichot:
                         loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
@@ -580,7 +580,7 @@ def training_loop(args, network, file_lab):
                         bs = func_us_test.to(args.device).float().squeeze().shape[0]
                     else:
                         bs = 1
-                    func_out_test = net(func_us_test.to(args.device).view([bs, 1, args.dim, args.dim]), lab_out=False)
+                    func_out_test = net(func_us_test.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
                     if args.dichot:
                         loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
