@@ -271,7 +271,7 @@ class LabFuncMod(nn.Module):
             # my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
 
             softmax = nn.Softmax(1)
-            kid_labs_wts = softmax(my_kid_labs[:, :, 0:5].squeeze())
+            kid_labs_wts = softmax(my_kid_labs[:, :, 0:5])
             # print("kid_lab_wts shape: ")
             # print(kid_labs_wts)
             #
