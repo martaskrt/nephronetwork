@@ -423,7 +423,7 @@ def training_loop(args, network, file_lab):
             lab_epoch_train_lab.append(view_lab.to("cpu").tolist())
 
         lab_train_mean_loss.append(np.mean(np.array(lab_train_epoch_loss)))
-        print('epoch: %d, train loss: %.3f' %
+        print('epoch: %d, label train loss: %.3f' %
               (epoch + 1, lab_train_mean_loss[epoch]))
 
         if args.include_val:
@@ -441,7 +441,7 @@ def training_loop(args, network, file_lab):
 
 
             lab_val_mean_loss.append(np.mean(np.array(lab_val_epoch_loss)))
-            print('epoch: %d, val loss: %.3f' %
+            print('epoch: %d, label val loss: %.3f' %
                   (epoch + 1, lab_val_mean_loss[epoch]))
 
 
@@ -460,7 +460,7 @@ def training_loop(args, network, file_lab):
 
                 lab_test_mean_loss.append(np.mean(np.array(lab_test_epoch_loss)))
 
-                print('epoch: %d, test loss: %.3f' %
+                print('epoch: %d, label test loss: %.3f' %
                       (epoch + 1, lab_test_mean_loss[epoch]))
 
         else:
@@ -479,7 +479,7 @@ def training_loop(args, network, file_lab):
 
                 lab_test_mean_loss.append(np.mean(np.array(lab_test_epoch_loss)))
 
-                print('epoch: %d, test loss: %.3f' %
+                print('epoch: %d, label test loss: %.3f' %
                       (epoch + 1, lab_test_mean_loss[epoch]))
 
         ##
@@ -516,7 +516,7 @@ def training_loop(args, network, file_lab):
             #       (epoch + 1, split, loss.item()))
 
         func_train_mean_loss.append(np.mean(np.array(func_train_epoch_loss)))
-        print('epoch: %d, train loss: %.3f' %
+        print('epoch: %d, function train loss: %.3f' %
               (epoch + 1, func_train_mean_loss[epoch]))
 
         if args.include_val:
@@ -539,7 +539,7 @@ def training_loop(args, network, file_lab):
                 func_val_epoch_loss.append(loss_val.item())
 
             func_val_mean_loss.append(np.mean(np.array(func_val_epoch_loss)))
-            print('epoch: %d, val loss: %.3f' %
+            print('epoch: %d, function val loss: %.3f' %
                   (epoch + 1, func_val_mean_loss[epoch]))
 
             func_epoch_val_pred.append(func_out_val.to("cpu").tolist())
@@ -569,7 +569,7 @@ def training_loop(args, network, file_lab):
 
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
-                print('epoch: %d, test loss: %.3f' %
+                print('epoch: %d, function test loss: %.3f' %
                       (epoch + 1, func_test_mean_loss[epoch]))
 
         else:
@@ -596,7 +596,7 @@ def training_loop(args, network, file_lab):
 
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
-                print('epoch: %d, test loss: %.3f' %
+                print('epoch: %d, function test loss: %.3f' %
                       (epoch + 1, func_test_mean_loss[epoch]))
 
     if args.save_pred:
