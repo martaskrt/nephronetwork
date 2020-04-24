@@ -251,7 +251,7 @@ class LabFuncMod(nn.Module):
             linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
         else:
             linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                         nn.Sigmoid())
+                                    nn.Sigmoid())
 
         self.out_fc = nn.Sequential(linear1, linear2, linear3)
 
@@ -504,8 +504,8 @@ def training_loop(args, network, file_lab):
                 loss = criterion(func_out.to(device=args.device).float(),
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
-                func_epoch_train_lab.append(func_lab.to("cpu").tolist())
-                func_epoch_train_pred.append(func_out.to("cpu").tolist())
+            func_epoch_train_lab.append(func_lab.to("cpu").tolist())
+            func_epoch_train_pred.append(func_out.to("cpu").tolist())
 
             optimizer.zero_grad()
             loss.backward()
@@ -601,29 +601,49 @@ def training_loop(args, network, file_lab):
                       (epoch + 1, func_test_mean_loss[epoch]))
 
     if args.save_pred:
-        train_df = pd.DataFrame({"pred": flatten_list(func_epoch_train_pred),
-                                 "lab": flatten_list(func_epoch_train_lab)})
-        train_file = args.csv_outdir + "/TrainPred_" + file_lab + ".csv"
-        train_df.to_csv(train_file)
+        func_train_df = pd.DataFrame({"pred": flatten_list(func_epoch_train_pred),
+                                      "lab": flatten_list(func_epoch_train_lab)})
+        func_train_file = args.csv_outdir + "/TrainPred_func_" + file_lab + ".csv"
+        func_train_df.to_csv(func_train_file)
+
+        lab_train_df = pd.DataFrame({"pred": flatten_list(lab_epoch_train_pred),
+                                      "lab": flatten_list(lab_epoch_train_lab)})
+        lab_train_file = args.csv_outdir + "/TrainPred_lab_" + file_lab + ".csv"
+        lab_train_df.to_csv(lab_train_file)
 
         if args.include_val:
-            val_df = pd.DataFrame({"pred": flatten_list(func_epoch_val_pred),
-                                   "lab": flatten_list(func_epoch_val_lab)})
-            val_file = args.csv_outdir + "/ValPred_" + file_lab + ".csv"
-            val_df.to_csv(val_file)
+            func_val_df = pd.DataFrame({"pred": flatten_list(func_epoch_val_pred),
+                                        "lab": flatten_list(func_epoch_val_lab)})
+            func_val_file = args.csv_outdir + "/ValPred_func_" + file_lab + ".csv"
+            func_val_df.to_csv(func_val_file)
+
+            lab_val_df = pd.DataFrame({"pred": flatten_list(lab_epoch_val_pred),
+                                        "lab": flatten_list(lab_epoch_val_lab)})
+            lab_val_file = args.csv_outdir + "/ValPred_lab_" + file_lab + ".csv"
+            lab_val_df.to_csv(lab_val_file)
 
             if args.include_test:
-                test_df = pd.DataFrame({"pred": flatten_list(func_epoch_test_pred),
-                                        "lab": flatten_list(func_epoch_test_lab)})
-                test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
-                test_df.to_csv(test_file)
+                func_test_df = pd.DataFrame({"pred": flatten_list(func_epoch_test_pred),
+                                             "lab": flatten_list(func_epoch_test_lab)})
+                func_test_file = args.csv_outdir + "/TestPred_func_" + file_lab + ".csv"
+                func_test_df.to_csv(func_test_file)
+
+                lab_test_df = pd.DataFrame({"pred": flatten_list(lab_epoch_test_pred),
+                                             "lab": flatten_list(lab_epoch_test_lab)})
+                lab_test_file = args.csv_outdir + "/TestPred_lab_" + file_lab + ".csv"
+                lab_test_df.to_csv(lab_test_file)
 
         else:
             if args.include_test:
-                test_df = pd.DataFrame({"pred": flatten_list(func_epoch_test_pred),
-                                        "lab": flatten_list(func_epoch_test_lab)})
-                test_file = args.csv_outdir + "/TestPred_" + file_lab + ".csv"
-                test_df.to_csv(test_file)
+                func_test_df = pd.DataFrame({"pred": flatten_list(func_epoch_test_pred),
+                                             "lab": flatten_list(func_epoch_test_lab)})
+                func_test_file = args.csv_outdir + "/TestPred_func_" + file_lab + ".csv"
+                func_test_df.to_csv(func_test_file)
+
+                lab_test_df = pd.DataFrame({"pred": flatten_list(lab_epoch_test_pred),
+                                             "lab": flatten_list(lab_epoch_test_lab)})
+                lab_test_file = args.csv_outdir + "/TestPred_lab_" + file_lab + ".csv"
+                lab_test_df.to_csv(lab_test_file)
 
     if args.save_net:
         net_file = args.csv_outdir + "/Net_" + file_lab + ".pth"
@@ -696,10 +716,10 @@ def main():
     parser.add_argument("-dim", default=256, help="Image dimensions")
     parser.add_argument('-device', default='cuda',help="device to run NN on")
 
-    parser.add_argument("-lr", default=0.001, help="Image dimensions")
+    parser.add_argument("-lr", default=0.01, help="Image dimensions")
     parser.add_argument("-mom", default=0.9, help="Image dimensions")
     parser.add_argument("-bs", default=32, help="Image dimensions")
-    parser.add_argument("-max_epochs", default=35, help="Image dimensions")
+    parser.add_argument("-max_epochs", default=200, help="Image dimensions")
 
     opt = parser.parse_args() ## comment for debug
 
