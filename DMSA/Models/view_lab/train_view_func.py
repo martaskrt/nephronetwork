@@ -105,7 +105,7 @@ class USFuncDataset(Dataset):
 
         label = torch.tensor(self.us_lab_dict[seq_id])
 
-        return seq_imgs.squeeze(), label
+        return seq_imgs, label
 
 
 class KidLabDataset(Dataset):
