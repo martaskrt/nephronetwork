@@ -225,15 +225,19 @@ class LabFuncMod(nn.Module):
         self.RL = args.RL
 
         conv0 = nn.Sequential(nn.Conv2d(1, 128, 7, padding=2),
+                              nn.BatchNorm2d(128),
                               nn.MaxPool2d(2),
                               nn.ReLU())
         conv1 = nn.Sequential(nn.Conv2d(128, 64, 7, padding=2),
+                              nn.BatchNorm2d(64),
                               nn.MaxPool2d(2),
                               nn.ReLU())
         conv2 = nn.Sequential(nn.Conv2d(64, 32, 7, padding=2),
+                              nn.BatchNorm2d(32),
                               nn.MaxPool2d(2),
                               nn.ReLU())
         conv3 = nn.Sequential(nn.Conv2d(32, 16, 7, padding=2),
+                              nn.BatchNorm2d(32),
                               nn.MaxPool2d(2),
                               nn.ReLU())
 
@@ -252,15 +256,14 @@ class LabFuncMod(nn.Module):
                                 nn.ReLU(),
                                 nn.Dropout(0.5))
 
-        linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                nn.Sigmoid())
+        # linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+        #                         nn.Sigmoid())
 
-        # if args.dichot:
-        #     linear3 = nn.Sequential(nn.Linear(64, 2, bias=True),
-        #                             nn.Tanh())
-        # else:
-        #     linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-        #                             nn.Sigmoid())
+        if args.dichot:
+            linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
+        else:
+            linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+                                    nn.Sigmoid())
 
         self.out_fc = nn.Sequential(linear1, linear2, linear3)
 
