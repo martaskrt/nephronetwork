@@ -1,7 +1,7 @@
 #/bin/bash
 
 python3 /home/marta/nephronetwork-github/nephronetwork/DMSA/Models/view_lab/train_view_func.py \
-	-func_train_datasheet /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_fulltrain_test_sets/DMSA-train-datasheet-top3view-USfunc-noVlab.csv \
+	-func_train_datasheet /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/DMSA-fulltrain-datasheet-top3view-USfunc-noVlab.csv \
 	-func_val_datasheet /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/DMSA-val-datasheet-top3view-USfunc-noVlab.csv \
 	-func_test_datasheet /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/DMSA-test-datasheet-top3view-USfunc-noVlab.csv \
 	-lab_train_datasheet /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/data/load_training_test_sets/train-view_label_df_20200423-noOther.csv \
