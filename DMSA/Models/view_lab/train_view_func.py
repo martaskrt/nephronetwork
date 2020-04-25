@@ -271,7 +271,7 @@ class LabFuncMod(nn.Module):
             my_kid_convs_flat = my_kid_convs.view([-1, bs])
             # my_kid_convs_transp = torch.transpose(my_kid_convs_flat, 0, 1)
 
-            softmax = nn.Softmax(0)
+            softmax = nn.Softmax(1)
 
             if self.RL:
                 kid_labs_in = my_kid_labs.view([bs, 6])[:, 0:5]
@@ -496,8 +496,13 @@ def training_loop(args, network, file_lab):
             func_out = net(func_us.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
             if args.dichot:
-                loss = criterion(func_out.to(device=args.device).squeeze().float(),
-                                 torch.tensor(func_lab).to(args.device).squeeze().to(device=args.device).long())
+                print("Function (dich): ")
+                print(func_out)
+                print("Label: ")
+                print(func_lab)
+
+                loss = criterion(func_out.to(device=args.device).float(),
+                                 torch.tensor(func_lab).to(args.device).to(device=args.device).long())
             else:
                 loss = criterion(func_out.to(device=args.device).float(),
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
@@ -682,7 +687,7 @@ def main():
     parser.add_argument('-func_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
 
-    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423-10024CUT.csv',
+    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423-5012CUT.csv',
                         help="directory of DMSA images")
     parser.add_argument('-lab_val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/val-view_label_df_20200423.csv',
                         help="directory of DMSA images")
