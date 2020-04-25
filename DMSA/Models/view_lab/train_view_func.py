@@ -237,7 +237,7 @@ class LabFuncMod(nn.Module):
                               nn.MaxPool2d(2),
                               nn.ReLU())
         conv3 = nn.Sequential(nn.Conv2d(32, 16, 7, padding=2),
-                              nn.BatchNorm2d(32),
+                              nn.BatchNorm2d(16),
                               nn.MaxPool2d(2),
                               nn.ReLU())
 
