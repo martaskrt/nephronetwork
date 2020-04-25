@@ -28,6 +28,7 @@ def read_image_file(file_name):
     """
     return torch.from_numpy(np.asarray(Image.open(file_name).convert('L')))
 
+
 def flatten_list(in_list):
     flat_list = []
     for sublist in in_list:
@@ -238,18 +239,28 @@ class LabFuncMod(nn.Module):
 
         self.in_conv = nn.Sequential(conv0, conv1, conv2, conv3)
 
-        linear1 = nn.Sequential(nn.Linear(3136, 512, bias=True),
-                                nn.ReLU(),
-                                nn.Dropout(0.5))
+        if args.RL:
+            linear1 = nn.Sequential(nn.Linear(3136*5, 512, bias=True),
+                                    nn.ReLU(),
+                                    nn.Dropout(0.5))
+        else:
+            linear1 = nn.Sequential(nn.Linear(3136*3, 512, bias=True),
+                                    nn.ReLU(),
+                                    nn.Dropout(0.5))
+
         linear2 = nn.Sequential(nn.Linear(512, 64, bias=True),
                                 nn.ReLU(),
                                 nn.Dropout(0.5))
 
-        if args.dichot:
-            linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
-        else:
-            linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                    nn.Sigmoid())
+        linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+                                nn.Sigmoid())
+
+        # if args.dichot:
+        #     linear3 = nn.Sequential(nn.Linear(64, 2, bias=True),
+        #                             nn.Tanh())
+        # else:
+        #     linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+        #                             nn.Sigmoid())
 
         self.out_fc = nn.Sequential(linear1, linear2, linear3)
 
@@ -274,9 +285,9 @@ class LabFuncMod(nn.Module):
             softmax = nn.Softmax(1)
 
             if self.RL:
-                kid_labs_in = my_kid_labs.view([bs, 6])[:, 0:5]
+                kid_labs_in = my_kid_labs.view([bs, 5])#[:, 0:5]
             else:
-                kid_labs_in = my_kid_labs.view([bs, 4])[:, 0:3]
+                kid_labs_in = my_kid_labs.view([bs, 3])#[:, 0:3]
 
             kid_labs_wts = softmax(kid_labs_in)
             # print("kid_lab_wts shape: ")
@@ -286,9 +297,12 @@ class LabFuncMod(nn.Module):
             # print(my_kid_convs_transp.shape)
 
             if self.RL:
-                weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 5, -1])
+                # weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 5, -1])
+                weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, -1])
+
             else:
-                weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 3, -1])
+                # weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 3, -1])
+                weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, -1])
 
             func_out = self.out_fc(weight_embed)
 
@@ -351,11 +365,12 @@ def training_loop(args, network, file_lab):
 
     lab_criterion = nn.CrossEntropyLoss()
 
-    if args.dichot:
-        criterion = nn.CrossEntropyLoss()
-    else:
-        # criterion = nn.BCELoss()
-        criterion = nn.MSELoss()
+    # if args.dichot:
+    #     criterion = nn.CrossEntropyLoss()
+    # else:
+    #     # criterion = nn.BCELoss()
+    #     criterion = nn.MSELoss()
+    criterion = nn.MSELoss()
 
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.mom)
 
@@ -495,17 +510,20 @@ def training_loop(args, network, file_lab):
 
             func_out = net(func_us.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-            if args.dichot:
-                print("Function (dich): ")
-                print(func_out)
-                print("Label: ")
-                print(func_lab)
+            loss = criterion(func_out.to(device=args.device).float(),
+                             torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
-                loss = criterion(func_out.to(device=args.device).float(),
-                                 torch.tensor(func_lab).to(args.device).to(device=args.device).long())
-            else:
-                loss = criterion(func_out.to(device=args.device).float(),
-                                 torch.tensor(func_lab).to(args.device).to(device=args.device).float())
+            # if args.dichot:
+            #     print("Function (dich): ")
+            #     print(func_out)
+            #     print("Label: ")
+            #     print(func_lab)
+            #
+            #     # loss = criterion(func_out.to(device=args.device).float().view([1, 2]),
+            #     #                  torch.tensor(func_lab).to(args.device).to(device=args.device).long())
+            # else:
+            #     loss = criterion(func_out.to(device=args.device).float(),
+            #                      torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
             func_epoch_train_lab.append(func_lab.to("cpu").tolist())
             func_epoch_train_pred.append(func_out.to("cpu").tolist())
@@ -533,12 +551,14 @@ def training_loop(args, network, file_lab):
 
                 func_out_val = net(func_us_val.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                if args.dichot:
-                    loss_val = criterion(func_out_val.to(device=args.device).squeeze().float(),
-                                         torch.tensor(func_lab_val).to(args.device).squeeze().to(device=args.device).long())
-                else:
-                    loss_val = criterion(func_out_val.to(device=args.device).float(),
-                                         torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
+                loss_val = criterion(func_out_val.to(device=args.device).float(),
+                                     torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
+                # if args.dichot:
+                #     loss_val = criterion(func_out_val.to(device=args.device).float().view([1, 2]),
+                #                          torch.tensor(func_lab_val).to(args.device).to(device=args.device).long())
+                # else:
+                #     loss_val = criterion(func_out_val.to(device=args.device).float(),
+                #                          torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
 
                 func_val_epoch_loss.append(loss_val.item())
 
@@ -559,12 +579,14 @@ def training_loop(args, network, file_lab):
 
                     func_out_test = net(func_us_test.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                    if args.dichot:
-                        loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
-                                              torch.tensor(func_lab_test).to(args.device).squeeze().to(device=args.device).long())
-                    else:
-                        loss_test = criterion(func_out_test.to(device=args.device).float(),
-                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                          torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    # if args.dichot:
+                    #     loss_test = criterion(func_out_test.to(device=args.device).float().view([1, 2]),
+                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).long())
+                    # else:
+                    #     loss_test = criterion(func_out_test.to(device=args.device).float(),
+                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
@@ -586,12 +608,14 @@ def training_loop(args, network, file_lab):
                         bs = 1
                     func_out_test = net(func_us_test.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                    if args.dichot:
-                        loss_test = criterion(func_out_test.to(device=args.device).squeeze().float(),
-                                              torch.tensor(func_lab_test).to(args.device).squeeze().to(device=args.device).long())
-                    else:
-                        loss_test = criterion(func_out_test.to(device=args.device).float(),
-                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                          torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    # if args.dichot:
+                    #     loss_test = criterion(func_out_test.to(device=args.device).float().view([1, 2]),
+                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).long())
+                    # else:
+                    #     loss_test = criterion(func_out_test.to(device=args.device).float(),
+                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
@@ -656,12 +680,14 @@ def training_loop(args, network, file_lab):
 
     if args.include_val:
         if args.include_test:
-            return {"train_loss": func_train_mean_loss, "val_loss": func_val_mean_loss, "test_loss": func_test_mean_loss}
+            return {"train_loss_func": func_train_mean_loss, "val_loss_func": func_val_mean_loss, "test_loss_func": func_test_mean_loss,
+                    "train_loss_lab": lab_train_mean_loss, "val_loss_lab": lab_val_mean_loss, "test_loss_lab": lab_test_mean_loss}
     else:
         if args.include_test:
-            return {"train_loss": func_train_mean_loss, "test_loss": func_test_mean_loss}
+            return {"train_loss_func": func_train_mean_loss, "test_loss_func": func_test_mean_loss,
+                    "train_loss_lab": lab_train_mean_loss, "test_loss_lab": lab_test_mean_loss}
         else:
-            return {"train_loss": func_train_mean_loss}
+            return {"train_loss_func": func_train_mean_loss, "train_loss_lab": lab_train_mean_loss}
 
 ###
     ###
@@ -678,7 +704,7 @@ def main():
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
     parser.add_argument("-RL", action='store_true', default=True, help="Include r/l labels or only build model on 4 labels")
 
-    parser.add_argument("-run_lab", default="MSE_Modelv1", help="String to add to output files")
+    parser.add_argument("-run_lab", default="MSE_Model-noOther", help="String to add to output files")
 
     parser.add_argument('-func_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
@@ -687,11 +713,11 @@ def main():
     parser.add_argument('-func_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-test-datasheet-top3view-USfunc-noVlab.csv',
                         help="directory of DMSA images")
 
-    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423-5012CUT.csv',
+    parser.add_argument('-lab_train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/train-view_label_df_20200423-noOther.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-lab_val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/val-view_label_df_20200423.csv',
+    parser.add_argument('-lab_val_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/val-view_label_df_20200423-noOther.csv',
                         help="directory of DMSA images")
-    parser.add_argument('-lab_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/test-view_label_df_20200423.csv',
+    parser.add_argument('-lab_test_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/test-view_label_df_20200423-noOther.csv',
                         help="directory of DMSA images")
 
     parser.add_argument('-csv_outdir', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/',
