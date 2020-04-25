@@ -288,7 +288,7 @@ class LabFuncMod(nn.Module):
             if self.RL:
                 weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 5, -1])
             else:
-                weight_embed = torch.matmul(my_kid_convs_transp, kid_labs_wts).view([1, 3, -1])
+                weight_embed = torch.matmul(my_kid_convs_flat, kid_labs_wts).view([1, 3, -1])
 
             func_out = self.out_fc(weight_embed)
 
