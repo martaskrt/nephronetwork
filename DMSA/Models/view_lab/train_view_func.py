@@ -186,9 +186,9 @@ class KidneyLab(nn.Module):
                                      nn.Dropout(0.5))
 
         if args.RL:
-            self.linear3 = nn.Sequential(nn.Linear(64, 6, bias=True))
+            self.linear3 = nn.Sequential(nn.Linear(64, 5, bias=True))
         else:
-            self.linear3 = nn.Sequential(nn.Linear(64, 4, bias=True))
+            self.linear3 = nn.Sequential(nn.Linear(64, 3, bias=True))
 
 
     def forward(self, x):
