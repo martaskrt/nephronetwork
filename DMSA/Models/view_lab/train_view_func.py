@@ -185,11 +185,9 @@ class KidneyLab(nn.Module):
                                      nn.Dropout(0.5))
 
         if args.RL:
-            self.linear3 = nn.Sequential(nn.Linear(64, 6, bias=True),
-                                         nn.Sigmoid())
+            self.linear3 = nn.Sequential(nn.Linear(64, 6, bias=True))
         else:
-            self.linear3 = nn.Sequential(nn.Linear(64, 4, bias=True),
-                                         nn.Sigmoid())
+            self.linear3 = nn.Sequential(nn.Linear(64, 4, bias=True))
 
 
     def forward(self, x):
@@ -727,6 +725,7 @@ def main():
 
     opt.lr = float(opt.lr)
     opt.mom = float(opt.mom)
+    opt.max_epochs = int(opt.max_epochs)
 
     my_net = LabFuncMod
 
