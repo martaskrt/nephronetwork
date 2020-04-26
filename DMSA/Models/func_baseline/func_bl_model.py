@@ -536,45 +536,18 @@ def training_loop(args, network, file_lab):
 
         for idx, (us, lab) in enumerate(train_dloader):
 
-            # print("input dim")
-            # print(us.shape)
-            #
-            # print("dmsa dim")
-            # print(dmsa.shape)
-
             if args.dmsa_out:
                 out = net(us.to(args.device)) ## update this to have 2 outcomes function prediction + image prediction
 
             else:
                 out = net(us.to(args.device))
-                # print("densenet out shape: ")
-                # print(out)
-
-            # print(out.shape)
-            # print(out[:, :, 0].shape)
-            # print(lab.shape)
-            # print(lab.squeeze())
-            # print(out.squeeze())
 
             bs = us.shape[0]
 
             if args.dichot:
-                # torch.max(labels, 1)[1]
-                # print("lab: ")
-                # print(lab)
-                # print("out: ")
-                # print(out)
-                #
                 loss = criterion(out.view([bs, 2]).to(device=args.device).float(), lab.to(args.device).squeeze().to(device=args.device).long())
-
             else:
                 loss = criterion(out.view([bs, 1]).to(device=args.device).float(), lab.to(args.device).view([bs, 1]).to(device=args.device).float())
-
-            # print("predicted vals: ")
-            # print(out.view([bs, 1]).to(device=args.device))
-            #
-            # print("true vals: ")
-            # print(lab.view([bs, 1]).to(device=args.device))
 
             optimizer.zero_grad()
             loss.backward()
@@ -592,7 +565,7 @@ def training_loop(args, network, file_lab):
             epoch_train_lab.append(func_train_label)
 
             if args.dichot:
-                pred_probs = np.max(np.array(out.to("cpu").tolist()))
+                pred_probs = np.max(np.array(out.to("cpu").tolist()), axis=1)
                 epoch_train_pred.append(pred_probs.tolist())
             else:
                 epoch_train_pred.append(out.to("cpu").tolist())
