@@ -527,6 +527,11 @@ def training_loop(args, network, file_lab):
         epoch_test_lab = []
         epoch_test_pred = []
 
+        if args.dichot:
+            func_train_epoch_auc = []
+            func_val_epoch_auc = []
+            func_test_epoch_auc = []
+
         split = 0
 
         for idx, (us, lab) in enumerate(train_dloader):
@@ -580,8 +585,18 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-            epoch_train_lab.append(lab.to("cpu").squeeze().tolist())
-            epoch_train_pred.append(out.to("cpu").squeeze().tolist())
+            # epoch_train_lab.append(lab.to("cpu").squeeze().tolist())
+            # epoch_train_pred.append(out.to("cpu").squeeze().tolist())
+
+            func_train_label = lab.to("cpu").item()
+            epoch_train_lab.append(func_train_label)
+
+            if args.dichot:
+                pred_probs = np.max(np.array(out.to("cpu").tolist()))
+                epoch_train_pred.append(pred_probs.item())
+            else:
+                epoch_train_pred.append(out.to("cpu").tolist())
+
 
         train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
