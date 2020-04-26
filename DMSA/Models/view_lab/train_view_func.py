@@ -542,7 +542,7 @@ def training_loop(args, network, file_lab):
             func_epoch_train_lab.append(func_train_labels)
 
             if args.dichot:
-                pred_probs = np.max(np.array(func_out.to("cpu").tolist()), axis=1)
+                pred_probs = np.max(np.array(func_out.to("cpu").tolist()))
                 func_epoch_train_pred.append(pred_probs.item())
             else:
                 func_epoch_train_pred.append(func_out.to("cpu").tolist())
@@ -556,7 +556,9 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-        train_auc = roc_auc_score(np.array(func_train_labels), np.array(func_train_labels))
+        print(np.array(func_train_labels))
+        print(np.array(func_epoch_train_pred))
+        train_auc = roc_auc_score(np.array(func_train_labels), np.array(func_epoch_train_pred))
         print("Train AUC : " + str(train_auc))
         func_train_epoch_auc.append(train_auc)
 
