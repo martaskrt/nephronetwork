@@ -12,7 +12,7 @@ from PIL import Image
 import pandas as pd
 import argparse
 import datetime
-
+from sklearn.metrics import roc_auc_score
 
     ###
     ###        HELPER FUNCTIONS
@@ -597,6 +597,9 @@ def training_loop(args, network, file_lab):
             else:
                 epoch_train_pred.append(out.to("cpu").tolist())
 
+        train_auc = roc_auc_score(np.array(func_epoch_train_lab), np.array(func_epoch_train_pred))
+        print("Train AUC : " + str(train_auc))
+        func_train_epoch_auc.append(train_auc)
 
         train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
@@ -618,6 +621,19 @@ def training_loop(args, network, file_lab):
                                          lab_val.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                 val_epoch_loss.append(loss_val.item())
+
+                val_label = lab_val.to("cpu").item()
+                epoch_val_lab.append(val_label)
+
+                if args.dichot:
+                    pred_probs_val = np.max(np.array(out_val.to("cpu").tolist()), axis=1)
+                    epoch_val_pred.append(pred_probs_val.item())
+                else:
+                    epoch_val_pred.append(out_val.to("cpu").item())
+
+            val_auc = roc_auc_score(np.array(epoch_val_lab), np.array(epoch_val_pred))
+            print("Val AUC : " + str(val_auc))
+            func_val_epoch_auc.append(val_auc)
 
             val_mean_loss.append(np.mean(np.array(val_epoch_loss)))
             print('epoch: %d, val loss: %.3f' %

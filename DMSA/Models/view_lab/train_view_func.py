@@ -556,8 +556,8 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-        # print(np.array(func_train_label))
-        # print(np.array(func_epoch_train_pred))
+        print(np.array(func_epoch_train_label))
+        print(np.array(func_epoch_train_pred))
         train_auc = roc_auc_score(np.array(func_epoch_train_lab), np.array(func_epoch_train_pred))
         print("Train AUC : " + str(train_auc))
         func_train_epoch_auc.append(train_auc)
