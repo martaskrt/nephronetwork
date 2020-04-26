@@ -639,11 +639,11 @@ def training_loop(args, network, file_lab):
 
                     if args.dichot:
                         loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
-                                         lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                              lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     else:
                         loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
-                                         lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+                                              lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                     test_epoch_loss.append(loss_test.item())
 
@@ -653,15 +653,16 @@ def training_loop(args, network, file_lab):
                     func_test_label = lab_test.detach().numpy()
                     epoch_test_lab.append(func_test_label)
 
-                    print("Len train lab: " + str(len(func_train_label)))
-                    print("Len epoch train lab: " + str(len(epoch_train_lab)))
+                    print("Len test lab: " + str(len(func_test_label)))
+                    print("Len epoch test lab: " + str(len(epoch_test_lab)))
                     if args.dichot:
+                        # out_test.view([bs, 2]).to(device=args.device).float()
                         pred_probs = np.max(out_test.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
-                        print(out.view([bs, 2]).to("cpu").detach().numpy())
+                        print(out_test.view([bs, 2]).to("cpu").detach().numpy())
                         print(pred_probs)
                         epoch_test_pred.append(pred_probs)
-                        print("Len train pred: " + str(len(pred_probs)))
-                        print("Len epoch train pred: " + str(len(epoch_train_pred)))
+                        print("Len test pred: " + str(len(pred_probs)))
+                        print("Len epoch test pred: " + str(len(epoch_test_pred)))
                     else:
                         epoch_test_pred.append(out_test.to("cpu").tolist())
 
@@ -686,11 +687,11 @@ def training_loop(args, network, file_lab):
 
                     if args.dichot:
                         loss_test = criterion(out_test.view([bs, 2]).to(device=args.device).float(),
-                                         lab_test.to(args.device).squeeze().to(device=args.device).long())
+                                              lab_test.to(args.device).squeeze().to(device=args.device).long())
 
                     else:
                         loss_test = criterion(out_test.view([bs, 1]).to(device=args.device).float(),
-                                         lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
+                                              lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                     test_epoch_loss.append(loss_test.item())
 
