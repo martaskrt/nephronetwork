@@ -539,7 +539,7 @@ def training_loop(args, network, file_lab):
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
             func_train_label = func_lab.to("cpu").item()
-            func_epoch_train_lab.append(flatten_list(func_train_label))
+            func_epoch_train_lab.append(func_train_label)
 
             if args.dichot:
                 pred_probs = np.max(np.array(func_out.to("cpu").tolist()))
