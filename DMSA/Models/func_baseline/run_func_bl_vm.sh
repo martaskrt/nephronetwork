@@ -7,6 +7,6 @@ python3 /home/marta/nephronetwork-github/nephronetwork/DMSA/Models/func_baseline
 	-csv_outdir /home/marta/lauren \
 	-us_dir /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/all-jpgs-dmsa/ \
 	-dmsa_dir /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/all-dmsa-cabs/dmsa-jpgs/
-	
+	-dichot
 	
 	
