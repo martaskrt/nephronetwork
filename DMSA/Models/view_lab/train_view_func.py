@@ -538,8 +538,8 @@ def training_loop(args, network, file_lab):
                 loss = criterion(func_out.to(device=args.device).float(),
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
-            func_train_labels = func_lab.to("cpu").item()
-            func_epoch_train_lab.append(func_train_labels)
+            func_train_label = func_lab.to("cpu").item()
+            func_epoch_train_lab.append(func_train_label)
 
             if args.dichot:
                 pred_probs = np.max(np.array(func_out.to("cpu").tolist()))
@@ -556,9 +556,9 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-        print(np.array(func_train_labels))
+        print(np.array(func_train_label))
         print(np.array(func_epoch_train_pred))
-        train_auc = roc_auc_score(np.array(func_train_labels), np.array(func_epoch_train_pred))
+        train_auc = roc_auc_score(np.array(func_train_epoch_loss), np.array(func_epoch_train_pred))
         print("Train AUC : " + str(train_auc))
         func_train_epoch_auc.append(train_auc)
 
