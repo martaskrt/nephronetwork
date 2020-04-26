@@ -647,8 +647,8 @@ def training_loop(args, network, file_lab):
 
                     test_epoch_loss.append(loss_test.item())
 
-                    test_label = lab_test.to("cpu").tolist()
-                    epoch_test_lab.append(test_label)
+                    # test_label = lab_test.to("cpu").tolist()
+                    # epoch_test_lab.append(test_label)
 
                     func_test_label = lab_test.detach().numpy()
                     epoch_test_lab.append(func_test_label)
