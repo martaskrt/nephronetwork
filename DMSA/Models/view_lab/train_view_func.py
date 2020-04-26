@@ -370,12 +370,12 @@ def training_loop(args, network, file_lab):
 
     lab_criterion = nn.CrossEntropyLoss()
 
-    # if args.dichot:
-    #     criterion = nn.CrossEntropyLoss()
-    # else:
-    #     # criterion = nn.BCELoss()
-    #     criterion = nn.MSELoss()
-    criterion = nn.MSELoss()
+    if args.dichot:
+        criterion = nn.CrossEntropyLoss()
+    else:
+        # criterion = nn.BCELoss()
+        criterion = nn.MSELoss()
+    # criterion = nn.MSELoss()
 
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.mom)
 
@@ -515,20 +515,20 @@ def training_loop(args, network, file_lab):
 
             func_out = net(func_us.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-            loss = criterion(func_out.to(device=args.device).float(),
-                             torch.tensor(func_lab).to(args.device).to(device=args.device).float())
+            # loss = criterion(func_out.to(device=args.device).float(),
+            #                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
-            # if args.dichot:
-            #     print("Function (dich): ")
-            #     print(func_out)
-            #     print("Label: ")
-            #     print(func_lab)
-            #
-            #     # loss = criterion(func_out.to(device=args.device).float().view([1, 2]),
-            #     #                  torch.tensor(func_lab).to(args.device).to(device=args.device).long())
-            # else:
-            #     loss = criterion(func_out.to(device=args.device).float(),
-            #                      torch.tensor(func_lab).to(args.device).to(device=args.device).float())
+            if args.dichot:
+                print("Function (dich): ")
+                print(func_out)
+                print("Label: ")
+                print(func_lab)
+
+                loss = criterion(func_out.to(device=args.device).float().view([1, 2]),
+                                 torch.tensor(func_lab).to(args.device).to(device=args.device).long())
+            else:
+                loss = criterion(func_out.to(device=args.device).float(),
+                                 torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
             func_epoch_train_lab.append(func_lab.to("cpu").tolist())
             func_epoch_train_pred.append(func_out.to("cpu").tolist())
@@ -556,14 +556,14 @@ def training_loop(args, network, file_lab):
 
                 func_out_val = net(func_us_val.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                loss_val = criterion(func_out_val.to(device=args.device).float(),
-                                     torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
-                # if args.dichot:
-                #     loss_val = criterion(func_out_val.to(device=args.device).float().view([1, 2]),
-                #                          torch.tensor(func_lab_val).to(args.device).to(device=args.device).long())
-                # else:
-                #     loss_val = criterion(func_out_val.to(device=args.device).float(),
-                #                          torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
+                # loss_val = criterion(func_out_val.to(device=args.device).float(),
+                #                      torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
+                if args.dichot:
+                    loss_val = criterion(func_out_val.to(device=args.device).float().view([1, 2]),
+                                         torch.tensor(func_lab_val).to(args.device).to(device=args.device).long())
+                else:
+                    loss_val = criterion(func_out_val.to(device=args.device).float(),
+                                         torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
 
                 func_val_epoch_loss.append(loss_val.item())
 
@@ -584,14 +584,14 @@ def training_loop(args, network, file_lab):
 
                     func_out_test = net(func_us_test.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                    loss_test = criterion(func_out_test.to(device=args.device).float(),
-                                          torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
-                    # if args.dichot:
-                    #     loss_test = criterion(func_out_test.to(device=args.device).float().view([1, 2]),
-                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).long())
-                    # else:
-                    #     loss_test = criterion(func_out_test.to(device=args.device).float(),
-                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    # loss_test = criterion(func_out_test.to(device=args.device).float(),
+                    #                       torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    if args.dichot:
+                        loss_test = criterion(func_out_test.to(device=args.device).float().view([1, 2]),
+                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).long())
+                    else:
+                        loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
@@ -613,14 +613,14 @@ def training_loop(args, network, file_lab):
                         bs = 1
                     func_out_test = net(func_us_test.to(args.device).float().view([bs, 1, args.dim, args.dim]), lab_out=False)
 
-                    loss_test = criterion(func_out_test.to(device=args.device).float(),
-                                          torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
-                    # if args.dichot:
-                    #     loss_test = criterion(func_out_test.to(device=args.device).float().view([1, 2]),
-                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).long())
-                    # else:
-                    #     loss_test = criterion(func_out_test.to(device=args.device).float(),
-                    #                           torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    # loss_test = criterion(func_out_test.to(device=args.device).float(),
+                    #                       torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
+                    if args.dichot:
+                        loss_test = criterion(func_out_test.to(device=args.device).float().view([1, 2]),
+                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).long())
+                    else:
+                        loss_test = criterion(func_out_test.to(device=args.device).float(),
+                                              torch.tensor(func_lab_test).to(args.device).to(device=args.device).float())
 
                     func_test_epoch_loss.append(loss_test.item())
 
@@ -707,7 +707,7 @@ def main():
                         help="Directory of ultrasound images")
 
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
-    parser.add_argument("-RL", action='store_true', default=True, help="Include r/l labels or only build model on 4 labels")
+    parser.add_argument("-RL", action='store_true', default=False, help="Include r/l labels or only build model on 4 labels")
 
     parser.add_argument("-run_lab", default="MSE_Model-noOther", help="String to add to output files")
 
@@ -753,7 +753,7 @@ def main():
     parser.add_argument("-lr", default=0.01, help="Learning rate")
     parser.add_argument("-mom", default=0.9, help="Momentum")
     parser.add_argument("-bs", default=32, help="Batch size")
-    parser.add_argument("-max_epochs", default=200, help="Maximum number of epochs")
+    parser.add_argument("-max_epochs", default=10, help="Maximum number of epochs")
 
     opt = parser.parse_args() ## comment for debug
 
