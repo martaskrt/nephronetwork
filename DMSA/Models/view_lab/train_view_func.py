@@ -12,6 +12,7 @@ from PIL import Image
 import pandas as pd
 import argparse
 import datetime
+from sklearn.metrics import roc_auc_score
 
 
     ###
@@ -321,6 +322,7 @@ class LabFuncMod(nn.Module):
     ###        MODEL TRAINING FUNCTIONS
     ###
 
+
 def initialize_training(args, neural_net):
 
     func_train_datasheet = pd.read_csv(args.func_train_datasheet)
@@ -387,6 +389,8 @@ def training_loop(args, network, file_lab):
     func_val_mean_loss = []
     func_test_mean_loss = []
 
+    softmax_func = nn.Softmax(1)
+
     for epoch in range(args.max_epochs):
         ## label output
         lab_train_epoch_loss = []
@@ -416,6 +420,11 @@ def training_loop(args, network, file_lab):
         func_epoch_test_lab = []
         func_epoch_test_pred = []
 
+        if args.dichot:
+            func_train_epoch_auc = []
+            func_val_epoch_auc = []
+            func_test_epoch_auc = []
+
         split = 0
 
         ##
@@ -438,7 +447,7 @@ def training_loop(args, network, file_lab):
             lab_train_epoch_loss.append(loss.item())
             split = split + 1
 
-            lab_epoch_train_pred.append(lab_out.to("cpu").tolist())
+            lab_epoch_train_pred.append(softmax_func(lab_out).to("cpu").tolist())
             lab_epoch_train_lab.append(view_lab.to("cpu").tolist())
 
         lab_train_mean_loss.append(np.mean(np.array(lab_train_epoch_loss)))
@@ -462,7 +471,6 @@ def training_loop(args, network, file_lab):
             lab_val_mean_loss.append(np.mean(np.array(lab_val_epoch_loss)))
             print('epoch: %d, label val loss: %.3f' %
                   (epoch + 1, lab_val_mean_loss[epoch]))
-
 
             if args.include_test:
                 for idx, (lab_us_test, view_lab_test) in enumerate(lab_test_dloader):
@@ -519,10 +527,10 @@ def training_loop(args, network, file_lab):
             #                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
             if args.dichot:
-                print("Function (dich): ")
-                print(func_out)
-                print("Label: ")
-                print(func_lab)
+                # print("Function (dich): ")
+                # print(func_out)
+                # print("Label: ")
+                # print(func_lab)
 
                 loss = criterion(func_out.to(device=args.device).float().view([1, 2]),
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).long())
@@ -530,8 +538,15 @@ def training_loop(args, network, file_lab):
                 loss = criterion(func_out.to(device=args.device).float(),
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
-            func_epoch_train_lab.append(func_lab.to("cpu").tolist())
-            func_epoch_train_pred.append(func_out.to("cpu").tolist())
+            func_train_labels = flatten_list(func_lab.to("cpu").tolist())
+            func_epoch_train_lab.append(func_train_labels)
+
+            if args.dichot:
+                pred_probs = np.max(np.array(func_out.to("cpu").tolist()), axis=1)
+                func_epoch_train_pred.append(pred_probs.tolist())
+                func_train_epoch_auc.append(np.array(func_train_labels), np.array(func_train_labels))
+            else:
+                func_epoch_train_pred.append(func_out.to("cpu").tolist())
 
             optimizer.zero_grad()
             loss.backward()
@@ -558,6 +573,17 @@ def training_loop(args, network, file_lab):
 
                 # loss_val = criterion(func_out_val.to(device=args.device).float(),
                 #                      torch.tensor(func_lab_val).to(args.device).to(device=args.device).float())
+
+                func_val_labels = flatten_list(func_lab_val.to("cpu").tolist())
+                func_epoch_val_lab.append(func_val_labels)
+
+                if args.dichot:
+                    pred_probs_val = np.max(np.array(func_out_val.to("cpu").tolist()), axis=1)
+                    func_epoch_val_pred.append(pred_probs_val.tolist())
+                    func_val_epoch_auc.append(np.array(func_val_labels), np.array(func_val_labels))
+                else:
+                    func_epoch_val_pred.append(func_out_val.to("cpu").tolist())
+
                 if args.dichot:
                     loss_val = criterion(func_out_val.to(device=args.device).float().view([1, 2]),
                                          torch.tensor(func_lab_val).to(args.device).to(device=args.device).long())
@@ -571,8 +597,8 @@ def training_loop(args, network, file_lab):
             print('epoch: %d, function val loss: %.3f' %
                   (epoch + 1, func_val_mean_loss[epoch]))
 
-            func_epoch_val_pred.append(func_out_val.to("cpu").tolist())
-            func_epoch_val_lab.append(func_lab_val.to("cpu").tolist())
+            # func_epoch_val_pred.append(func_out_val.to("cpu").tolist())
+            # func_epoch_val_lab.append(func_lab_val.to("cpu").tolist())
 
             if args.include_test:
                 for idx, (func_us_test, func_lab_test) in enumerate(func_test_dloader):
@@ -595,8 +621,21 @@ def training_loop(args, network, file_lab):
 
                     func_test_epoch_loss.append(loss_test.item())
 
-                    func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
-                    func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
+                    # func_val_labels = flatten_list(func_lab_val.to("cpu").tolist())
+                    # func_epoch_val_lab.append(func_val_labels)
+
+                    func_test_labels = flatten_list(func_lab_test.to("cpu").tolist())
+                    func_epoch_test_lab.append(func_test_labels)
+
+                    if args.dichot:
+                        pred_probs_test = np.max(np.array(func_out_test.to("cpu").tolist()), axis=1)
+                        func_epoch_test_pred.append(pred_probs_test.tolist())
+                        func_test_epoch_auc.append(np.array(func_test_labels), np.array(func_test_labels))
+                    else:
+                        func_epoch_train_pred.append(func_out.to("cpu").tolist())
+
+                    # func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
+                    # func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
 
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
@@ -624,8 +663,18 @@ def training_loop(args, network, file_lab):
 
                     func_test_epoch_loss.append(loss_test.item())
 
-                    func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
-                    func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
+                    func_test_labels = flatten_list(func_lab_test.to("cpu").tolist())
+                    func_epoch_test_lab.append(func_test_labels)
+
+                    if args.dichot:
+                        pred_probs_test = np.max(np.array(func_out_test.to("cpu").tolist()), axis=1)
+                        func_epoch_test_pred.append(pred_probs_test.tolist())
+                        func_test_epoch_auc.append(np.array(func_test_labels), np.array(func_test_labels))
+                    else:
+                        func_epoch_train_pred.append(func_out.to("cpu").tolist())
+
+                    # func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
+                    # func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
 
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
