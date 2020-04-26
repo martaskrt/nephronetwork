@@ -247,9 +247,9 @@ class FuncMod(nn.Module):
         #                              nn.Sigmoid())
 
         if self.dichot:
-            self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
+            self.linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
         else:
-            self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
+            self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True))
 
     def forward(self, x):
 
@@ -309,13 +309,13 @@ class FuncModSiamese(nn.Module):
                                     nn.ReLU(),
                                     nn.Dropout(0.5))
 
-        self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                     nn.Sigmoid())
+        # self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+        #                              nn.Sigmoid())
 
-        # if self.dichot:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
-        # else:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
+        if self.dichot:
+            self.linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
+        else:
+            self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True))
 
     def forward(self, x):
         bs, chan, dim1, dim2 = x.shape
@@ -814,7 +814,7 @@ def main():
     opt = parser.parse_args() ## comment for debug
     print(opt)
 	
-    my_net = DenseNet
+    my_net = FuncMod
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
     file_labs = opt.run_lab + "_AUC_LR" + str(opt.lr) + "_MOM" + str(opt.mom) + "_MAXEP" + str(opt.max_epochs) + "_BS" + str(opt.bs) + "_" + analysis_time
