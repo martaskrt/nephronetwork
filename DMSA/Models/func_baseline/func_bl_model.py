@@ -588,12 +588,12 @@ def training_loop(args, network, file_lab):
             # epoch_train_lab.append(lab.to("cpu").squeeze().tolist())
             # epoch_train_pred.append(out.to("cpu").squeeze().tolist())
 
-            func_train_label = lab.to("cpu").item()
+            func_train_label = lab.to("cpu").tolist()
             epoch_train_lab.append(func_train_label)
 
             if args.dichot:
                 pred_probs = np.max(np.array(out.to("cpu").tolist()))
-                epoch_train_pred.append(pred_probs.item())
+                epoch_train_pred.append(pred_probs)
             else:
                 epoch_train_pred.append(out.to("cpu").tolist())
 
@@ -622,14 +622,14 @@ def training_loop(args, network, file_lab):
 
                 val_epoch_loss.append(loss_val.item())
 
-                val_label = lab_val.to("cpu").item()
+                val_label = lab_val.to("cpu").tolist()
                 epoch_val_lab.append(val_label)
 
                 if args.dichot:
                     pred_probs_val = np.max(np.array(out_val.to("cpu").tolist()), axis=1)
-                    epoch_val_pred.append(pred_probs_val.item())
+                    epoch_val_pred.append(pred_probs_val)
                 else:
-                    epoch_val_pred.append(out_val.to("cpu").item())
+                    epoch_val_pred.append(out_val.to("cpu").tolist())
 
             if args.dichot:
                 val_auc = roc_auc_score(np.array(epoch_val_lab), np.array(epoch_val_pred))
@@ -660,14 +660,14 @@ def training_loop(args, network, file_lab):
 
                     test_epoch_loss.append(loss_test.item())
 
-                    test_label = lab_test.to("cpu").item()
+                    test_label = lab_test.to("cpu").tolist()
                     epoch_test_lab.append(test_label)
 
                     if args.dichot:
                         pred_probs_test = np.max(np.array(out_test.to("cpu").tolist()), axis=1)
-                        epoch_test_pred.append(pred_probs_test.item())
+                        epoch_test_pred.append(pred_probs_test)
                     else:
-                        epoch_test_pred.append(out_test.to("cpu").item())
+                        epoch_test_pred.append(out_test.to("cpu").tolist())
 
                 if args.dichot:
                     test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
@@ -697,14 +697,14 @@ def training_loop(args, network, file_lab):
 
                     test_epoch_loss.append(loss_test.item())
 
-                    test_label = lab_test.to("cpu").item()
+                    test_label = lab_test.to("cpu").tolist()
                     epoch_test_lab.append(test_label)
 
                     if args.dichot:
                         pred_probs_test = np.max(np.array(out_test.to("cpu").tolist()), axis=1)
-                        epoch_test_pred.append(pred_probs_test.item())
+                        epoch_test_pred.append(pred_probs_test.tolist())
                     else:
-                        epoch_test_pred.append(out_test.to("cpu").item())
+                        epoch_test_pred.append(out_test.to("cpu").tolist())
 
                 if args.dichot:
                     test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
