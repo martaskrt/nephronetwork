@@ -565,12 +565,14 @@ def training_loop(args, network, file_lab):
             epoch_train_lab.append(func_train_label)
 
             print("Len train lab: " + str(len(func_train_label)))
+            print("Len epoch train lab: " + str(len(epoch_train_lab)))
             if args.dichot:
                 pred_probs = np.max(out.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
                 # print(out.view([bs, 2]).to("cpu").detach().numpy())
                 # print(pred_probs)
                 epoch_train_pred.append(pred_probs)
                 print("Len train pred: " + str(len(pred_probs)))
+                print("Len epoch train pred: " + str(len(epoch_train_pred)))
             else:
                 epoch_train_pred.append(out.to("cpu").tolist())
 
