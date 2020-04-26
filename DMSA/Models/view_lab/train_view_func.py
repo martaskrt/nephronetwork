@@ -545,7 +545,7 @@ def training_loop(args, network, file_lab):
                 pred_probs = np.max(np.array(func_out.to("cpu").tolist()))
                 func_epoch_train_pred.append(pred_probs.item())
             else:
-                func_epoch_train_pred.append(func_out.to("cpu").tolist())
+                func_epoch_train_pred.append(func_out.to("cpu").item())
 
             optimizer.zero_grad()
             loss.backward()
@@ -556,7 +556,7 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-        print(np.array(func_epoch_train_label))
+        print(np.array(func_epoch_train_lab))
         print(np.array(func_epoch_train_pred))
         train_auc = roc_auc_score(np.array(func_epoch_train_lab), np.array(func_epoch_train_pred))
         print("Train AUC : " + str(train_auc))
