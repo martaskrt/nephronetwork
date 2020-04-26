@@ -538,13 +538,12 @@ def training_loop(args, network, file_lab):
                 loss = criterion(func_out.to(device=args.device).float(),
                                  torch.tensor(func_lab).to(args.device).to(device=args.device).float())
 
-            func_train_labels = flatten_list(func_lab.to("cpu").tolist())
+            func_train_labels = func_lab.to("cpu").item()
             func_epoch_train_lab.append(func_train_labels)
 
             if args.dichot:
                 pred_probs = np.max(np.array(func_out.to("cpu").tolist()), axis=1)
-                func_epoch_train_pred.append(pred_probs.tolist())
-                func_train_epoch_auc.append(np.array(func_train_labels), np.array(func_train_labels))
+                func_epoch_train_pred.append(pred_probs.item())
             else:
                 func_epoch_train_pred.append(func_out.to("cpu").tolist())
 
@@ -556,6 +555,10 @@ def training_loop(args, network, file_lab):
             split = split + 1
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
+
+        train_auc = roc_auc_score(np.array(func_train_labels), np.array(func_train_labels))
+        print("Train AUC : " + str(train_auc))
+        func_train_epoch_auc.append(train_auc)
 
         func_train_mean_loss.append(np.mean(np.array(func_train_epoch_loss)))
         print('epoch: %d, function train loss: %.3f' %
