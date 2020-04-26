@@ -565,7 +565,7 @@ def training_loop(args, network, file_lab):
             epoch_train_lab.append(func_train_label)
 
             if args.dichot:
-                pred_probs = np.max(np.array(out.to("cpu").tolist()), axis=1)
+                pred_probs = np.max(out.view([bs, 2]).to("cpu").numpy(), axis=1)
                 epoch_train_pred.append(pred_probs.tolist())
             else:
                 epoch_train_pred.append(out.to("cpu").tolist())
