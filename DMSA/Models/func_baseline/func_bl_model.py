@@ -561,7 +561,7 @@ def training_loop(args, network, file_lab):
             # epoch_train_lab.append(lab.to("cpu").squeeze().tolist())
             # epoch_train_pred.append(out.to("cpu").squeeze().tolist())
 
-            func_train_label = lab.detach().numpy(np.int8)
+            func_train_label = lab.detach().numpy()
             epoch_train_lab.append(func_train_label)
 
             if args.dichot:
