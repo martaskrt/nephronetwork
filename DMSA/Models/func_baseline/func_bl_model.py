@@ -650,14 +650,24 @@ def training_loop(args, network, file_lab):
                     test_label = lab_test.to("cpu").tolist()
                     epoch_test_lab.append(test_label)
 
+                    func_test_label = lab_test.detach().numpy()
+                    epoch_test_lab.append(func_test_label)
+
+                    # print("Len train lab: " + str(len(func_train_label)))
+                    # print("Len epoch train lab: " + str(len(epoch_train_lab)))
                     if args.dichot:
-                        pred_probs_test = np.max(np.array(out_test.to("cpu").tolist()), axis=1)
-                        epoch_test_pred.append(pred_probs_test)
+                        pred_probs = np.max(out_test.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
+                        # print(out.view([bs, 2]).to("cpu").detach().numpy())
+                        # print(pred_probs)
+                        epoch_test_pred.append(pred_probs)
+                        # print("Len train pred: " + str(len(pred_probs)))
+                        # print("Len epoch train pred: " + str(len(epoch_train_pred)))
                     else:
                         epoch_test_pred.append(out_test.to("cpu").tolist())
 
                 if args.dichot:
-                    test_auc = roc_auc_score(np.array(epoch_test_lab), np.array(epoch_test_pred))
+                    test_auc = roc_auc_score(np.array(flatten_list(epoch_test_lab), dtype=np.int8),
+                                             flatten_list(np.array(epoch_test_pred)))
                     print("Test AUC : " + str(test_auc))
                     func_test_epoch_auc.append(test_auc)
 
@@ -684,19 +694,26 @@ def training_loop(args, network, file_lab):
 
                     test_epoch_loss.append(loss_test.item())
 
-                    test_label = lab_test.to("cpu").tolist()
-                    epoch_test_lab.append(test_label)
+                    func_test_label = lab_test.detach().numpy()
+                    epoch_test_lab.append(func_test_label)
 
+                    # print("Len train lab: " + str(len(func_train_label)))
+                    # print("Len epoch train lab: " + str(len(epoch_train_lab)))
                     if args.dichot:
-                        pred_probs_test = np.max(np.array(out_test.to("cpu").tolist()), axis=1)
-                        epoch_test_pred.append(pred_probs_test.tolist())
+                        pred_probs = np.max(out_test.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
+                        # print(out.view([bs, 2]).to("cpu").detach().numpy())
+                        # print(pred_probs)
+                        epoch_test_pred.append(pred_probs)
+                        # print("Len train pred: " + str(len(pred_probs)))
+                        # print("Len epoch train pred: " + str(len(epoch_train_pred)))
                     else:
                         epoch_test_pred.append(out_test.to("cpu").tolist())
 
-                if args.dichot:
-                    test_auc = roc_auc_score(np.array(epoch_test_lab), np.array(epoch_test_pred))
-                    print("Test AUC : " + str(test_auc))
-                    func_test_epoch_auc.append(test_auc)
+            if args.dichot:
+                test_auc = roc_auc_score(np.array(flatten_list(epoch_test_lab), dtype=np.int8),
+                                         flatten_list(np.array(epoch_test_pred)))
+                print("Test AUC : " + str(test_auc))
+                func_test_epoch_auc.append(test_auc)
 
                 test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
 
