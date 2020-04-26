@@ -545,7 +545,7 @@ def training_loop(args, network, file_lab):
                 pred_probs = np.max(np.array(func_out.to("cpu").tolist()))
                 func_epoch_train_pred.append(pred_probs.item())
             else:
-                func_epoch_train_pred.append(func_out.to("cpu").tolist())
+                func_epoch_train_pred.append(func_out.to("cpu").item())
 
             optimizer.zero_grad()
             loss.backward()
