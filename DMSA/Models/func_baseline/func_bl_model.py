@@ -184,7 +184,7 @@ class DMSADataset_PreloadImgs(Dataset):
             ## make 5x256x256 tensor
         input_tensor = torch.cat((sr, sl, tr, tl, b), 0)
 
-        out_label = torch.tensor(self.label)[index]
+        out_label = self.label[index]
         # print("out_label")
         # print(out_label)
 
@@ -243,13 +243,13 @@ class FuncMod(nn.Module):
                                     nn.ReLU(),
                                     nn.Dropout(0.5))
 
-        self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
-                                     nn.Sigmoid())
+        # self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
+        #                              nn.Sigmoid())
 
-        # if self.dichot:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
-        # else:
-        #     self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
+        if self.dichot:
+            self.linear3 = nn.Sequential(nn.Linear(64,2,bias=True))
+        else:
+            self.linear3 = nn.Sequential(nn.Linear(64,1,bias=True))
 
     def forward(self, x):
 
