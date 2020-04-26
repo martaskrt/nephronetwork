@@ -598,7 +598,7 @@ def training_loop(args, network, file_lab):
                 epoch_train_pred.append(out.to("cpu").tolist())
 
         print(np.array(flatten_list(epoch_train_lab), dtype=np.uint8))
-        print(np.array(flatten_list(epoch_train_pred), dtype=np.float64))
+        print(np.array(flatten_list(epoch_train_pred.tolist()), dtype=np.float64))
         train_auc = roc_auc_score(np.array(flatten_list(epoch_train_lab), dtype=np.uint8), np.array(flatten_list(epoch_train_pred)))
         print("Train AUC : " + str(train_auc))
         func_train_epoch_auc.append(train_auc)
