@@ -667,7 +667,7 @@ def training_loop(args, network, file_lab):
 
                 if args.dichot:
                     test_auc = roc_auc_score(np.array(flatten_list(epoch_test_lab), dtype=np.int8),
-                                             flatten_list(np.array(epoch_test_pred)))
+                                             np.array(flatten_list(epoch_test_pred)))
                     print("Test AUC : " + str(test_auc))
                     func_test_epoch_auc.append(test_auc)
 
@@ -709,11 +709,11 @@ def training_loop(args, network, file_lab):
                     else:
                         epoch_test_pred.append(out_test.to("cpu").tolist())
 
-            if args.dichot:
-                test_auc = roc_auc_score(np.array(flatten_list(epoch_test_lab), dtype=np.int8),
-                                         flatten_list(np.array(epoch_test_pred)))
-                print("Test AUC : " + str(test_auc))
-                func_test_epoch_auc.append(test_auc)
+                if args.dichot:
+                    test_auc = roc_auc_score(np.array(flatten_list(epoch_test_lab), dtype=np.int8),
+                                             np.array(flatten_list(epoch_test_pred)))
+                    print("Test AUC : " + str(test_auc))
+                    func_test_epoch_auc.append(test_auc)
 
                 test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
 
