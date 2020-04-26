@@ -556,11 +556,13 @@ def training_loop(args, network, file_lab):
             # print('epoch: %d, split: %d, train loss: %.3f' %
             #       (epoch + 1, split, loss.item()))
 
-        print(np.array(func_epoch_train_lab))
-        print(np.array(func_epoch_train_pred))
-        train_auc = roc_auc_score(np.array(func_epoch_train_lab), np.array(func_epoch_train_pred))
-        print("Train AUC : " + str(train_auc))
-        func_train_epoch_auc.append(train_auc)
+        # print(np.array(func_epoch_train_lab))
+        # print(np.array(func_epoch_train_pred))
+
+        if args.dichot:
+            train_auc = roc_auc_score(np.array(func_epoch_train_lab), np.array(func_epoch_train_pred))
+            print("Train AUC : " + str(train_auc))
+            func_train_epoch_auc.append(train_auc)
 
         func_train_mean_loss.append(np.mean(np.array(func_train_epoch_loss)))
         print('epoch: %d, function train loss: %.3f' %
@@ -597,9 +599,10 @@ def training_loop(args, network, file_lab):
 
                 func_val_epoch_loss.append(loss_val.item())
 
-            val_auc = roc_auc_score(np.array(func_epoch_val_lab), np.array(func_epoch_val_pred))
-            print("Val AUC : " + str(val_auc))
-            func_val_epoch_auc.append(val_auc)
+            if args.dichot:
+                val_auc = roc_auc_score(np.array(func_epoch_val_lab), np.array(func_epoch_val_pred))
+                print("Val AUC : " + str(val_auc))
+                func_val_epoch_auc.append(val_auc)
 
             func_val_mean_loss.append(np.mean(np.array(func_val_epoch_loss)))
             print('epoch: %d, function val loss: %.3f' %
@@ -653,9 +656,10 @@ def training_loop(args, network, file_lab):
                     # func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
                     # func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
 
-                test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
-                print("Test AUC : " + str(test_auc))
-                func_test_epoch_auc.append(test_auc)
+                if args.dichot:
+                    test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
+                    print("Test AUC : " + str(test_auc))
+                    func_test_epoch_auc.append(test_auc)
 
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 
@@ -695,9 +699,10 @@ def training_loop(args, network, file_lab):
                     # func_epoch_test_lab.append(func_lab_test.to("cpu").tolist())
                     # func_epoch_test_pred.append(func_out_test.to("cpu").tolist())
 
-                test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
-                print("Test AUC : " + str(test_auc))
-                func_test_epoch_auc.append(test_auc)
+                if args.dichot:
+                    test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
+                    print("Test AUC : " + str(test_auc))
+                    func_test_epoch_auc.append(test_auc)
 
                 func_test_mean_loss.append(np.mean(np.array(func_test_epoch_loss)))
 

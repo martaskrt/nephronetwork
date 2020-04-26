@@ -12,6 +12,6 @@ python3 /home/marta/nephronetwork-github/nephronetwork/DMSA/Models/view_lab/trai
 	-lab_us_dir /home/marta/nephronetwork-github/nephronetwork/1.Models/siamese_network/mountpoint/label_img/ \
 	-lr 0.001 \
 	-max_epochs 9 \
+	-dichot	\
 	-RL	
-#-dichot	\
 	
