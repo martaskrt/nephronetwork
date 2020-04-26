@@ -631,9 +631,10 @@ def training_loop(args, network, file_lab):
                 else:
                     epoch_val_pred.append(out_val.to("cpu").item())
 
-            val_auc = roc_auc_score(np.array(epoch_val_lab), np.array(epoch_val_pred))
-            print("Val AUC : " + str(val_auc))
-            func_val_epoch_auc.append(val_auc)
+            if args.dichot:
+                val_auc = roc_auc_score(np.array(epoch_val_lab), np.array(epoch_val_pred))
+                print("Val AUC : " + str(val_auc))
+                func_val_epoch_auc.append(val_auc)
 
             val_mean_loss.append(np.mean(np.array(val_epoch_loss)))
             print('epoch: %d, val loss: %.3f' %
@@ -659,6 +660,20 @@ def training_loop(args, network, file_lab):
 
                     test_epoch_loss.append(loss_test.item())
 
+                    test_label = lab_test.to("cpu").item()
+                    epoch_test_lab.append(test_label)
+
+                    if args.dichot:
+                        pred_probs_test = np.max(np.array(out_test.to("cpu").tolist()), axis=1)
+                        epoch_test_pred.append(pred_probs_test.item())
+                    else:
+                        epoch_test_pred.append(out_test.to("cpu").item())
+
+                if args.dichot:
+                    test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
+                    print("Test AUC : " + str(test_auc))
+                    func_test_epoch_auc.append(test_auc)
+
                 test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
 
                 print('epoch: %d, test loss: %.3f' %
@@ -681,6 +696,20 @@ def training_loop(args, network, file_lab):
                                          lab_test.to(args.device).view([bs, 1]).to(device=args.device).float())
 
                     test_epoch_loss.append(loss_test.item())
+
+                    test_label = lab_test.to("cpu").item()
+                    epoch_test_lab.append(test_label)
+
+                    if args.dichot:
+                        pred_probs_test = np.max(np.array(out_test.to("cpu").tolist()), axis=1)
+                        epoch_test_pred.append(pred_probs_test.item())
+                    else:
+                        epoch_test_pred.append(out_test.to("cpu").item())
+
+                if args.dichot:
+                    test_auc = roc_auc_score(np.array(func_epoch_test_lab), np.array(func_epoch_test_pred))
+                    print("Test AUC : " + str(test_auc))
+                    func_test_epoch_auc.append(test_auc)
 
                 test_mean_loss.append(np.mean(np.array(test_epoch_loss)))
 
