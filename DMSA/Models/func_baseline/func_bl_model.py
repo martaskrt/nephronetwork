@@ -561,11 +561,13 @@ def training_loop(args, network, file_lab):
             # epoch_train_lab.append(lab.to("cpu").squeeze().tolist())
             # epoch_train_pred.append(out.to("cpu").squeeze().tolist())
 
-            func_train_label = map(int, lab.to("cpu").tolist())
+            func_train_label = lab.detach().numpy(np.int8)
             epoch_train_lab.append(func_train_label)
 
             if args.dichot:
-                pred_probs = np.max(out.view([bs, 2]).to("cpu").numpy(), axis=1)
+                pred_probs = np.max(out.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
+                print(out.view([bs, 2]).to("cpu").detach().numpy())
+                print(pred_probs)
                 epoch_train_pred.append(pred_probs.tolist())
             else:
                 epoch_train_pred.append(out.to("cpu").tolist())
