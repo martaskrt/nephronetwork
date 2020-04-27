@@ -659,8 +659,8 @@ def training_loop(args, network, file_lab):
                     if args.dichot:
                         # out_test.view([bs, 2]).to(device=args.device).float()
                         pred_probs = np.max(out_test.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
-                        print(out_test.view([bs, 2]).to("cpu").detach().numpy())
-                        print(pred_probs)
+                        # print(out_test.view([bs, 2]).to("cpu").detach().numpy())
+                        # print(pred_probs)
                         epoch_test_pred.append(pred_probs)
                         # print("Len test pred: " + str(len(pred_probs)))
                         # print("Len epoch test pred: " + str(len(epoch_test_pred)))
