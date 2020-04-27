@@ -678,8 +678,8 @@ def training_loop(args, network, file_lab):
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, test_mean_loss[epoch]))
 
-                epoch_test_lab.append(lab_test.to("cpu").squeeze().tolist())
-                epoch_test_pred.append(out_test.to("cpu").squeeze().tolist())
+                # epoch_test_lab.append(lab_test.to("cpu").squeeze().tolist())
+                # epoch_test_pred.append(out_test.to("cpu").squeeze().tolist())
 
         else:
             if args.include_test:
@@ -722,8 +722,8 @@ def training_loop(args, network, file_lab):
                 print('epoch: %d, test loss: %.3f' %
                       (epoch + 1, test_mean_loss[epoch]))
 
-                epoch_test_lab.append(lab_test.to("cpu").squeeze().tolist())
-                epoch_test_pred.append(out_test.to("cpu").squeeze().tolist())
+                # epoch_test_lab.append(lab_test.to("cpu").squeeze().tolist())
+                # epoch_test_pred.append(out_test.to("cpu").squeeze().tolist())
 
     if args.save_pred:
         train_df = pd.DataFrame({"pred": flatten_list(epoch_train_pred), "lab": flatten_list(epoch_train_lab)})
@@ -819,7 +819,7 @@ def main():
     opt.mom = float(opt.mom)
     opt.max_epochs = int(opt.max_epochs)
 
-    my_net = FuncModSiamese
+    my_net = DenseNet
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
     file_labs = opt.run_lab + "_AUC_LR" + str(opt.lr) + "_MOM" + str(opt.mom) + "_MAXEP" + str(opt.max_epochs) + "_BS" + str(opt.bs) + "_" + analysis_time
