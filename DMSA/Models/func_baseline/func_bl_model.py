@@ -578,7 +578,8 @@ def training_loop(args, network, file_lab):
 
         # print(np.array(flatten_list(epoch_train_lab), dtype=np.uint8))
         # print(epoch_train_pred)
-        train_auc = roc_auc_score(np.array(flatten_list(epoch_train_lab), dtype=np.uint8), np.array(flatten_list(epoch_train_pred)))
+        train_auc = roc_auc_score(np.array(flatten_list(epoch_train_lab), dtype=np.uint8),
+                                  np.array(flatten_list(epoch_train_pred)))
         print("Train AUC : " + str(train_auc))
         func_train_epoch_auc.append(train_auc)
 
@@ -818,7 +819,7 @@ def main():
     opt.mom = float(opt.mom)
     opt.max_epochs = int(opt.max_epochs)
 
-    my_net = FuncMod
+    my_net = FuncModSiamese
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
     file_labs = opt.run_lab + "_AUC_LR" + str(opt.lr) + "_MOM" + str(opt.mom) + "_MAXEP" + str(opt.max_epochs) + "_BS" + str(opt.bs) + "_" + analysis_time
