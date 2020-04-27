@@ -813,7 +813,11 @@ def main():
 
     opt = parser.parse_args() ## comment for debug
     print(opt)
-	
+
+    opt.lr = float(opt.lr)
+    opt.mom = float(opt.mom)
+    opt.max_epochs = int(opt.max_epochs)
+
     my_net = FuncMod
 
     analysis_time = "_".join(str(datetime.datetime.now()).split(" "))
