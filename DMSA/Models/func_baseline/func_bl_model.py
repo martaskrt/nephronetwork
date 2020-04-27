@@ -570,7 +570,7 @@ def training_loop(args, network, file_lab):
                 pred_probs = np.max(out.view([bs, 2]).to("cpu").detach().numpy(), axis=1)
                 # print(out.view([bs, 2]).to("cpu").detach().numpy())
                 # print(pred_probs)
-                epoch_train_pred.append(pred_probs)
+                epoch_train_pred.append(flatten_list(pred_probs))
                 print("Len train pred: " + str(len(pred_probs)))
                 print("Len epoch train pred: " + str(len(epoch_train_pred)))
             else:
