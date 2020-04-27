@@ -312,7 +312,7 @@ class FuncModSiamese(nn.Module):
         # self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True),
         #                              nn.Sigmoid())
 
-        if self.dichot:
+        if args.dichot:
             self.linear3 = nn.Sequential(nn.Linear(64, 2, bias=True))
         else:
             self.linear3 = nn.Sequential(nn.Linear(64, 1, bias=True))
