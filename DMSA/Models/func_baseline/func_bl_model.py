@@ -579,10 +579,12 @@ def training_loop(args, network, file_lab):
 
         print(np.array(flatten_list(epoch_train_lab), dtype=np.uint8))
         print(np.array(flatten_list(epoch_train_pred)))
-        train_auc = roc_auc_score(np.array(flatten_list(epoch_train_lab), dtype=np.uint8),
-                                  np.array(flatten_list(epoch_train_pred)))
-        print("Train AUC : " + str(train_auc))
-        func_train_epoch_auc.append(train_auc)
+
+        if args.dichot:
+            train_auc = roc_auc_score(np.array(flatten_list(epoch_train_lab), dtype=np.uint8),
+                                      np.array(flatten_list(epoch_train_pred)))
+            print("Train AUC : " + str(train_auc))
+            func_train_epoch_auc.append(train_auc)
 
         train_mean_loss.append(np.mean(np.array(train_epoch_loss)))
         print('epoch: %d, train loss: %.3f' %
@@ -629,8 +631,8 @@ def training_loop(args, network, file_lab):
             print('epoch: %d, val loss: %.3f' %
                   (epoch + 1, val_mean_loss[epoch]))
 
-            epoch_val_pred.append(out_val.to("cpu").squeeze().tolist())
-            epoch_val_lab.append(lab_val.to("cpu").squeeze().tolist())
+            # epoch_val_pred.append(out_val.to("cpu").squeeze().tolist())
+            # epoch_val_lab.append(lab_val.to("cpu").squeeze().tolist())
 
             if args.include_test:
                 for idx, (us_test, lab_test) in enumerate(test_dloader):
