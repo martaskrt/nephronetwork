@@ -775,7 +775,7 @@ def main():
 
     parser.add_argument("-dichot", action='store_true', default=False, help="Use dichotomous (vs continuous) outcome")
 
-    parser.add_argument("-run_lab", default="FuncMod_top3USFunc_MSE", help="String to add to output files")
+    parser.add_argument("-run_lab", default="FuncModSiam_top3USFunc_MSE", help="String to add to output files")
 
     parser.add_argument('-train_datasheet', default='/hpf/largeprojects/agoldenb/lauren/Hydronephrosis/data/load_training_test_sets/DMSA-train-datasheet-top3view-USfunc.csv',
                         help="directory of DMSA images")
