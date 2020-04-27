@@ -208,7 +208,7 @@ class FuncMod(nn.Module):
     def __init__(self, args):
         super(FuncMod, self).__init__()
 
-        # self.dichot = args.dichot
+        self.dichot = args.dichot
 
         self.conv0 = nn.Sequential(nn.Conv2d(5, 64, 5, padding=2),
                                    nn.MaxPool2d(2),
@@ -277,7 +277,7 @@ class FuncModSiamese(nn.Module):
     def __init__(self, args):
         super(FuncModSiamese, self).__init__()
 
-        # self.dichot = args.dichot
+        self.dichot = args.dichot
 
         self.conv0 = nn.Sequential(nn.Conv2d(1, 64, 5, padding=2),
                                    nn.MaxPool2d(2),
