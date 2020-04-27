@@ -574,7 +574,7 @@ def training_loop(args, network, file_lab):
             else:
                 epoch_train_pred.append(flatten_list(out.to("cpu").tolist()))
 
-            print("Len train pred: " + str(len(pred_probs)))
+            print("Len train pred: " + str(len(flatten_list(out.to("cpu").tolist()))))
             print("Len epoch train pred: " + str(len(epoch_train_pred)))
 
         print(np.array(flatten_list(epoch_train_lab), dtype=np.uint8))
