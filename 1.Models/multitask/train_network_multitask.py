@@ -476,7 +476,7 @@ def main():
     get_data_stats(train_y_func, "FUNC_TRAIN")
     get_data_stats(test_y_func, "FUNC_TEST")
     print("-----------------------------------")
-    import sys; sys.exit(0)
+    # import sys; sys.exit(0)
     train_X = []
     train_y = []
     train_cov = []
@@ -501,7 +501,34 @@ def main():
         if train_cov_func[i] not in dataset_train:
             dataset_train[train_cov_func[i]] = {}
         dataset_train[train_cov_func[i]]['f'] = (train_X_func[i], train_y_func[i])
-    
+
+    train_cov_shuffled = shuffle(list(dataset_train.keys()), random_state=42)
+    val_covs = train_cov_shuffled[int(len(train_cov_shuffled)*0.8):]
+    train_covs = train_cov_shuffled[:int(len(train_cov_shuffled)*0.8)]
+
+    train_func = []
+    train_reflux = []
+    train_surg = []
+    for cov in train_covs:
+        train_func.append(dataset_train[cov]['f'][1]); train_reflux.append(dataset_train[cov]['r'][1]); train_surg.append(dataset_train[cov]['s'][1])
+
+    val_func = []
+    val_reflux = []
+    val_surg = []
+    for cov in val_covs:
+        val_func.append(dataset_train[cov]['f'][1]); val_reflux.append(dataset_train[cov]['r'][1]); val_surg.append(dataset_train[cov]['s'][1])
+    print("****************************************")
+    get_data_stats(train_surg, "SURG_TRAIN")
+    get_data_stats(val_surg, "SURG_VAL")
+    print("-----------------------------------")
+    get_data_stats(train_reflux, "REFLUX_TRAIN")
+    get_data_stats(val_reflux, "REFLUX_VAL")
+    print("-----------------------------------")
+    get_data_stats(train_func, "FUNC_TRAIN")
+    get_data_stats(val_func, "FUNC_VAL")
+    print("-----------------------------------")
+    import sys; sys.exit(0)
+
     test_X = []
     test_y = []
     test_cov = []
