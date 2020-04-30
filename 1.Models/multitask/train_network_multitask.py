@@ -13,8 +13,8 @@ import argparse
 from torch.autograd import Variable
 from sklearn.utils import class_weight
 
-#process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
-import process_results
+process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
+#import process_results
 
 SEED = 42
 
@@ -79,18 +79,23 @@ def train(args, dataset_train, dataset_test,  max_epochs):
               'shuffle': True,
               'num_workers': args.num_workers}
 
+    train_cov_shuffled = shuffle(list(dataset_train.keys()), random_state=42)
+    val_covs = train_cov_shuffled[int(len(train_cov_shuffled)*0.8):]
+    train_covs = train_cov_shuffled[:int(len(train_cov_shuffled)*0.8)]
+
+    dataset_val = {key: dataset_train[key] for key in val_covs}
+    dataset_train = {key: dataset_train[key] for key in train_covs}  
+
+    training_set = KidneyDataset(dataset_train)
+    training_generator = DataLoader(training_set, **params)
+ 
+    val_set = KidneyDataset(dataset_val)
+    val_generator = DataLoader(val_set, **params)
+
     test_set = KidneyDataset(dataset_test)
     test_generator = DataLoader(test_set, **params)
 
     fold=1
-   # n_splits = 5
-   # skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-   # train_y = np.array(train_y)
-   # train_cov = np.array(train_cov)
-   # train_label_type = np.array(train_label_type)
-
-    #train_X, train_y, train_cov, train_label_type = shuffle(train_X, train_y, train_cov, train_label_type, random_state=42)
-    #for train_index, test_index in skf.split(train_X, train_y):
     for _ in range(1): 
         if args.view != "siamese":
             net = CNN(num_views=1, three_channel=False).to(device)
@@ -101,28 +106,11 @@ def train(args, dataset_train, dataset_test,  max_epochs):
         optimizer = torch.optim.SGD(net.parameters(), lr=hyperparams['lr'], momentum=hyperparams['momentum'],
                                         weight_decay=hyperparams['weight_decay'])
 
-
-        #train_X_CV = train_X[train_index]
-        #train_y_CV = train_y[train_index]
-        #train_cov_CV = train_cov[train_index]
-        #train_label_type_CV = train_label_type[train_index]
-
-        #val_X_CV = train_X[test_index]
-        #val_y_CV = train_y[test_index]
-        #val_cov_CV = train_cov[test_index]
-        #val_label_type_CV = train_label_type[test_index]
-
-        training_set = KidneyDataset(dataset_train)
-        training_generator = DataLoader(training_set, **params)
        
-        #training_set = KidneyDataset(train_X_CV, train_y_CV, train_cov_CV, train_label_type_CV)
-        #training_generator = DataLoader(training_set, **params)
-
-        #validation_set = KidneyDataset(val_X_CV, val_y_CV, val_cov_CV, val_label_type_CV)
-        #validation_generator = DataLoader(validation_set, **params)
 
         for epoch in range(max_epochs):
             loss_accum_train = 0
+            loss_accum_val = 0
             loss_accum_test = 0
 
             surgery_targets_train = []
@@ -139,6 +127,21 @@ def train(args, dataset_train, dataset_test,  max_epochs):
             surgery_patient_ID_train = []
             reflux_patient_ID_train = []
             func_patient_ID_train = []
+
+            surgery_targets_val = []
+            surgery_pred_prob_val = []
+            surgery_pred_label_val = []
+            reflux_targets_val = []
+            reflux_pred_prob_val = []
+            reflux_pred_label_val = []
+            func_targets_val = []
+            func_pred_prob_val = []
+            func_pred_label_val = []
+
+
+            surgery_patient_ID_val = []
+            reflux_patient_ID_val = []
+            func_patient_ID_val = []
 
             surgery_targets_test = []
             surgery_pred_prob_test = []
@@ -254,33 +257,106 @@ def train(args, dataset_train, dataset_test,  max_epochs):
                                                                         func_results_train['auprc'], func_results_train['tn'],
                                                                         func_results_train['fp'], func_results_train['fn'],
                                                                         func_results_train['tp']))
-    #        net.eval()
-   #         with torch.no_grad():
-  #              for batch_idx, (data, target, cov) in enumerate(validation_generator):
-   #                 net.zero_grad()
-    #                optimizer.zero_grad()
-     #               output = net(data)
-      #              target = target.type(torch.LongTensor).to(device)
-###
-   #                 loss = F.cross_entropy(output, target)
-    #                loss_accum_val += loss.item() * len(target)
-     #               counter_val += len(target)
-      #              output_softmax = softmax(output)
-#
- #                   accurate_labels_val += torch.sum(torch.argmax(output, dim=1) == target).cpu()
-#
- #                   pred_prob = output_softmax[:,1]
-  #                  pred_prob = pred_prob.squeeze()
-   #                 pred_label = torch.argmax(output, dim=1)
-#
- #                   assert len(pred_prob) == len(target)
-  #                  assert len(pred_label) == len(target)
-#
- #                   all_pred_prob_val.append(pred_prob)
-  #                  all_targets_val.append(target)
-   #                 all_pred_label_val.append(pred_label)
-#
- #                   patient_ID_val.extend(cov)
+            net.eval()
+            with torch.no_grad():
+                for batch_idx, (x, y, cov) in enumerate(val_generator):
+                    net.zero_grad()
+                    net.eval() # 20190619
+                    optimizer.zero_grad()
+                    surg_batch_x, y_surgery, surg_batch_cov = torch.stack([x[i][:2] for i in range(len(x)) if y[i][0] != -1]), torch.stack([y[i][0] for i in range(len(y)) if y[i][0] != -1]), [cov[i] for i in range(len(cov)) if y[i][0] != -1]
+                    reflux_batch_x, y_reflux, reflux_batch_cov = torch.stack([x[i][2:4] for i in range(len(x)) if y[i][1] != -1]), torch.stack([y[i][1] for i in range(len(y)) if y[i][1] != -1]), [cov[i] for i in range(len(cov)) if y[i][1] != -1]
+                    func_batch_x, y_func, func_batch_cov =  torch.stack([x[i][4:] for i in range(len(x)) if y[i][2] != -1]), torch.stack([y[i][2] for i in range(len(y)) if y[i][2] != -1]), [cov[i] for i in range(len(cov)) if y[i][2] != -1]
+                    loss_surgery, loss_reflux, loss_func = 0, 0, 0
+                    if surg_batch_x.size()[0] > 0:
+                        pred_surgery = net(surg_batch_x.float().to(device), 's')
+                        if len(pred_surgery.shape) == 1:
+                            pred_surgery = pred_surgery.unsqueeze(0)
+                        assert len(pred_surgery) == len(y_surgery)
+                        y_surgery = Variable(y_surgery.type(torch.LongTensor), requires_grad=False).to(device)
+                        loss_surgery = F.cross_entropy(pred_surgery, y_surgery)
+                    if reflux_batch_x.size()[0] > 0:
+                        pred_reflux = net(reflux_batch_x.float().to(device), 'r')
+                        if len(pred_reflux.shape) == 1:
+                            pred_reflux = pred_reflux.unsqueeze(0)
+                        assert len(pred_reflux) == len(y_reflux)
+                        y_reflux = Variable(y_reflux.type(torch.LongTensor), requires_grad=False).to(device)
+                        loss_reflux = F.cross_entropy(pred_reflux, y_reflux)
+                    if func_batch_x.size()[0] > 0:
+                        pred_func = net(func_batch_x.float().to(device), 'f')
+                        if len(pred_func.shape) == 1:
+                            pred_func = pred_func.unsqueeze(0)
+                        assert len(pred_func) == len(y_func)
+                        y_func = Variable(y_func.type(torch.LongTensor), requires_grad=False).to(device)
+                        loss_func = F.cross_entropy(pred_func, y_func)
+                    loss = loss_surgery + loss_reflux + loss_func
+                    loss_accum_val += loss.item() * (len(y_surgery) + len(y_reflux) + len(y_func))
+
+
+                    #optimizer.step()
+                    counter_val += len(y_surgery) + len(y_reflux) + len(y_func)
+
+                    surgery_pred_prob, surgery_pred_label = get_proba(pred_surgery)
+                    reflux_pred_prob, reflux_pred_label = get_proba(pred_reflux)
+                    func_pred_prob, func_pred_label = get_proba(pred_func)
+
+                    surgery_pred_prob_val.append(surgery_pred_prob)
+                    surgery_targets_val.append(y_surgery)
+                    surgery_pred_label_val.append(surgery_pred_label)
+                    surgery_patient_ID_val.extend(surg_batch_cov)
+
+                    reflux_pred_prob_val.append(reflux_pred_prob)
+                    reflux_targets_val.append(y_reflux)
+                    reflux_pred_label_val.append(reflux_pred_label)
+                    reflux_patient_ID_val.extend(reflux_batch_cov)
+
+                    func_pred_prob_val.append(func_pred_prob)
+                    func_targets_val.append(y_func)
+                    func_pred_label_val.append(func_pred_label)
+                    func_patient_ID_val.extend(func_batch_cov)
+
+                surgery_pred_prob_val = torch.cat(surgery_pred_prob_val)
+                surgery_targets_val = torch.cat(surgery_targets_val)
+                surgery_pred_label_val = torch.cat(surgery_pred_label_val)
+                reflux_pred_prob_val = torch.cat(reflux_pred_prob_val)
+                reflux_targets_val = torch.cat(reflux_targets_val)
+                reflux_pred_label_val = torch.cat(reflux_pred_label_val)
+                func_pred_prob_val = torch.cat(func_pred_prob_val)
+                func_targets_val = torch.cat(func_targets_val)
+                func_pred_label_val = torch.cat(func_pred_label_val)
+
+                print("Fold\t{}\tValEpoch\t{}\tLoss\t{}".format(fold, epoch, loss_accum_val/counter_val))
+
+                surgery_results_val = process_results.get_metrics(y_score=surgery_pred_prob_val.cpu().detach().numpy(),
+                                                      y_true=surgery_targets_val.cpu().detach().numpy(),
+                                                      y_pred=surgery_pred_label_val.cpu().detach().numpy())
+
+                print('Fold\t{}\tValEpoch\t{}\tSURGERY\tAUC\t{:.6f}\t'
+                      'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch,
+                                                                            surgery_results_val['auc'],
+                                                                            surgery_results_val['auprc'], surgery_results_val['tn'],
+                                                                            surgery_results_val['fp'], surgery_results_val['fn'],
+                                                                            surgery_results_val['tp']))
+                reflux_results_val = process_results.get_metrics(y_score=reflux_pred_prob_val.cpu().detach().numpy(),
+                                                      y_true=reflux_targets_val.cpu().detach().numpy(),
+                                                      y_pred=reflux_pred_label_val.cpu().detach().numpy())
+
+                print('Fold\t{}\tValEpoch\t{}\tREFLUX\tAUC\t{:.6f}\t'
+                      'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch,
+                                                                            reflux_results_val['auc'],
+                                                                            reflux_results_val['auprc'], reflux_results_val['tn'],
+                                                                            reflux_results_val['fp'], reflux_results_val['fn'],
+                                                                            reflux_results_val['tp']))
+                func_results_val = process_results.get_metrics(y_score=func_pred_prob_val.cpu().detach().numpy(),
+                                                      y_true=func_targets_val.cpu().detach().numpy(),
+                                                      y_pred=func_pred_label_val.cpu().detach().numpy())
+
+                print('Fold\t{}\tValEpoch\t{}\tFUNC\tAUC\t{:.6f}\t'
+                      'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch,
+                                                                            func_results_val['auc'],
+                                                                            func_results_val['auprc'], func_results_val['tn'],
+                                                                            func_results_val['fp'], func_results_val['fn'],
+                                                                            func_results_val['tp']))
+
             net.eval()
             with torch.no_grad():
                 for batch_idx, (x, y, cov) in enumerate(test_generator):
@@ -315,10 +391,8 @@ def train(args, dataset_train, dataset_test,  max_epochs):
                     loss = loss_surgery + loss_reflux + loss_func
                     loss_accum_test += loss.item() * (len(y_surgery) + len(y_reflux) + len(y_func))
 
-                    #loss.backward()
 
-                    #accurate_labels_train += torch.sum(torch.argmax(output, dim=1) == target).cpu()
-                    optimizer.step()
+                    #optimizer.step()
                     counter_test += len(y_surgery) + len(y_reflux) + len(y_func)
 
                     surgery_pred_prob, surgery_pred_label = get_proba(pred_surgery)
@@ -403,6 +477,19 @@ def train(args, dataset_train, dataset_test,  max_epochs):
                           'surgery_patient_ID_train': surgery_patient_ID_train,
                           'reflux_patient_ID_train': reflux_patient_ID_train,
                           'func_patient_ID_train': func_patient_ID_train,
+                          'loss_val': loss_accum_val / counter_val,
+                          'surgery_results_val': surgery_results_val,
+                          'reflux_results_val': reflux_results_val,
+                          'func_results_val': func_results_val,
+                          'surgery_pred_prob_val': surgery_pred_prob_val,
+                          'reflux_pred_prob_val': reflux_pred_prob_val,
+                          'func_pred_prob_val': func_pred_prob_val,
+                          'surgery_targets_val': surgery_targets_val,
+                          'reflux_targets_val': reflux_targets_val,
+                          'func_targets_val': func_targets_val,
+                          'surgery_patient_ID_val': surgery_patient_ID_val,
+                          'reflux_patient_ID_val': reflux_patient_ID_val,
+                          'func_patient_ID_val': func_patient_ID_val,
                           'loss_test': loss_accum_test / counter_test,
                           'surgery_results_test': surgery_results_test,
                           'reflux_results_test': reflux_results_test,
@@ -454,17 +541,17 @@ def main():
 
     max_epochs = args.epochs
     
-    #load_dataset_surgery = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
-    import load_dataset as load_dataset_surgery
+    load_dataset_surgery = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
+    #import load_dataset as load_dataset_surgery
     train_X_surg, train_y_surg, train_cov_surg, test_X_surg, test_y_surg, test_cov_surg = load_dataset_surgery.load_dataset(views_to_get="siamese", pickle_file=args.datafile,
                                                                                       contrast=args.contrast, split=args.split, get_cov=True)
-    #load_dataset_vur = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset_vur.py').load_module()
-    import load_dataset_vur
-    train_X_reflux, train_y_reflux, train_cov_reflux, test_X_reflux, test_y_reflux, test_cov_reflux = load_dataset_vur.load_dataset(views_to_get="siamese", pickle_file="vur_images_256_20200422.pickle", image_dim=256, contrast=args.contrast, split=args.split, get_cov=True)
+    load_dataset_vur = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset_vur.py').load_module()
+    #import load_dataset_vur
+    train_X_reflux, train_y_reflux, train_cov_reflux, test_X_reflux, test_y_reflux, test_cov_reflux = load_dataset_vur.load_dataset(views_to_get="siamese", pickle_file="../../0.Preprocess/vur_images_256_20200422.pickle", image_dim=256, contrast=args.contrast, split=args.split, get_cov=True)
     
-    #load_dataset_func = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset_func.py').load_module()
-    import load_dataset_func
-    train_X_func, train_y_func, train_cov_func, test_X_func, test_y_func, test_cov_func = load_dataset_func.load_dataset(views_to_get="siamese", pickle_file="func_images_256_20200422.pickle", image_dim=256,  contrast=args.contrast, split=args.split, get_cov=True)
+    load_dataset_func = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset_func.py').load_module()
+    #import load_dataset_func
+    train_X_func, train_y_func, train_cov_func, test_X_func, test_y_func, test_cov_func = load_dataset_func.load_dataset(views_to_get="siamese", pickle_file="../../0.Preprocess/func_images_256_20200422.pickle", image_dim=256,  contrast=args.contrast, split=args.split, get_cov=True)
     train_y_func = [1 if item >=0.6 or item <= 0.4 else 0 for item in train_y_func]
     test_y_func = [1 if item >=0.6 or item <= 0.4 else 0 for item in test_y_func] 
     get_data_stats(train_y_surg, "SURG_TRAIN")
@@ -502,32 +589,6 @@ def main():
             dataset_train[train_cov_func[i]] = {}
         dataset_train[train_cov_func[i]]['f'] = (train_X_func[i], train_y_func[i])
 
-    train_cov_shuffled = shuffle(list(dataset_train.keys()), random_state=42)
-    val_covs = train_cov_shuffled[int(len(train_cov_shuffled)*0.8):]
-    train_covs = train_cov_shuffled[:int(len(train_cov_shuffled)*0.8)]
-
-    train_func = []
-    train_reflux = []
-    train_surg = []
-    for cov in train_covs:
-        train_func.append(dataset_train[cov]['f'][1]); train_reflux.append(dataset_train[cov]['r'][1]); train_surg.append(dataset_train[cov]['s'][1])
-
-    val_func = []
-    val_reflux = []
-    val_surg = []
-    for cov in val_covs:
-        val_func.append(dataset_train[cov]['f'][1]); val_reflux.append(dataset_train[cov]['r'][1]); val_surg.append(dataset_train[cov]['s'][1])
-    print("****************************************")
-    get_data_stats(train_surg, "SURG_TRAIN")
-    get_data_stats(val_surg, "SURG_VAL")
-    print("-----------------------------------")
-    get_data_stats(train_reflux, "REFLUX_TRAIN")
-    get_data_stats(val_reflux, "REFLUX_VAL")
-    print("-----------------------------------")
-    get_data_stats(train_func, "FUNC_TRAIN")
-    get_data_stats(val_func, "FUNC_VAL")
-    print("-----------------------------------")
-    import sys; sys.exit(0)
 
     test_X = []
     test_y = []
