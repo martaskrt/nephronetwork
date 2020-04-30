@@ -10,7 +10,7 @@ def make_cov_labels(cov):
     cov_id_str = []
     num_samples = len(cov[0])
     # 0: study_id, 1: age_at_baseline, 2: gender (0 if male), 3: view (0 if saggital)...skip), 4: sample_num,
-    # 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer, 9: etiology
+    # 5: kidney side, 6: date_of_US_1, 7: date of curr US, 8: manufacturer, 9: etiology, 10: vur_grade
     for i in range(num_samples):
         curr_sample = []
         for j in range(len(cov)):
@@ -23,11 +23,13 @@ def make_cov_labels(cov):
                 continue
             elif j == 4:
                 curr_sample.append(int(cov[j][i]))
+           # elif j == 9:
+            #    if cov[j][i] == 0:
+             #       curr_sample.append("R")
+              #  elif cov[j][i] == 1:
+               #     curr_sample.append("O")
             elif j == 9:
-                if cov[j][i] == 0:
-                    curr_sample.append("R")
-                elif cov[j][i] == 1:
-                    curr_sample.append("O")
+                curr_sample.append("g" + str(cov[j][i]))
             else:
                 curr_sample.append(cov[j][i])
 
@@ -38,6 +40,7 @@ def make_cov_labels(cov):
     return cov_id_str
 
 def open_file(file):
+    #print(file)
     data = pd.read_pickle(file)
     #data = pd.read_pickle("preprocessed_images.pickle")
     return data
@@ -58,25 +61,40 @@ def get_y(data, siamese=False, samples_to_exclude=None):
         for i in range(num_samples):
             if i in samples_to_exclude:
                 continue
-            if data[i]['surgery'].iloc[0] == 0:
+            if data[i]['vur'].iloc[0] == 0:
                 labels.append(0)
-            else:
-                if data[i]['kidney_side'].iloc[0] == "Left" and data[i]['hydro_kidney'].iloc[0] == "Left":
+            else: # VUR=1
+                if data[i]['kidney_side'].iloc[0] == "Left" and data[i]['hydro_kidney'].iloc[0] == "Left" \
+                        and (data[i]['vur_location'].iloc[0] == "Both" or data[i]['vur_location'].iloc[0] == "Concurrent"):
                     labels.append(1)
-                elif data[i]['kidney_side'].iloc[0] == "Right" and data[i]['hydro_kidney'].iloc[0] == "Right":
+                elif data[i]['kidney_side'].iloc[0] == "Right" and data[i]['hydro_kidney'].iloc[0] == "Right"\
+                        and (data[i]['vur_location'].iloc[0] == "Both" or data[i]['vur_location'].iloc[0] == "Concurrent"):
+                    labels.append(1)
+                elif data[i]['kidney_side'].iloc[0] == "Right" and data[i]['hydro_kidney'].iloc[0] == "Left"\
+                        and data[i]['vur_location'].iloc[0] == "Contralateral":
+                    labels.append(1)
+                elif data[i]['kidney_side'].iloc[0] == "Left" and data[i]['hydro_kidney'].iloc[0] == "Right"\
+                        and data[i]['vur_location'].iloc[0] == "Contralateral":
                     labels.append(1)
                 else:
                     labels.append(0)
     else:
         num_samples = data.shape[0]
-
         for i in range(num_samples):
-            if data.iloc[i]['surgery'] == 0:
+            if data.iloc[i]['vur'] == 0:
                 labels.append(0)
             else:
-                if data.iloc[i]['kidney_side'] == "Left" and data.iloc[i]['hydro_kidney'] == "Left":
+                if data.iloc[i]['kidney_side'] == "Left" and data.iloc[i]['hydro_kidney'] == "Left" \
+                        and (data.iloc[i]['vur_location'] == "Both" or data.iloc[i]['vur_location'] == "Concurrent"):
                     labels.append(1)
-                elif data.iloc[i]['kidney_side'] == "Right" and data.iloc[i]['hydro_kidney'] == "Right":
+                elif data.iloc[i]['kidney_side'] == "Right" and data.iloc[i]['hydro_kidney'] == "Right" \
+                        and (data.iloc[i]['vur_location'] == "Both" or data.iloc[i]['vur_location'] == "Concurrent"):
+                    labels.append(1)
+                elif data.iloc[i]['kidney_side'] == "Right" and data.iloc[i]['hydro_kidney'] == "Left" \
+                        and data.iloc[i]['vur_location'] == "Contralateral":
+                    labels.append(1)
+                elif data.iloc[i]['kidney_side'] == "Left" and data.iloc[i]['hydro_kidney'] == "Right" \
+                        and data.iloc[i]['vur_location'] == "Contralateral":
                     labels.append(1)
                 else:
                     labels.append(0)
@@ -142,10 +160,10 @@ def get_X(data, contrast, image_dim, siamese=False):
 '''
 def get_f(data, samples_to_exclude=None, siamese=False):
 
-    study_id_date_map = pd.read_csv("../../0.Preprocess/samples_with_studyids_and_usdates.csv")
+    study_id_date_map = pd.read_csv("/home/marta/nephronetwork-github/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
     # "/Volumes/terminator/nephronetwork/preprocess/"
 
-    #study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
+    # study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
 
     # study_id_date_map = pd.read_csv("/Users/Marta/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
 
@@ -153,7 +171,6 @@ def get_f(data, samples_to_exclude=None, siamese=False):
     features = {}
     if siamese:
         for column in data[0]:
-
             if column not in ['laterality', 'surgery', 'crop_style', 'hydro_kidney', 'image', 'kidney_view']:
                 features[column] = []
     else:
@@ -266,8 +283,10 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
                              train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer'],
-                             ]
+                             train_features["vur_grade"],]
+                counter = 0
                 for item in train_cov:
+                    counter += 1
                     assert len(item) == len(train_y)
                 train_features = make_cov_labels(train_cov)
         test_grouped = test_data.groupby(['study_id', 'sample_num', 'kidney_side'])
@@ -284,7 +303,7 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
                             test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer'],
-                            ]
+                            test_features["vur_grade"],]
 
                 for item in test_cov:
                     assert len(item) == len(test_y)
@@ -312,11 +331,11 @@ def load_train_test_sets(data, sort_by_date, split, bottom_cut,contrast, image_d
                 train_cov = [train_features["study_id"], train_features["age_at_baseline"], train_features["male"],
                              train_features["saggital"], train_features["sample_num"], train_features['kidney_side'],
                              train_features["date_of_ultrasound_1"], train_features['sample_us_date'], train_features['manufacturer'],
-                             ]
+                             train_features["vur_grade"],]
                 test_cov = [test_features["study_id"], test_features["age_at_baseline"], test_features["male"],
                             test_features["saggital"], test_features["sample_num"], test_features['kidney_side'],
                             test_features["date_of_ultrasound_1"], test_features['sample_us_date'], test_features['manufacturer'],
-                            ]
+                            test_features["vur_grade"],]
                 for item in train_cov:
                     assert len(item) == len(train_y)
                 for item in test_cov:
@@ -344,10 +363,11 @@ def get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_
 
 
 def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, crop=0, get_features=False,
-                 image_dim=256, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B", hydro_only=False, gender=None):
+                 image_dim=300, views_to_get="all", get_cov=False, pickle_file="", bottom_cut=0, etiology="B", hydro_only=False, gender=None,
+                 high_vur=False):
 
     data = open_file(pickle_file)
-    print("Loading SURG data............")
+    print("Loading VUR data.............")
     if drop_bilateral:
         data = data[((data['hydro_kidney'] == data['kidney_side']) & (data['laterality'] == "Bilateral"))
                     | (data['laterality'] != "Bilateral")]
@@ -360,6 +380,9 @@ def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, 
         data = data[data.gender == "Female"]
         
 
+    if high_vur:
+        data = data[(data.vur_grade == int(5)) | (data['vur_grade'].isnull())]
+
     if etiology == 'O':
         data = data[data.etiology == int(1)]
     elif etiology == 'R':
@@ -371,6 +394,8 @@ def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, 
         return get_trans(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
     elif views_to_get == "siamese":
         return get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
+
+
 
 
 
