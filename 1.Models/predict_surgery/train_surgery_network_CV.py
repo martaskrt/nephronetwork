@@ -9,6 +9,7 @@ import importlib.machinery
 from torch.utils.data import Dataset, DataLoader
 import argparse
 from torch.autograd import Variable
+import train_surgery_network_full
 
 # load data preprocessing and results postprocessing scripts
 load_dataset = importlib.machinery.SourceFileLoader('load_dataset','../../0.Preprocess/load_dataset.py').load_module()
@@ -44,7 +45,7 @@ def get_stopping_epoch(val_dict):
     return np.argmax(val_dict)
 
 
-def train(args, train_X, train_y, train_cov, max_epochs):
+def train_CV(args, train_X, train_y, train_cov, max_epochs):
     from CNN_surgery import CNN
       
     hyperparams = {'lr': args.lr,
@@ -60,9 +61,6 @@ def train(args, train_X, train_y, train_cov, max_epochs):
     # StratifiedKFold to ensure proportional class splitting
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     best_epoch_per_fold = {fold: [0]*max_epochs for fold in range(1, 5)} # store best epoch for each fold
-
-    train_y = np.array(train_y)
-    train_cov = np.array(train_cov)
 
     train_X, train_y, train_cov = shuffle(train_X, train_y, train_cov, random_state=42)
     for train_index, val_index in skf.split(train_X, train_y):
@@ -236,9 +234,11 @@ def train(args, train_X, train_y, train_cov, max_epochs):
 
         fold += 1
 
+    best_epoch = get_stopping_epoch(best_epoch_per_fold)
     print("********************************************************************")
-    print("STOPPING EPOCH:::{}".format(get_stopping_epoch(best_epoch_per_fold)))
+    print("STOPPING EPOCH:::{}".format(best_epoch))
     print("********************************************************************")
+    return best_epoch
         
 
 def main():
@@ -268,7 +268,7 @@ def main():
     print("ARGS" + '\t' + str(args))
 
     max_epochs = args.epochs
-    train_X, train_y, train_cov, _, _, _ = load_dataset.load_dataset(views_to_get="siamese",
+    train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset.load_dataset(views_to_get="siamese",
                                                                                       sort_by_date=True,
                                                                                       pickle_file=args.datafile,
                                                                                       contrast=args.contrast,
@@ -282,9 +282,13 @@ def main():
 
     if args.view == "sag" or args.view == "trans":
         train_X=np.array([item[0] if args.view == "sag" else item[1] for item in train_X])
+        test_X = np.array([item[0] if args.view == "sag" else item[1] for item in test_X])
 
-    train(args, train_X, train_y, train_cov, max_epochs)
+    train_y, train_cov = np.array(train_y), np.array(train_cov)
+    test_y, test_cov = np.array(test_y), np.array(test_cov)
 
+    best_epoch = train_CV(args, train_X, train_y, train_cov, max_epochs)
+    train_surgery_network_full.train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, best_epoch)
 
 if __name__ == '__main__':
     main()
