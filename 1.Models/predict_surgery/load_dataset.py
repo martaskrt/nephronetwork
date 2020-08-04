@@ -2,9 +2,6 @@ import pandas as pd
 import math
 from skimage import exposure
 import numpy as np
-#import ast
-#from numpy import genfromtxt
-#import matplotlib.pyplot as plt
 
 def make_cov_labels(cov):
     cov_id_str = []
@@ -39,7 +36,6 @@ def make_cov_labels(cov):
 
 def open_file(file):
     data = pd.read_pickle(file)
-    #data = pd.read_pickle("preprocessed_images.pickle")
     return data
 
 
@@ -137,19 +133,11 @@ def get_X(data, contrast, image_dim, siamese=False):
         X = np.array(X)
         return X
 
-'''
 
-'''
 def get_f(data, samples_to_exclude=None, siamese=False):
 
     study_id_date_map = pd.read_csv("../../0.Preprocess/samples_with_studyids_and_usdates.csv")
-    # "/Volumes/terminator/nephronetwork/preprocess/"
 
-    #study_id_date_map = pd.read_csv("samples_with_studyids_and_usdates.csv")
-
-    # study_id_date_map = pd.read_csv("/Users/Marta/nephronetwork/0.Preprocess/samples_with_studyids_and_usdates.csv")
-
-    # study_id_date_map = pd.read_csv("/home/lauren/preprocess/samples_with_studyids_and_usdates.csv")
     features = {}
     if siamese:
         for column in data[0]:
@@ -165,12 +153,6 @@ def get_f(data, samples_to_exclude=None, siamese=False):
     features["sample_us_date"] = []
 
 
-    # if 'sample_num' in features:
-    #     features['total_patient_samples'] = []
-    #     total_patient_samples = list(set(zip(data.study_id, data.sample_num)))
-    #     id2numsamples = {}  # map study_id to total_num of samples
-    #     for i in total_patient_samples:
-    #         id2numsamples[i[0]] = i[1]
     if siamese:
         num_samples = len(data)
         for i in range(num_samples):
@@ -204,9 +186,7 @@ def get_f(data, samples_to_exclude=None, siamese=False):
 
                 elif j != 'total_patient_samples' and j != "sample_us_date":
                     features[j].append(data[i][j].iloc[0])
-                # else:
-                #     study_id = data[i]['study_id'].iloc[0]
-                #     features[j].append(id2numsamples[study_id])_
+
 
     else:
         num_samples = data.shape[0]
@@ -236,9 +216,7 @@ def get_f(data, samples_to_exclude=None, siamese=False):
 
                 elif j != 'total_patient_samples' and j != "sample_us_date":
                     features[j].append(data.iloc[i][j])
-                # else:
-                #     study_id = data.iloc[i]['study_id']
-                #     features[j].append(id2numsamples[study_id])
+
     return features
 
 
@@ -372,66 +350,3 @@ def load_dataset(split=0.7, sort_by_date=True, contrast=0, drop_bilateral=True, 
     elif views_to_get == "siamese":
         return get_siamese(data, sort_by_date, split, bottom_cut, contrast, image_dim, get_features, get_cov)
 
-
-
-# =============================================================================
-# def view_images(imgs, num_images_to_view=20, views_to_get="siamese"):
-#     counter = 0
-#     if views_to_get=="siamese":
-#         for img in imgs:
-#             if counter >= num_images_to_view:
-#                 break
-#             plt.figure()
-#             plt.subplot(1, 2, 1)
-#             plt.imshow(img[0], cmap='gray')
-#             plt.subplot(1, 2, 2)
-#             plt.imshow(img[1], cmap='gray')
-#             plt.show()
-#             counter += 1
-#     else:
-#         for img in imgs:
-#             if counter >= num_images_to_view:
-#                 break
-#             plt.figure()
-#             plt.subplot(1, 1, 1)
-#             plt.imshow(img[0], cmap='gray')
-#             counter += 1
-# 
-# =============================================================================
-#datafile = "/home/lauren/preprocessed_images_20190402.pickle"
-#train_X, train_y, f, test_X, test_y, x = load_dataset(views_to_get="siamese", pickle_file=datafile, get_cov=True)
-
-#print(f)
-
-# from sklearn.utils import shuffle
-# train_X_shuffled = shuffle(train_X, random_state=42)
-# train_X = train_X_shuffled[:int(len(train_X_shuffled)*0.8)]
-# val_X = train_X_shuffled[int(len(train_X_shuffled)*0.8):]
-#
-# import os
-# os.makedirs("ILSVRC2012_img_train")
-# f = open("ILSVRC2012_img_train/ilsvrc12_train.txt", 'w')
-# import scipy.misc
-# counter = 0
-# for img in train_X:
-#     scipy.misc.imsave("ILSVRC2012_img_train/" + str(counter) +'.jpg', img[0])
-#     f.write(str(counter) +'.jpg\n')
-#     counter += 1
-#     scipy.misc.imsave("ILSVRC2012_img_train/" + str(counter) + '.jpg', img[1])
-#     f.write(str(counter) + '.jpg\n')
-#     counter += 1
-# f.close()
-#
-# os.makedirs("ILSVRC2012_img_val")
-# f = open("ILSVRC2012_img_val/ilsvrc12_val.txt", 'w')
-# counter = 0
-# for img in val_X:
-#     scipy.misc.imsave("ILSVRC2012_img_val/" + str(counter) + '.jpg', img[0])
-#     f.write(str(counter) + '.jpg\n')
-#     counter += 1
-#     scipy.misc.imsave("ILSVRC2012_img_val/" + str(counter) + '.jpg', img[1])
-#     f.write(str(counter) + '.jpg\n')
-#     counter += 1
-# f.close()
-# #
-#view_images(test_X)
