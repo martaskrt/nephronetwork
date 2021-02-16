@@ -18,6 +18,7 @@ from sklearn.metrics import roc_auc_score
     ###        HELPER FUNCTIONS
     ###
 
+
 def read_image_file(file_name):
 
     """
@@ -346,6 +347,8 @@ class FuncModSiamese(nn.Module):
         return x7
 
 ## COME BACK TO THIS BASED ON HOW OTHER MODS DO
+
+
 class STStack_FuncMod(nn.Module):
     def __init__(self, args):
         super(FuncMod, self).__init__()
@@ -413,6 +416,8 @@ class STStack_FuncMod(nn.Module):
 ##  PRETRAINED MODELS
 
 ## -- RETURN TO THIS --
+
+
 class DenseNet(nn.Module):
     def __init__(self, args):
         super(DenseNet, self).__init__()
@@ -461,11 +466,11 @@ class DenseNet(nn.Module):
 
         return x7
 
-
 ###
     ###
     ###        MODEL TRAINING FUNCTIONS
     ###
+
 
 def initialize_training(args, neural_net):
 
@@ -768,6 +773,7 @@ def training_loop(args, network, file_lab):
     ###
     ###        MAIN FUNCTION
     ###
+
 
 def main():
     parser = argparse.ArgumentParser()
