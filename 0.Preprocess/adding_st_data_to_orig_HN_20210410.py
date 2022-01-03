@@ -6,6 +6,8 @@ import argparse
 import os
 from PIL import Image
 import json
+import codecs
+import re
 #import ast
 #from numpy import genfromtxt
 #import matplotlib.pyplot as plt
@@ -388,6 +390,13 @@ def extract_st_us_num(file_string):
     return split2
 
 
+def extract_st_us_num_originals(file_string):
+
+    out_num = re.findall(r'\d+', file_string)
+
+    return out_num[0]
+
+
 def get_view(filename):
     if containsAll(filename.lower(), "trv"):
         view = "trv"
@@ -411,12 +420,83 @@ def get_side(filename):
 
     return side
 
+
+def get_side_original(filename):
+    side = filename.upper()[-5]
+
+    if side == "R":
+        side = "Right"
+    elif side == "L":
+        side = "Left"
+    else:
+        side = "NA"
+
+    return side
+
 ## read in images
 def get_st_files(study_id, img_dir, data_sheet):
     out_dict = {"Right": dict(), "Left": dict()}
 
     print("Img dir: " + img_dir)
 
+    orig_folders = [folder for folder in os.listdir(img_dir) if "original" in folder.lower()]
+
+    if len(orig_folders) > 0:
+        for file in os.listdir(img_dir+"/"+orig_folders[0]):
+
+            print(file)
+
+            ###********************************************###
+            ### MAKE THESE FUNCTIONS FOR THE ORIGINALS FOLDERS
+            num = extract_st_us_num_originals(file)
+            view = get_view(filename=file)
+            side = get_side_original(filename=file)
+            print("US number: " + num)
+            out_dict["Sex"] = list(data_sheet.query('ID == ' + str(study_id)).Sex)[0]
+            out_dict["BL_date"] = list(data_sheet.query('ID == ' + str(study_id)).DOB)[0]
+
+
+            if len(list(data_sheet.query('ID == ' + str(study_id) + ' & view_side == "' + side + '"').surg)) > 0:
+                out_dict[side]["surgery"] = \
+                    list(data_sheet.query('ID == ' + str(study_id) + ' & view_side == "' + side + '"').surg)[0]
+                try:
+                    out_dict[side][num][view] = img_dir + "/" + orig_folders[0] + "/" + file
+
+                    out_dict[side][num]["US_machine"] = \
+                        str(list(data_sheet.query('ID == ' + str(study_id) +
+                                                  ' & view_side == "' + side + '"').US_machine)[0]) + "ST"
+                    out_dict[side][num]["SFU"] = \
+                        list(data_sheet.query('ID == ' + str(study_id) +
+                                              ' & view_side == "' + side + '"').SFU)[0]
+                    out_dict[side][num]["Age_wks"] = \
+                        list(data_sheet.query('ID == ' + str(study_id) +
+                                              ' & view_side == "' + side + '"').age_at_US_wk)[0]
+                    out_dict[side][num]["ApD"] = \
+                        list(data_sheet.query('ID == ' + str(study_id) +
+                                              ' & view_side == "' + side + '"').ApD)[0]
+
+
+                except KeyError:
+                    out_dict[side][num] = dict()
+
+                    out_dict[side][num][view] = img_dir + "/" + orig_folders[0] + "/" + file
+
+                    out_dict[side][num]["US_machine"] = \
+                        str(list(data_sheet.query('ID == ' + str(study_id) +
+                                                  ' & view_side == "' + side + '"').US_machine)[0]) + "ST"
+                    out_dict[side][num]["SFU"] = \
+                        list(data_sheet.query('ID == ' + str(study_id) +
+                                              ' & view_side == "' + side + '"').SFU)[0]
+                    out_dict[side][num]["Age_wks"] = \
+                        list(data_sheet.query('ID == ' + str(study_id) +
+                                              ' & view_side == "' + side + '"').age_at_US_wk)[0]
+                    out_dict[side][num]["ApD"] = \
+                        list(data_sheet.query('ID == ' + str(study_id) +
+                                              ' & view_side == "' + side + '"').ApD)[0]
+
+    print("original data read in")
+
+    ## Replace any originals that are preprocessed with the preprocessed version
     for file in os.listdir(img_dir):
 
         print("File:" + file)
@@ -481,19 +561,37 @@ def get_st_files(study_id, img_dir, data_sheet):
                 out_dict[side][num]["ApD"] = "NA"
                 out_dict[side][num]["SFU"] = "NA"
 
+    print("preprocessed data read in")
+
     return out_dict
 
 
 def load_st_data(data_folder="C:/Users/lauren erdman/Desktop/kidney_img/HN/silent_trial/ImageOutput/HN Outputs", ## put these in the args
-                 data_sheet="C:/Users/lauren erdman/Desktop/kidney_img/HN/silent_trial/SilentTrial_Datasheet.csv"):
-    my_dat = pd.read_csv(data_sheet)
+                 data_sheet="C:/Users/lauren erdman/Desktop/kidney_img/HN/silent_trial/SilentTrial_Datasheet.csv",
+                 max_ID=None, min_ID=None):
+
+    doc = codecs.open(data_sheet, 'rU', 'latin1')
+    my_dat = pd.read_csv(doc, sep=',')
 
     img_dict = dict()
+
+    print(my_dat["ID"].unique())
+
     for i in my_dat["ID"].unique():
-        study_folder = data_folder + "/Study ID " + str(i) + "/"
-        if os.path.exists(study_folder):
-            print("Study ID " + str(i))
-            img_dict["STID"+str(i)] = get_st_files(study_id=i, img_dir=study_folder, data_sheet=my_dat)
+
+        if max_ID:
+            if i <= max_ID:
+                study_folder = data_folder + "/Study ID " + str(i) + "/"
+                if os.path.exists(study_folder):
+                    # print("Study ID " + str(i))
+                    img_dict["STID"+str(i)] = get_st_files(study_id=i, img_dir=study_folder, data_sheet=my_dat)
+
+        if min_ID:
+            if i > min_ID:
+                study_folder = data_folder + "/Study ID " + str(i) + "/"
+                if os.path.exists(study_folder):
+                    # print("Study ID " + str(i))
+                    img_dict["STID"+str(i)] = get_st_files(study_id=i, img_dir=study_folder, data_sheet=my_dat)
 
     return img_dict
 
@@ -527,8 +625,11 @@ def combine_st_orig(in_dict, X, y, feat, pt_info_file):
         trv_out_file = "C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/Original_CNN_Imgs/ORIG" + \
                        study_id + "_" + side + "_" + us_num + "_trv.jpg"
 
-        Image.fromarray(X[i, 0, :, :]).convert('L').save(sag_out_file)
-        Image.fromarray(X[i, 1, :, :]).convert('L').save(trv_out_file)
+        sag_img = Image.fromarray((X[i, 0, :, :]*255)).convert('L')
+        trv_img = Image.fromarray(X[i, 1, :, :]*255).convert('L')
+
+        sag_img.save(sag_out_file)
+        trv_img.save(trv_out_file)
 
         try:
             in_dict["ORIG" + study_id]["Sex"] = sex
@@ -587,9 +688,11 @@ def main():
     parser.add_argument("--datafile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_20190617.pickle")
     parser.add_argument("--st_datafile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/silent_trial/SilentTrial_Datasheet.csv",
                         help="Silent trial datasheet")
-    parser.add_argument("--json_out", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKids_wST_filenames_20210216.json", help="Directory to save model checkpoints to")
+    parser.add_argument("--json_out", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKidswST_filenames_20210411.json", help="Directory to save model checkpoints to")
+    parser.add_argument("--st_json_out", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_newSTonly_filenames_20210411.json", help="Directory to save model checkpoints to")
     parser.add_argument("--orig_extra_dat", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/Orig_data_age_apd_sfu.csv", help="Directory to save model checkpoints to")
 
+    parser.add_argument("--st_split_num", default=215, type=int, help="ID after which to exclude from training data.")
 
     args = parser.parse_args()
 
@@ -607,14 +710,20 @@ def main():
                                               git_dir=args.git_dir)
     print("original data loaded")
 
-    st_data = load_st_data(data_sheet=args.st_datafile)
-    print("silent trial data loaded")
+    st_data = load_st_data(data_sheet=args.st_datafile, max_ID=215)
+    print("training silent trial data loaded")
 
     full_data = combine_st_orig(in_dict=st_data, X=train_X, y=train_y, feat=train_cov, pt_info_file=args.orig_extra_dat)
     print("data merged")
 
     with open(args.json_out, 'w') as fp:
         json.dump(full_data, fp)
+
+    st_data_new = load_st_data(data_sheet=args.st_datafile, min_ID=215)
+    print("test silent trial data loaded")
+
+    with open(args.st_json_out, 'w') as fp:
+        json.dump(st_data_new, fp)
 
     ## write final data to a json then read in as dict in dataloader in training
 

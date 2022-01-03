@@ -2,12 +2,10 @@ from PIL import Image
 import numpy as np
 import torch
 import os
-import copy
 import argparse
 from torch import nn
 from skimage import exposure
 from skimage import img_as_float, transform
-import matplotlib.cm as mpl_color_map
 
 
 def save_image(im, path):
@@ -48,60 +46,6 @@ def format_np_output(np_arr):
     if np.max(np_arr) <= 1:
         np_arr = (np_arr*255).astype(np.uint8)
     return np_arr
-
-
-def save_class_activation_images(org_img, activation_map, file_name):
-    """
-        Saves cam activation map and activation map on the original image
-
-    Args:
-        org_img (PIL img): Original image
-        activation_map (numpy arr): Activation map (grayscale) 0-255
-        file_name (str): File name of the exported image
-    """
-    # Grayscale activation map
-    # heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, 'viridis')
-    # for map in ['plasma', 'magma', 'inferno', 'viridis', 'jet']:
-    #     for opacity in [0.5, 0.6]:
-    map = 'inferno'
-    opacity = 0.5
-    heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, map, opacity) ### this will be more similar to papers
-            # Save colored heatmap
-            #path_to_file = os.path.join('../results', file_name+'_Cam_Heatmap.png')
-            #save_image(heatmap, path_to_file)
-            # Save heatmap on iamge
-    path_to_file = '{}_Cam_On_Image_{}.png'.format(file_name, map)
-    save_image(heatmap_on_image, path_to_file)
-            # SAve grayscale heatmap
-            #path_to_file = os.path.join('../results', file_name+'_Cam_Grayscale.png')
-            #save_image(activation_map, path_to_file)
-
-
-def apply_colormap_on_image(org_im, activation, colormap_name, opacity=0.4):
-    """
-        Apply heatmap on image
-    Args:
-        org_img (PIL img): Original image
-        activation_map (numpy arr): Activation map (grayscale) 0-255
-        colormap_name (str): Name of the colormap
-    """
-    # Get colormap
-    color_map = mpl_color_map.get_cmap(colormap_name)
-    no_trans_heatmap = color_map(activation)
-
-    # Change alpha channel in colormap to make sure original image is displayed
-    heatmap = copy.copy(no_trans_heatmap)
-    heatmap[:, :, 3] = opacity
-    heatmap = np.transpose(heatmap, (1, 0, 2)) ########## added since Image grabs them in different order
-    heatmap = Image.fromarray((heatmap*255).astype(np.uint8))
-    no_trans_heatmap = Image.fromarray((no_trans_heatmap*255).astype(np.uint8))
-
-    # Apply heatmap on iamge
-    heatmap_on_image = Image.new("RGBA", org_im.size)
-    heatmap_on_image = Image.alpha_composite(heatmap_on_image, org_im.convert('RGBA'))
-    heatmap_on_image = Image.alpha_composite(heatmap_on_image, heatmap)
-
-    return no_trans_heatmap, heatmap_on_image
 
 
 def set_contrast(image, contrast=1):
@@ -323,145 +267,17 @@ class LRN(nn.Module):
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-class CamExtractor():
-    """
-        Extracts cam features from the model
-    """
-    def __init__(self, model, view):
-        self.model = model
-        self.gradients = None
-        self.view = view
-
-    def save_gradient(self, grad):
-        self.gradients = grad
-
-    def forward_pass_on_convolutions(self, x, age, left):
-        """
-            Does a forward pass on convolutions, hooks the function at given layer
-        """
-
-        x = torch.unsqueeze(x, 0)
-        conv_output = None
-
-        B, T, C, H = x.size()
-        x = x.transpose(0, 1)
-        x_list = []
-
-        for i in range(2):
-            curr_x = torch.unsqueeze(x[i], 1)
-            curr_x = curr_x.expand(-1, 3, -1, -1)
-            if torch.cuda.is_available():
-                input = torch.cuda.FloatTensor(curr_x)
-            else:
-                input = torch.FloatTensor(curr_x)
-
-            out1 = self.model.conv(input)
-
-            # z = out1.view([B, 1, -1])
-            z = self.model.fc6(out1) ## convolution
-            z = self.model.fc6b(z) ## convolution
-
-            if i == 0 and self.view == 'sag':
-                z.register_hook(self.save_gradient)
-                conv_output = z  # Save the convolution output on that layer
-
-            elif i == 1 and self.view == 'trans':
-                z.register_hook(self.save_gradient)
-                conv_output = z  # Save the convolution output on that layer
-
-            z = z.view([B, 1, -1])
-            z = self.model.fc6c(z) ## fully connected layer
-            ### LAUREN CHECK THIS -- shouldn't need to .view, no?
-            # z = z.view([B, 1, -1])
-            x_list.append(z)
-
-        x = torch.cat(x_list, 1)
-        x = self.model.fc7_new(x.view(B, -1))
-        pred = self.model.classifier_new(x)
-
-        age = torch.tensor(age).type(torch.FloatTensor).to(device).view(B, 1)
-        left = torch.tensor(left).type(torch.FloatTensor).to(device).view(B, 1)
-
-        mid_in = torch.cat((pred, age, left), 1)
-
-        x = self.model.add_covs1(mid_in)
-        x = self.model.add_covs2(x)
-
-        return conv_output, x
-
-    def forward_pass(self, x, age, left):
-        """
-            Does a full forward pass on the model
-        """
-        # Forward pass on the convolutions
-        conv_output, x = self.forward_pass_on_convolutions(x=x, age=age, left=left)
-        x = x.view(x.size(0), -1)  # Flatten
-        return conv_output, x
-
-
-class GradCam():
-    """
-        Produces class activation map
-    """
-    def __init__(self, model, view):
-        self.model = model.to(device)
-        self.model.eval()
-        # Define extractor
-        self.extractor = CamExtractor(self.model, view)
-
-    def generate_cam(self, input_image, age, left, target_class=None):
-
-        conv_output, model_output = self.extractor.forward_pass(x=input_image.to(device), age=age, left=left)
-        if target_class is None:
-            target_class = np.argmax(model_output.data.numpy())
-        # Target for backprop
-        if torch.cuda.is_available():
-            one_hot_output = torch.cuda.FloatTensor(1, model_output.size()[-1]).zero_()
-        else:
-            one_hot_output = torch.FloatTensor(1, model_output.size()[-1]).zero_()
-        one_hot_output[0][target_class] = 1
-
-        # Zero grads
-
-        self.model.zero_grad()
-        # Backward pass with specified target
-        model_output.backward(gradient=one_hot_output, retain_graph=True)
-        # Get hooked gradients
-        guided_gradients = self.extractor.gradients.data.cpu().numpy()[0]
-        # Get convolution outputs
-        target = conv_output.data.cpu().numpy()[0]
-        # Get weights from gradients
-        # weights = np.mean(guided_gradients, axis=(1, 2)) * -1  # Take averages for each gradient
-        weights = np.mean(guided_gradients, axis=(1, 2))
-
-        # Create empty numpy array for cam
-        cam = np.ones(target.shape[1:], dtype=np.float32)
-        # Multiply each weight with its conv output and then, sum
-        for i, w in enumerate(weights):
-            cam += w * target[i, :, :]
-        cam = np.maximum(cam, 0) ### this is relu
-        cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
-        cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
-
-        input_image = torch.unsqueeze(input_image[0], 0)
-        input_image = torch.unsqueeze(input_image, 1)
-        input_image = input_image.expand(-1, 3, -1, -1)
-        cam = np.uint8(Image.fromarray(cam).resize((input_image.shape[2],
-                       input_image.shape[3]), Image.ANTIALIAS))/255
-        return cam
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('--sag_path', default='C:/Users/lauren erdman/Desktop/kidney_img/HN/repos/SingleRun_20210706/test_RS_cropped2.png')
     # parser.add_argument('--trans_path', default='C:/Users/lauren erdman/Desktop/kidney_img/HN/repos/SingleRun_20210706/test_RT_cropped2.png')
     # parser.add_argument('--age_wks', default=143)
-    parser.add_argument('--sag_path', default='C:/Users/lauren erdman/Desktop/kidney_img/HN/repos/SingleRun_20210706/test_RS_cropped1.png')
-    parser.add_argument('--trans_path', default='C:/Users/lauren erdman/Desktop/kidney_img/HN/repos/SingleRun_20210706/test_RT_cropped1.png')
+    parser.add_argument('--sag_path', default='../../ModelTest/Images/test_RS_cropped1.png')
+    parser.add_argument('--trans_path', default='../../ModelTest/Images/test_RT_cropped1.png')
     parser.add_argument('--age_wks', default=34)
     parser.add_argument('--left_kidney', action="store_true", help="Flag for left kidney")
-    parser.add_argument('--outdir', default="C:/Users/lauren erdman/Desktop/kidney_img/HN/silent_trial/gradcam_test/")
-    parser.add_argument('-checkpoint', default="C:/Users/lauren erdman/Desktop/kidney_img/HN/repos/SingleRun_20210706/SickKids_origST_TrainOnly_40epochs_bs16_lr0.001_RCFalse_covTrue_OSFalse_30thEpoch_20210614_v5.pth") ## update with best model
+    parser.add_argument('--outdir', default="./")
+    parser.add_argument('-checkpoint', default="../../ModelTest/ModelWeights/SickKids_origST_TrainOnly_40epochs_bs16_lr0.001_RCFalse_covTrue_OSFalse_30thEpoch_20210614_v5.pth")
     args = parser.parse_args()
    
     checkpoint = args.checkpoint
@@ -514,26 +330,5 @@ if __name__ == '__main__':
         pred_prob = output_softmax[:, 1]
         pred_prob = np.exp(-2.3103 + 3.5598*float(pred_prob))
 
-    print("Un-scaled probability of surgery:::{:6.3f}".format(float(output_softmax[:, 1])))
     print("Probability of surgery:::{:6.3f}".format(float(pred_prob)))
     target_class = 1 if pred_prob >= 0.1 else 0
-
-    original_image_sag = Image.open(img_path_sag)
-    original_image_trans = Image.open(img_path_trans)
-
-    sag_filename_id = os.path.join(outdir, sag_path)
-    trans_filename_id = os.path.join(outdir, trans_path)
-
-    # Grad cam
-    grad_cam = GradCam(net, view='sag')
-    # Generate cam mask
-    cam = grad_cam.generate_cam(input_image=combined_image, age=args.age_wks, left=int(args.left_kidney), target_class=target_class)
-    # Save mask
-    save_class_activation_images(original_image_sag, cam, sag_filename_id)
-
-    grad_cam = GradCam(net, view='trans')
-    # Generate cam mask
-    cam = grad_cam.generate_cam(input_image=combined_image, age=args.age_wks, left=int(args.left_kidney), target_class=target_class)
-    # Save mask
-    save_class_activation_images(original_image_trans, cam, trans_filename_id)
-    print('Grad cam completed')

@@ -526,7 +526,7 @@ def train(args, train_X, train_y, train_cov, test_X, test_y, test_cov):
 
 def chooseModel(args):
     model_pretrain = args.pretrained
-    num_inputs =  1 if args.view != "siamese" else 2
+    num_inputs = 1 if args.view != "siamese" else 2
     if args.vgg:
         print("importing VGG16 without BN")
         from VGGResNetSiamese import RevisedVGG
@@ -617,34 +617,6 @@ def main():
         data_loader = importlib.machinery.SourceFileLoader("loadData", "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
         train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
 
-    # datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190617.pickle"
-    #
-    # if not local:
-    #     load_dataset_LE = importlib.machinery.SourceFileLoader('load_dataset_LE',
-    #                                                            args.git_dir + '/nephronetwork/0.Preprocess/load_dataset_LE.py').load_module()
-    #
-    # # sys.path.append(args.git_dir + 'nephronetwork/0.Preprocess')
-    # # import load_dataset_LE
-    # # sys.path.append(args.git_dir + 'nephronetwork/2.Results')
-    # # import process_results
-    #
-    #     train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset_LE.load_dataset(
-    #         views_to_get=args.view,
-    #         sort_by_date=True,
-    #         pickle_file=datafile,
-    #         contrast=args.contrast,
-    #         split=args.split,
-    #         get_cov=True,
-    #         bottom_cut=args.bottom_cut,
-    #         etiology=args.etiology,
-    #         crop=args.crop,
-    #         git_dir=args.git_dir
-    #     )
-    #
-    # if local:
-    #     data_loader = importlib.machinery.SourceFileLoader("loadData",
-    #                                                        "/Users/sulagshan/Documents/Thesis/logs/loadData.py").load_module()
-    #     train_X, train_y, train_cov, test_X, test_y, test_cov = data_loader.load()
     args.resnet18 = True
     train(args, train_X, train_y, train_cov, test_X, test_y, test_cov)
     print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
@@ -652,101 +624,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-#########################################
-######## DEBUGGING MAIN FUNCTION
-#########################################
-
-# args_dict = {'epochs': 35,
-#         'batch_size': 16,
-#         'lr': 0.001, # 0.005
-#         'momentum': 0.9,
-#         'adam': False,
-#         'weight_decay': 5e-4,
-#         'num_workers': 0,
-#         'dir': './',
-#         'contrast': 1,
-#         'view': 'sag', ## trans, sag
-#         'checkpoint':"", ## use if you want to do transfer learning -- could be interesting to use pretrained resnet and vgg,
-#         'split':0.7,
-#         'bottom_cut':0.0,
-#         'etiology':'B',
-#         'crop':0,
-#         'output_dim':128, ## may be unnecessary in this code,
-#         'git_dir':"C:/Users/Lauren/Desktop/DS Core/Projects/Urology/",
-#         'vgg': False,
-#         'resnet18': True,
-#         'resnet50': False,
-#         'cv': False,
-#         'stop_epoch':18
-#         }
-#
-# class myargs():
-#     def __init__(self,args_dict):
-#         self.epochs = args_dict['epochs']
-#         self.batch_size = args_dict['batch_size']
-#         self.lr = args_dict['lr']
-#         self.momentum = args_dict['momentum']
-#         self.adam = args_dict['adam']
-#         self.weight_decay = args_dict['weight_decay']
-#         self.num_workers = args_dict['num_workers']
-#         self.dir = args_dict['dir']
-#         self.contrast = args_dict['contrast']
-#         self.view = args_dict['view']
-#         self.checkpoint = args_dict['checkpoint']
-#         self.split = args_dict['split']
-#         self.bottom_cut = args_dict['bottom_cut']
-#         self.etiology = args_dict['etiology']
-#         self.crop = args_dict['crop']
-#         self.output_dim = args_dict['output_dim']
-#         self.git_dir = args_dict['git_dir']
-#         self.vgg = args_dict['vgg']
-#         self.resnet18 = args_dict['resnet18']
-#         self.resnet50 = args_dict['resnet50']
-#         self.cv = args_dict['cv']
-#         self.stop_epoch = args_dict['stop_epoch']
-#
-# args = myargs(args_dict)
-# args.git_dir
-#
-# datafile = args.git_dir + "nephronetwork/0.Preprocess/preprocessed_images_20190601.pickle" ## CHANGE THIS IN THE MAIN FUNCTION
-#
-# sys.path.insert(0, args.git_dir + '/nephronetwork/0.Preprocess/')
-# import load_dataset_LE
-# sys.path.insert(0, args.git_dir + '/nephronetwork/2.Results/')
-# import process_results
-#
-# max_epochs = args.epochs
-# train_X, train_y, train_cov, test_X, test_y, test_cov = load_dataset_LE.load_dataset(views_to_get=args.view,
-#                                                                                   sort_by_date=True,
-#                                                                                   pickle_file=datafile,
-#                                                                                   contrast=args.contrast,
-#                                                                                   split=args.split,
-#                                                                                   get_cov=True,
-#                                                                                   bottom_cut=args.bottom_cut,
-#                                                                                   etiology=args.etiology,
-#                                                                                   crop=args.crop,
-#                                                                                   git_dir=args.git_dir)
-#
-# # if args.view == "sag" or args.view == "trans":
-# #     train_X_single = []
-# #     test_X_single = []
-# #
-# #     for item in train_X:
-# #         if args.view == "sag":
-# #             train_X_single.append(item[0])
-# #         elif args.view  == "trans":
-# #             train_X_single.append(item[1])
-# #     for item in test_X:
-# #         if args.view == "sag":
-# #             test_X_single.append(item[0])
-# #         elif args.view == "trans":
-# #             test_X_single.append(item[1])
-# #
-# #     train_X = np.array(train_X_single)
-# #     test_X = np.array(test_X_single)
-#
-# train(args, train_X, train_y, train_cov, test_X, test_y, test_cov, max_epochs)
-#
-# print(len(train_X), len(train_y), len(train_cov), len(test_X), len(test_y), len(test_cov))
 

@@ -24,7 +24,9 @@ from sklearn.utils import class_weight
 import json
 import math
 import collections
-
+from skimage.transform import resize
+import random
+import cv2
 
     ##
     ##  UTILITY FUNCTIONS
@@ -38,8 +40,16 @@ def load_dataset(json_infile, test_prop, ordered_split=False):
     with open(json_infile, 'r') as fp:
         in_dict = json.load(fp)
 
+    if 'SU2bae8dc' in list(in_dict.keys()):
+        in_dict.pop('SU2bae8dc', None)
+
     pt_ids = list(in_dict.keys())
-    BL_dates = [in_dict[my_key]['BL_date'] for my_key in pt_ids]
+    BL_dates = []
+    for my_key in pt_ids:
+        if 'BL_date' in in_dict[my_key].keys():
+            BL_dates.extend([in_dict[my_key]['BL_date']])
+        else:
+            BL_dates.extend(['2021-01-01'])
 
     if ordered_split:
         sorted_pt_BL_dates = sorted(zip(pt_ids, BL_dates))
@@ -47,13 +57,13 @@ def load_dataset(json_infile, test_prop, ordered_split=False):
         train_out = dict()
         test_out = dict()
 
-        for i in range(test_n):
-            study_id, _ = sorted_pt_BL_dates[i]
-            test_out[study_id] = in_dict[study_id]
-
-        for i in range(test_n + 1, len(pt_ids)):
+        for i in range(len(pt_ids) - test_n):
             study_id, _ = sorted_pt_BL_dates[i]
             train_out[study_id] = in_dict[study_id]
+
+        for i in range(len(pt_ids) - test_n + 1, len(pt_ids)):
+            study_id, _ = sorted_pt_BL_dates[i]
+            test_out[study_id] = in_dict[study_id]
 
     else:
         shuf_pt_id, shuf_BL_dates = shuffle(list(pt_ids), BL_dates, random_state=42)
@@ -259,30 +269,146 @@ softmax = torch.nn.Softmax(dim=1)
     ##
 
 
+def pad_img_le(image_in, dim=256, random_pad = False):
+    """
+
+    :param image_in: input image
+    :param dim: desired dimensions of padded image (should be bigger or as big as all input images)
+    :return: padded image
+
+    """
+
+    im_shape = image_in.shape
+
+    while im_shape[0] > dim or im_shape[1] > dim:
+        image_in = resize(image_in, ((im_shape[0]*4)//5, (im_shape[1]*4)//5), anti_aliasing=True)
+        im_shape = image_in.shape
+
+    # print(im_shape)
+    if random_pad:
+
+        if random.random() >= 0.5:
+            image_in = cv2.flip(image_in, 1)
+
+        rand_h = np.random.uniform(0, 1, 1)
+        rand_v = np.random.uniform(0, 1, 1)
+        right = math.floor((dim - im_shape[1])*rand_h)
+        left = math.ceil((dim - im_shape[1])*(1-rand_h))
+        bottom = math.floor((dim - im_shape[0])*rand_v)
+        top = math.ceil((dim - im_shape[0])*(1-rand_v))
+    else:
+        right = math.floor((dim - im_shape[1])/2)
+        left = math.ceil((dim - im_shape[1])/2)
+        bottom = math.floor((dim - im_shape[0])/2)
+        top = math.ceil((dim - im_shape[0])/2)
+
+    image_out = cv2.copyMakeBorder(image_in, top, bottom, left, right, cv2.BORDER_CONSTANT, value=0)
+
+    return image_out
+
+
+def autocrop(image, threshold=0):
+    """Crops any edges below or equal to threshold
+
+    from fviktor here: https://stackoverflow.com/questions/13538748/crop-black-edges-with-opencv
+    Crops blank image to 1x1.
+
+    Returns cropped image.
+
+    """
+    if len(image.shape) == 3:
+        flatImage = np.max(image, 2)
+    else:
+        flatImage = image
+    assert len(flatImage.shape) == 2
+
+    rows = np.where(np.max(flatImage, 0) > threshold)[0]
+    if rows.size:
+        cols = np.where(np.max(flatImage, 1) > threshold)[0]
+        image = image[cols[0]: cols[-1] + 1, rows[0]: rows[-1] + 1]
+    else:
+        image = image[:1, :1]
+
+    return image
+
+
+def process_input_image(img_file):
+    """
+    Processes image: crop, convert to greyscale and resize
+
+    :param image: image
+    :return: formatted image
+    """
+    # print(img_file)
+    image = np.array(Image.open(img_file).convert('L'))
+
+    fit_img = pad_img_le(np.array(image))
+
+    # cv2.imwrite(img_file, fit_img*255)
+    # out_img.save(img_file)
+    # fit_img = my_img
+
+    return fit_img
+
+
 def get_images(in_dict):
     img_dict = dict()
     label_dict = dict()
     cov_dict = dict()
 
     for study_id in in_dict.keys():
-        sides = np.setdiff1d(list(in_dict[study_id].keys()), ['BL_date', 'Sex'])
-        for side in sides:
-            us_nums = [my_key for my_key in in_dict[study_id][side].keys() if my_key != 'surgery']
-            if len(us_nums) > 0 and in_dict[study_id][side][
-                        'surgery'] != "NA":
-                for us_num in us_nums:
-                    if in_dict[study_id][side][us_num]['Age_wks'] != "NA" and \
-                            set(['sag', 'trv']).issubset(in_dict[study_id][side][us_num].keys()):
-                        img_dict[study_id+"_"+side+"_"+us_num] = dict()
 
-                        img_dict[study_id + "_" + side + "_" + us_num]['sag'] = np.array(Image.open(in_dict[study_id][side][us_num]['sag']).convert('L'))
-                        img_dict[study_id + "_" + side + "_" + us_num]['trv'] = np.array(Image.open(in_dict[study_id][side][us_num]['trv']).convert('L'))
+        try:
+            sides = np.setdiff1d(list(in_dict[study_id].keys()), ['BL_date', 'Sex'])
+            for side in sides:
+                # print(study_id)
+                # print(in_dict[study_id][side])
 
-                        label_dict[study_id+"_"+side+"_"+us_num] = in_dict[study_id][side]['surgery']
-                        cov_dict[study_id + "_" + side + "_" + us_num] = dict()
-                        cov_dict[study_id+"_"+side+"_"+us_num]['US_machine'] = in_dict[study_id][side][us_num]['US_machine']
-                        cov_dict[study_id+"_"+side+"_"+us_num]['Sex'] = in_dict[study_id]['Sex']
-                        cov_dict[study_id+"_"+side+"_"+us_num]['Age_wks'] = in_dict[study_id][side][us_num]['Age_wks']
+                if type(in_dict[study_id][side]) == dict:
+                    if 'surgery' in list(in_dict[study_id][side].keys()):
+                        if type(in_dict[study_id][side]['surgery']) == int:
+                            surgery = in_dict[study_id][side]['surgery']
+                        elif type(in_dict[study_id][side]['surgery']) == list:
+                            s1 = [i for i in in_dict[study_id][side]['surgery'] if type(i) == int]
+                            if(len(s1) > 0):
+                                surgery = s1[0]
+                            else:
+                                surgery = None
+                        elif type(in_dict[study_id][side]['surgery']) == str:
+                            surgery = None
+                    else:
+                        surgery = None
+                else:
+                    surgery = None
+
+                us_nums = [my_key for my_key in in_dict[study_id][side].keys() if my_key != 'surgery']
+                if len(us_nums) > 0 and surgery is not None:
+                    for us_num in us_nums:
+                        if in_dict[study_id][side][us_num]['Age_wks'] != "NA" and \
+                                set(['sag', 'trv']).issubset(in_dict[study_id][side][us_num].keys()):
+                            img_dict[study_id+"_"+side+"_"+us_num] = dict()
+
+                            img_dict[study_id + "_" + side + "_" + us_num]['sag'] = process_input_image(in_dict[study_id][side][us_num]['sag'])
+                            img_dict[study_id + "_" + side + "_" + us_num]['trv'] = process_input_image(in_dict[study_id][side][us_num]['trv'])
+                            # img_dict[study_id + "_" + side + "_" + us_num]['sag'] = np.array(Image.open(in_dict[study_id][side][us_num]['sag']).convert('L'))
+                            # img_dict[study_id + "_" + side + "_" + us_num]['trv'] = np.array(Image.open(in_dict[study_id][side][us_num]['trv']).convert('L'))
+
+                            label_dict[study_id+"_"+side+"_"+us_num] = surgery
+
+                            cov_dict[study_id + "_" + side + "_" + us_num] = dict()
+                            cov_dict[study_id+"_"+side+"_"+us_num]['US_machine'] = in_dict[study_id][side][us_num]['US_machine']
+                            cov_dict[study_id+"_"+side+"_"+us_num]['Sex'] = in_dict[study_id]['Sex']
+                            cov_dict[study_id+"_"+side+"_"+us_num]['Age_wks'] = in_dict[study_id][side][us_num]['Age_wks']
+                            # print(label_dict)
+                            # print(img_dict[study_id+"_"+side+"_"+us_num])
+                            # print(cov_dict[study_id+"_"+side+"_"+us_num])
+                            assert(type(label_dict[study_id+"_"+side+"_"+us_num]) is not None)
+                            assert(type(img_dict[study_id+"_"+side+"_"+us_num]) is not None)
+                            assert(type(cov_dict[study_id+"_"+side+"_"+us_num]['Sex']) is not None)
+                            assert(type(cov_dict[study_id+"_"+side+"_"+us_num]['Age_wks']) is not None)
+
+        except AttributeError:
+            continue
 
     ids = img_dict.keys()
 
@@ -301,7 +427,10 @@ class KidneyDataset(torch.utils.data.Dataset):
         self.cov_input = cov_input
         self.rand_crop = rand_crop
 
+
     def __getitem__(self, index):
+
+        # print(index)
 
         id = list(self.study_ids)[index]
 
@@ -335,9 +464,19 @@ class KidneyDataset(torch.utils.data.Dataset):
             dict_out['img'] = img_out
             dict_out['Side_L'] = 1 if id_split[1] == 'Left' else 0
 
-            if math.isnan(torch.tensor(dict_out['Age_wks']).type(torch.FloatTensor)):
+            if dict_out['Age_wks'] is None:
+                dict_out['Age_wks'] = 36
+            elif math.isnan(torch.tensor(dict_out['Age_wks']).type(torch.FloatTensor)):
                 dict_out['Age_wks'] = 36
 
+            # print("Side:")
+            # print(dict_out['Side_L'])
+            # print("Age:")
+            # print(dict_out['Age_wks'])
+            # print("target:")
+            # print(target_out)
+            # print("image")
+            # print(dict_out["img"].shape)
             return dict_out, target_out, id
         else:
             return img_out, target_out, id
@@ -387,8 +526,8 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
     # train_y = np.array(train_y)
     # train_cov = np.array(train_cov)
-
     train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict)
+
     train_study_ids = shuffle(list(train_study_ids), random_state=42)
 
     model_output = {"train": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
@@ -397,21 +536,7 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
     split = 0
     for train_idx, val_idx in skf.split(train_study_ids, list(train_label_dict.values())):
         split += 1
-      #  class_weights=torch.tensor([1/num_0, 1/num_1]).to(device)
-        #class_weights=torch.tensor([0.5, 2.0]).to(device)
-        #cw=torch.from_numpy(class_weights).float().to(device)
-        #print("CLASS WEIGHTS: " + str(cw))
-        #cross_entropy = nn.CrossEntropyLoss(weight=cw)
-        #cross_entropy = nn.CrossEntropyLoss()
-        #if fold == 1 or fold == 2:
-         #   fold += 1
-          #  continue
-        #if fold != 5:
-         #   fold += 1
-          #  continue
-        # jigsaw = False
-        # if "jigsaw" in args.dir and "unet" in args.dir:
-        #     jigsaw = True
+
         if args.view != "siamese":
             net = SiamNet(num_inputs=1, output_dim=args.output_dim, cov_layers=cov_in).to(device)
         else:
@@ -421,120 +546,22 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
 
         ## come back to this
         if args.checkpoint != "":
-            if "jigsaw" in args.dir and "unet" in args.dir:
-                print("Loading Jigsaw into UNet")
-                pretrained_dict = torch.load(args.checkpoint)
-                model_dict = net.state_dict()
-                unet_dict = {}
+            #pretrained_dict = torch.load(args.checkpoint)
+            pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
+            model_dict = net.state_dict()
+            print("loading checkpoint..............")
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and k not in ["fc6c.fc7.weight","fc6c.fc7.bias", "fc7_new.fc7.weight", "fc7_new.fc7.bias", "classifier_new.fc8.weight", "classifier_new.fc8.bias"]}
 
-                for k, v in model_dict.items():
-                    unet_dict[k] = model_dict[k]
-
-                unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight']
-                unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
-                unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
-                unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
-                unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
-                unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
-                unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
-                unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
-                unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
-                unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
-
-                unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-                #unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight']
-                unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
-
-                model_dict.update(unet_dict)
-                # 3. load the new state dict
-                net.load_state_dict(unet_dict)
-            elif "carson" in args.checkpoint:
-                if "mnist" in args.checkpoint:
-                    print("Loading mnist into SiamNet")
-                elif "oct" in args.checkpoint:
-                    print("Loading oct into SiamNet")
-                pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
-                model_dict = net.state_dict()
-                unet_dict = {}
-
-                for k, v in model_dict.items():
-                    unet_dict[k] = model_dict[k]
-
-                #unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight'][:, 0, :, :].unsqueeze(1)
-                unet_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv.conv1_s1.weight'].mean(1).unsqueeze(1)
-                unet_dict['conv1.conv1_s1.bias'] = pretrained_dict['conv.conv1_s1.bias']
-                unet_dict['conv1.batch1_s1.weight'] = pretrained_dict['conv.batch1_s1.weight']
-                unet_dict['conv1.batch1_s1.bias'] = pretrained_dict['conv.batch1_s1.bias']
-                unet_dict['conv1.batch1_s1.running_mean'] = pretrained_dict['conv.batch1_s1.running_mean']
-                unet_dict['conv1.batch1_s1.running_var'] = pretrained_dict['conv.batch1_s1.running_var']
-                unet_dict['conv1.batch1_s1.num_batches_tracked'] = pretrained_dict['conv.batch1_s1.num_batches_tracked']
-
-                unet_dict['conv2.conv2_s1.weight'] = pretrained_dict['conv.conv2_s1.weight']
-                unet_dict['conv2.conv2_s1.bias'] = pretrained_dict['conv.conv2_s1.bias']
-                unet_dict['conv2.batch2_s1.weight'] = pretrained_dict['conv.batch2_s1.weight']
-                unet_dict['conv2.batch2_s1.bias'] = pretrained_dict['conv.batch2_s1.bias']
-                unet_dict['conv2.batch2_s1.running_mean'] = pretrained_dict['conv.batch2_s1.running_mean']
-                unet_dict['conv2.batch2_s1.running_var'] = pretrained_dict['conv.batch2_s1.running_var']
-                unet_dict['conv2.batch2_s1.num_batches_tracked'] = pretrained_dict['conv.batch2_s1.num_batches_tracked']
-
-                unet_dict['conv3.conv3_s1.weight'] = pretrained_dict['conv.conv3_s1.weight']
-                unet_dict['conv3.conv3_s1.bias'] = pretrained_dict['conv.conv3_s1.bias']
-                unet_dict['conv3.batch3_s1.weight'] = pretrained_dict['conv.batch3_s1.weight']
-                unet_dict['conv3.batch3_s1.bias'] = pretrained_dict['conv.batch3_s1.bias']
-                unet_dict['conv3.batch3_s1.running_mean'] = pretrained_dict['conv.batch3_s1.running_mean']
-                unet_dict['conv3.batch3_s1.running_var'] = pretrained_dict['conv.batch3_s1.running_var']
-                unet_dict['conv3.batch3_s1.num_batches_tracked'] = pretrained_dict['conv.batch3_s1.num_batches_tracked']    
-            
-                unet_dict['conv4.conv4_s1.weight'] = pretrained_dict['conv.conv4_s1.weight']
-                unet_dict['conv4.conv4_s1.bias'] = pretrained_dict['conv.conv4_s1.bias']
-                unet_dict['conv4.batch4_s1.weight'] = pretrained_dict['conv.batch4_s1.weight']
-                unet_dict['conv4.batch4_s1.bias'] = pretrained_dict['conv.batch4_s1.bias']
-                unet_dict['conv4.batch4_s1.running_mean'] = pretrained_dict['conv.batch4_s1.running_mean']
-                unet_dict['conv4.batch4_s1.running_var'] = pretrained_dict['conv.batch4_s1.running_var']
-                unet_dict['conv4.batch4_s1.num_batches_tracked'] = pretrained_dict['conv.batch4_s1.num_batches_tracked'] 
- 
-                unet_dict['conv5.conv5_s1.weight'] = pretrained_dict['conv.conv5_s1.weight']
-                unet_dict['conv5.conv5_s1.bias'] = pretrained_dict['conv.conv5_s1.bias']
-                unet_dict['conv5.batch5_s1.weight'] = pretrained_dict['conv.batch5_s1.weight']
-                unet_dict['conv5.batch5_s1.bias'] = pretrained_dict['conv.batch5_s1.bias']
-                unet_dict['conv5.batch5_s1.running_mean'] = pretrained_dict['conv.batch5_s1.running_mean']
-                unet_dict['conv5.batch5_s1.running_var'] = pretrained_dict['conv.batch5_s1.running_var']
-                unet_dict['conv5.batch5_s1.num_batches_tracked'] = pretrained_dict['conv.batch5_s1.num_batches_tracked']
-                 
-                unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-                #unet_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight']
-                unet_dict['fc6.fc6_s1.bias'] = pretrained_dict['fc6.fc6_s1.bias']
-                unet_dict['fc6.batch6_s1.weight'] = pretrained_dict['fc6.batch6_s1.weight']
-                unet_dict['fc6.batch6_s1.bias'] = pretrained_dict['fc6.batch6_s1.bias']
-                unet_dict['fc6.batch6_s1.running_mean'] = pretrained_dict['fc6.batch6_s1.running_mean']
-                unet_dict['fc6.batch6_s1.running_var'] = pretrained_dict['fc6.batch6_s1.running_var']
-                unet_dict['fc6.batch6_s1.num_batches_tracked'] = pretrained_dict['fc6.batch6_s1.num_batches_tracked']
-                
-                unet_dict['uconnect1.conv.weight'] = pretrained_dict['fc6b.conv6b_s1.weight']
-                unet_dict['uconnect1.conv.bias'] = pretrained_dict['fc6b.conv6b_s1.bias']
-
-                #unet_dict['fc6c.fc7.weight'] = pretrained_dict['fc6c.fc7.weight']
-                #unet_dict['fc6c.fc7.bias'] = pretrained_dict['fc6c.fc7.bias']
-                model_dict.update(unet_dict)
-                # 3. load the new state dict
-                net.load_state_dict(unet_dict)
-            else:
-                #pretrained_dict = torch.load(args.checkpoint)
-                pretrained_dict = torch.load(args.checkpoint)['model_state_dict']
-                model_dict = net.state_dict()
-                print("loading checkpoint..............")
-                pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and k not in ["fc6c.fc7.weight","fc6c.fc7.bias", "fc7_new.fc7.weight", "fc7_new.fc7.bias", "classifier_new.fc8.weight", "classifier_new.fc8.bias"]}
-           
-                pretrained_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv1.conv1_s1.weight'].mean(1).unsqueeze(1)            
-                #pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
-                #for k, v in model_dict.items():
-                 #   if k not in pretrained_dict:
-                  #      pretrained_dict[k] = model_dict[k]
-                # 2. overwrite entries in the existing state dict
-                model_dict.update(pretrained_dict)
-                # 3. load the new state dict
-                net.load_state_dict(model_dict)
-                print("Checkpoint loaded...............")
+            pretrained_dict['conv1.conv1_s1.weight'] = pretrained_dict['conv1.conv1_s1.weight'].mean(1).unsqueeze(1)
+            #pretrained_dict['fc6.fc6_s1.weight'] = pretrained_dict['fc6.fc6_s1.weight'].view(1024, 256, 2, 2)
+            #for k, v in model_dict.items():
+             #   if k not in pretrained_dict:
+              #      pretrained_dict[k] = model_dict[k]
+            # 2. overwrite entries in the existing state dict
+            model_dict.update(pretrained_dict)
+            # 3. load the new state dict
+            net.load_state_dict(model_dict)
+            print("Checkpoint loaded...............")
 
         if args.adam:
             optimizer = torch.optim.Adam(net.parameters(), lr=hyperparams['lr'],
@@ -549,6 +576,8 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
         val_ids = [train_study_ids[k] for k in val_idx]
         _, _, _, test_ids = get_images(test_dict)
 
+        print(test_ids)
+
         train_imgs_d = {train_id: train_img_dict[train_id] for train_id in train_ids}
         val_imgs_d = {val_id: train_img_dict[val_id] for val_id in val_ids}
 
@@ -560,6 +589,27 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
 
         training_set = KidneyDataset(from_full_dict=False, image_dict=train_imgs_d, label_dict=train_lab_d, cov_dict=train_cov_d, study_ids=train_ids, rand_crop=rand_crop, cov_input=cov_in)
         training_generator = DataLoader(training_set, shuffle=True, num_workers=0, batch_size=16)
+
+        ### DEBUGGING DATA LOADER FEB 22, 2022
+        # for my_key in train_imgs_d.keys():
+        #     if train_imgs_d[my_key]['trv'].shape != (256, 256):
+        #         print(train_imgs_d[my_key]['trv'].shape)
+        #
+        # for my_key in train_lab_d.keys():
+        #     if train_lab_d[my_key] != 1 & train_lab_d[my_key] != 0:
+        #         print(train_lab_d[my_key])
+        #
+        # for my_key in train_cov_d.keys():
+        #     print(train_cov_d[my_key]['Sex'])
+        #     print(train_cov_d[my_key]['Age_wks'])
+        #
+        #
+        # set(train_imgs_d.keys()) == set(train_lab_d.keys())
+        # set(train_imgs_d.keys()) == set(train_cov_d.keys())
+        #
+        # set(training_set.image_dict.keys()) == set(training_set.label_dict.keys())
+        # training_set.cov_dict.keys()
+
 
         print("Training set ready.")
 
@@ -638,8 +688,14 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
                 #output_softmax = output
                 pred_prob = output_softmax[:, 1]
                 pred_label = torch.argmax(output_softmax, dim=1)
-                #print(pred_prob)
-                #print(pred_label)
+
+                # print("Training")
+                # print(target)
+                # print(pred_prob)
+                # print(len(target))
+                # print(len(pred_prob))
+
+                # print(pred_label)
                 assert len(pred_prob) == len(target)
                 assert len(pred_label) == len(target)
 
@@ -675,6 +731,12 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
                     pred_prob = pred_prob.squeeze()
                     pred_label = torch.argmax(output, dim=1)
 
+                    # print("Validating")
+                    # print(target)
+                    # print(pred_prob)
+                    # print(len(target))
+                    # print(len(pred_prob))
+
                     assert len(pred_prob) == len(target)
                     assert len(pred_label) == len(target)
 
@@ -707,6 +769,15 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
                     pred_prob = pred_prob.squeeze()
                     pred_label = torch.argmax(output, dim=1)
 
+                    # print("Testing")
+                    # print(target)
+                    # print(pred_prob)
+                    # print(len(target))
+                    # print(len(pred_prob))
+
+                    if pred_prob.shape == torch.Size([]):
+                        pred_prob = pred_prob.unsqueeze(0)
+
                     assert len(pred_prob) == len(target)
                     assert len(pred_label) == len(target)
 
@@ -723,7 +794,7 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
 
             model_output['train'][str(split)][str(epoch)]['id'] = all_train_ids
             model_output['train'][str(split)][str(epoch)]['pred'] = all_pred_prob_train.tolist()
-            model_output['train'][str(split)][str(epoch)]['target'] = all_pred_prob_train.tolist()
+            model_output['train'][str(split)][str(epoch)]['target'] = all_targets_train.tolist()
 
            # patient_ID_train = torch.cat(patient_ID_train)
 
@@ -758,7 +829,7 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
 
             model_output['val'][str(split)][str(epoch)]['id'] = all_val_ids
             model_output['val'][str(split)][str(epoch)]['pred'] = all_pred_prob_val.tolist()
-            model_output['val'][str(split)][str(epoch)]['target'] = all_pred_prob_val.tolist()
+            model_output['val'][str(split)][str(epoch)]['target'] = all_targets_val.tolist()
 
             #patient_ID_val = torch.cat(patient_ID_val)
 
@@ -792,7 +863,7 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
 
             model_output['test'][str(split)][str(epoch)]['id'] = all_test_ids
             model_output['test'][str(split)][str(epoch)]['pred'] = all_pred_prob_test.tolist()
-            model_output['test'][str(split)][str(epoch)]['target'] = all_pred_prob_test.tolist()
+            model_output['test'][str(split)][str(epoch)]['target'] = all_targets_test.tolist()
 
             # patient_ID_test = torch.cat(patient_ID_test)
 
@@ -852,8 +923,9 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
                 #os.makedirs(args.dir + "/" + str(fold))
 
             ## TO SAVE THE CHECKPOINT
-            # path_to_checkpoint = args.dir + "/" + str(fold) + "_checkpoint_" + str(epoch) + '.pth'
-            # torch.save(checkpoint, path_to_checkpoint)
+            if epoch == args.epoch_save:
+                path_to_checkpoint = out_file_root + '.pth'
+                torch.save(checkpoint, path_to_checkpoint)
             
         fold += 1
 
@@ -866,7 +938,8 @@ def train(args, train_dict, test_dict, max_epochs, cov_in, rand_crop=False):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', default=70, type=int, help="Number of epochs")
+    parser.add_argument('--epochs', default=47, type=int, help="Number of epochs")
+    parser.add_argument('--epoch_save', default=None, type=int, help="Number of epochs at which to save the model")
     parser.add_argument('--batch_size', default=16, type=int, help="Batch size")
     parser.add_argument('--lr', default=0.001, type=float, help="Learning rate")
     parser.add_argument('--momentum', default=0.9, type=float, help="Momentum")
@@ -889,8 +962,10 @@ def main():
     parser.add_argument("--hydro_only", action="store_true")
     parser.add_argument("--output_dim", default=256, type=int, help="output dim for last linear layer")
     parser.add_argument("--gender", default=None, type=str, help="choose from 'male' and 'female'")
-    parser.add_argument("--json_infile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKids_wST_filenames_20201217.json",
+    parser.add_argument("--json_infile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKidswST_filenames_20210411.json",
                         help="Json file of all our data")
+    # parser.add_argument("--json_infile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SK_ST_filenames_20210217.json",
+    #                     help="Json file of all our data")
     parser.add_argument('--cov_in', action="store_true", default=False, help="Use age at ultrasound and kidney side (R/L) as covariates in the model")
     parser.add_argument("--out_dir", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/orig_st_results/", help="Directory to save model checkpoints to")
 

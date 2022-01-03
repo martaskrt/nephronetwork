@@ -411,7 +411,6 @@ def get_side(filename):
 
     return side
 
-
 ## read in images
 def get_st_files(study_id, img_dir, data_sheet):
     out_dict = {"Right": dict(), "Left": dict()}
@@ -454,7 +453,7 @@ def get_st_files(study_id, img_dir, data_sheet):
                                                   ' & view_side == "' + side + '"').SFU)[0]
                     out_dict[side][num]["Age_wks"] = \
                         list(data_sheet.query('ID == ' + str(study_id) +
-                                                  ' & view_side == "' + side + '"').age_at_US_mo)[0]
+                                                  ' & view_side == "' + side + '"').age_at_US_wk)[0]
                     out_dict[side][num]["ApD"] = \
                         list(data_sheet.query('ID == ' + str(study_id) +
                                                   ' & view_side == "' + side + '"').ApD)[0]
@@ -470,7 +469,7 @@ def get_st_files(study_id, img_dir, data_sheet):
                                                   ' & view_side == "' + side + '"').SFU)[0]
                     out_dict[side][num]["Age_wks"] = \
                         list(data_sheet.query('ID == ' + str(study_id) +
-                                                  ' & view_side == "' + side + '"').age_at_US_mo)[0]
+                                                  ' & view_side == "' + side + '"').age_at_US_wk)[0]
                     out_dict[side][num]["ApD"] = \
                         list(data_sheet.query('ID == ' + str(study_id) +
                                                   ' & view_side == "' + side + '"').ApD)[0]
@@ -588,10 +587,8 @@ def main():
     parser.add_argument("--datafile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_20190617.pickle")
     parser.add_argument("--st_datafile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/silent_trial/SilentTrial_Datasheet.csv",
                         help="Silent trial datasheet")
-    parser.add_argument("--json_out", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKids_wST_filenames_20201217.json", help="Directory to save model checkpoints to")
+    parser.add_argument("--json_out", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKids_wST_filenames_20210216.json", help="Directory to save model checkpoints to")
     parser.add_argument("--orig_extra_dat", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/Orig_data_age_apd_sfu.csv", help="Directory to save model checkpoints to")
-
-
 
 
     args = parser.parse_args()
@@ -608,10 +605,13 @@ def main():
                                               etiology=args.etiology,
                                               crop=args.crop,
                                               git_dir=args.git_dir)
+    print("original data loaded")
 
     st_data = load_st_data(data_sheet=args.st_datafile)
+    print("silent trial data loaded")
 
     full_data = combine_st_orig(in_dict=st_data, X=train_X, y=train_y, feat=train_cov, pt_info_file=args.orig_extra_dat)
+    print("data merged")
 
     with open(args.json_out, 'w') as fp:
         json.dump(full_data, fp)

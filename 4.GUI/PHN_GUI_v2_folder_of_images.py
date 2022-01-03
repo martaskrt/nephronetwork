@@ -281,6 +281,7 @@ def process_input_image(image, crop, output_dim=256, convert_grey=True):
         image_grey = img_as_float(rgb2gray(image))
     else:
         image_grey = img_as_float(image)
+
     if crop:
         cropped_img = crop_image(image_grey)
     else:

@@ -426,6 +426,7 @@ def create_png_file(image_file,crop):
 ### GRAD CAM FUNCTIONS
 ###
 
+
 class CamExtractor():
     """
         Extracts cam features from the model
@@ -494,6 +495,7 @@ class CamExtractor():
         x = x.view(x.size(0), -1)  # Flatten
         return conv_output, x
 
+
 class GradCam():
     """
         Produces class activation map
@@ -545,6 +547,7 @@ class GradCam():
                        input_image.shape[3]), Image.ANTIALIAS))/255
         return cam
 
+
 def get_example_params(image_path):
     """
         Gets used variables for almost all visualizations, like the image, model etc.
@@ -570,6 +573,7 @@ def get_example_params(image_path):
     #         net)
     return original_image
 
+
 def save_image(im, path):
     """
         Saves a numpy matrix or PIL image as an image
@@ -581,6 +585,7 @@ def save_image(im, path):
         im = format_np_output(im)
         im = Image.fromarray(im)
     im.save(path)
+
 
 def save_class_activation_images(org_img, activation_map, file_name):
     """
@@ -613,6 +618,7 @@ def save_class_activation_images(org_img, activation_map, file_name):
             #save_image(activation_map, path_to_file)
 
     return path_to_file
+
 
 def apply_colormap_on_image(org_im, activation, colormap_name, opacity=0.4):
     """
@@ -724,7 +730,7 @@ def main():
             checkpoint = pth_file
             net = CNN().to(device)
 
-            pretrained_dict = torch.load(checkpoint, map_location=torch.device('cpu'))['model_state_dict']
+            pretrained_dict = torch.load(checkpoint, map_location=torch.device(device))['model_state_dict']
 
             model_dict = net.state_dict()
 
