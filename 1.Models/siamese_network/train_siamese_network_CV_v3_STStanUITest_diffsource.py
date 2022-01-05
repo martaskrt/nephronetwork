@@ -40,8 +40,9 @@ def flatten(lst):
     ## from https://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists
     return eval('[' + str(lst).replace('[', '').replace(']', '') + ']')
 
-def load_dataset(json_infile, test_prop, ordered_split=False, train_only=False):
-    with open(json_infile, 'r') as fp:
+
+def load_dataset(json_infile, test_prop, data_dir, ordered_split=False, train_only=False):
+    with open(data_dir + json_infile, 'r') as fp:
         in_dict = json.load(fp)
 
     if 'SU2bae8dc' in list(in_dict.keys()):
@@ -91,14 +92,16 @@ def load_dataset(json_infile, test_prop, ordered_split=False, train_only=False):
 
         return train_out, test_out
 
-def load_test_dataset(json_infile):
-    with open(json_infile, 'r') as fp:
+
+def load_test_dataset(json_infile, data_dir):
+    with open(data_dir + json_infile, 'r') as fp:
         in_dict = json.load(fp)
 
     if 'SU2bae8dc' in list(in_dict.keys()):
         in_dict.pop('SU2bae8dc', None)
 
     return in_dict
+
 
 process_results = importlib.machinery.SourceFileLoader('process_results','../../2.Results/process_results.py').load_module()
 
@@ -483,7 +486,7 @@ def process_input_image(img_file, crop=False, random_crop=False):
     return fit_img
 
 
-def get_images(in_dict, crop=False, random_crop=False, update=False, update_num=None, silent_trial=False):
+def get_images(in_dict, data_dir, crop=False, random_crop=False, update=False, update_num=None, silent_trial=False):
     img_dict = dict()
     label_dict = dict()
     cov_dict = dict()
@@ -529,11 +532,11 @@ def get_images(in_dict, crop=False, random_crop=False, update=False, update_num=
                             img_dict[dict_key] = dict()
 
                             if silent_trial:
-                                img_dict[dict_key]['sag'] = process_input_image(in_dict[study_id][side][us_num]['sag'], crop=crop, random_crop=random_crop)
-                                img_dict[dict_key]['trv'] = process_input_image(in_dict[study_id][side][us_num]['trv'], crop=crop, random_crop=random_crop)
+                                img_dict[dict_key]['sag'] = process_input_image(data_dir + in_dict[study_id][side][us_num]['sag'], crop=crop, random_crop=random_crop)
+                                img_dict[dict_key]['trv'] = process_input_image(data_dir + in_dict[study_id][side][us_num]['trv'], crop=crop, random_crop=random_crop)
                             else:
-                                img_dict[dict_key]['sag'] = special_ST_preprocessing(in_dict[study_id][side][us_num]['sag'])
-                                img_dict[dict_key]['trv'] = special_ST_preprocessing(in_dict[study_id][side][us_num]['trv'])
+                                img_dict[dict_key]['sag'] = special_ST_preprocessing(data_dir + in_dict[study_id][side][us_num]['sag'])
+                                img_dict[dict_key]['trv'] = special_ST_preprocessing(data_dir + in_dict[study_id][side][us_num]['trv'])
                             # img_dict[dict_key]['sag'] = np.array(Image.open(in_dict[study_id][side][us_num]['sag']).convert('L'))
                             # img_dict[dict_key]['trv'] = np.array(Image.open(in_dict[study_id][side][us_num]['trv']).convert('L'))
 
@@ -567,17 +570,18 @@ def get_images(in_dict, crop=False, random_crop=False, update=False, update_num=
 
 class KidneyDataset(torch.utils.data.Dataset):
 
-    def __init__(self, from_full_dict=True, in_dict=None, image_dict=None, label_dict=None, cov_dict=None, study_ids=None,
+    def __init__(self, from_full_dict=True, in_dict=None, data_dir=None, image_dict=None, label_dict=None, cov_dict=None, study_ids=None,
                  cov_input=False, rand_crop=False, crop=False, silent_trial=False):
 
         if from_full_dict:
-            self.image_dict, self.label_dict, self.cov_dict, self.study_ids = get_images(in_dict, crop=crop,
+            self.image_dict, self.label_dict, self.cov_dict, self.study_ids = get_images(in_dict, data_dir=data_dir,
+                                                                                         crop=crop,
                                                                                          random_crop=rand_crop,
                                                                                          update_num=1,
                                                                                          silent_trial=silent_trial)
 
             if rand_crop:
-                image_dict2, label_dict2, cov_dict2, study_ids2 = get_images(in_dict, crop=crop,
+                image_dict2, label_dict2, cov_dict2, study_ids2 = get_images(in_dict, data_dir=data_dir, crop=crop,
                                                                              random_crop=rand_crop, update=True,
                                                                              update_num=2,
                                                                              silent_trial=silent_trial)
@@ -671,7 +675,7 @@ def init_weights(m):
     print(m.weight)
 
 
-def train(args, train_dict, test_dict, st_dict, stan_dict, ui_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
+def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
 
     if train_only:
         out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_" + str(max_epochs) + "epochs_bs" + \
@@ -698,10 +702,10 @@ def train(args, train_dict, test_dict, st_dict, stan_dict, ui_dict, max_epochs, 
     #           'num_workers': args.num_workers}
 
     if not train_only:
-        test_set = KidneyDataset(in_dict=test_dict, cov_input=cov_in)
+        test_set = KidneyDataset(in_dict=test_dict, data_dir=data_dir, cov_input=cov_in)
         test_generator = DataLoader(test_set, num_workers=0, batch_size=16)
 
-    st_test_set = KidneyDataset(in_dict=st_dict, cov_input=cov_in, silent_trial=True)
+    st_test_set = KidneyDataset(in_dict=st_dict, data_dir=data_dir, cov_input=cov_in, silent_trial=True)
     st_test_generator = DataLoader(st_test_set, num_workers=0, batch_size=16)
 
     stan_test_set = KidneyDataset(in_dict=stan_dict, cov_input=cov_in, crop=True)
@@ -1542,19 +1546,19 @@ def main():
     # parser.add_argument("--json_infile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SKST_60%train_20210722.json",
     #                     help="Json file of model training data")
     ## original training data
-    parser.add_argument("--json_infile", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_SickKidswST_filenames_20210411.json",
+    parser.add_argument("--json_infile", default="HNTrain_rootfilenames_20211229.json",
                         help="Json file of model training data")
 
-    parser.add_argument("--json_st_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_newSTonly_filenames_20210411.json",
+    parser.add_argument("--json_st_test", default="newSTonly_rootfilenames_20211229.json",
                         help="Json file of held-out, prospective silent trial data")
 
-    parser.add_argument("--json_stan_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_StanOnly_filenames_20210612.json",
+    parser.add_argument("--json_stan_test", default="StanfordOnly_rootfilenames_20211229.json",
                         help="Json file of held-out, retrospective Stanford data")
 
     # parser.add_argument("--json_stan_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_Stan_finetune60%_test_20210711.json",
     #                     help="Json file of held-out, retrospective Stanford data")
 
-    parser.add_argument("--json_ui_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_UIonly_filenames_20210612.json",
+    parser.add_argument("--json_ui_test", default="UIonly_rootfilenames_20211229.json",
                         help="Json file of held-out, retrospective Stanford data")
 
     # parser.add_argument("--json_ui_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_UIowa_finetune60%_test_20210711.json",
@@ -1566,28 +1570,34 @@ def main():
     parser.add_argument("--train_only", action="store_true", help="Only fit train/val")
     parser.add_argument("--rand_crop_contrast", action="store_true", help="Only fit train/val")
 
+    parser.add_argument("--data_dir", default="C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/",
+                        help="Directory where the images and data files are located")
+
+
+
     args = parser.parse_args()
 
     print("ARGS" + '\t' + str(args))
 
     if args.train_only:
         train_dict = load_dataset(args.json_infile, test_prop=0.2, ordered_split=args.ordered_split,
-                                             train_only=args.train_only)
+                                             train_only=args.train_only, data_dir=args.data_dir)
     else:
-        train_dict, test_dict = load_dataset(args.json_infile, test_prop=0.2, ordered_split=args.ordered_split, train_only=args.train_only)
+        train_dict, test_dict = load_dataset(args.json_infile, test_prop=0.2, ordered_split=args.ordered_split, train_only=args.train_only,
+                                             data_dir=args.data_dir)
     # train_dict, test_dict = load_dataset(args.json_infile, test_prop=0.2, ordered_split=args.ordered_split)
     print("Data loaded.")
 
-    st_test_dict = load_test_dataset(args.json_st_test)
-    stan_test_dict = load_test_dataset(args.json_stan_test)
-    ui_test_dict = load_test_dataset(args.json_ui_test)
+    st_test_dict = load_test_dataset(args.json_st_test, data_dir=args.data_dir)
+    stan_test_dict = load_test_dataset(args.json_stan_test, data_dir=args.data_dir)
+    ui_test_dict = load_test_dataset(args.json_ui_test, data_dir=args.data_dir)
 
     # any(item in list(train_dict.keys()) for item in list(st_test_dict.keys()))
 
     if args.train_only:
-        train(args, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.datadir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
     else:
-        train(args, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.datadir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
 
     # if args.view == "sag" or args.view == "trans":
     #     train_X_single=[]
