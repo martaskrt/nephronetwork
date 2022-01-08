@@ -42,6 +42,7 @@ def flatten(lst):
 
 
 def load_dataset(json_infile, test_prop, data_dir, ordered_split=False, train_only=False):
+    # print("break")
     with open(data_dir + json_infile, 'r') as fp:
         in_dict = json.load(fp)
 
@@ -94,6 +95,7 @@ def load_dataset(json_infile, test_prop, data_dir, ordered_split=False, train_on
 
 
 def load_test_dataset(json_infile, data_dir):
+
     with open(data_dir + json_infile, 'r') as fp:
         in_dict = json.load(fp)
 
@@ -531,6 +533,9 @@ def get_images(in_dict, data_dir, crop=False, random_crop=False, update=False, u
 
                             img_dict[dict_key] = dict()
 
+                            print(data_dir)
+                            print(in_dict[study_id][side][us_num]['sag'])
+                            print(in_dict[study_id][side][us_num]['trv'])
                             if silent_trial:
                                 img_dict[dict_key]['sag'] = process_input_image(data_dir + in_dict[study_id][side][us_num]['sag'], crop=crop, random_crop=random_crop)
                                 img_dict[dict_key]['trv'] = process_input_image(data_dir + in_dict[study_id][side][us_num]['trv'], crop=crop, random_crop=random_crop)
@@ -708,15 +713,15 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
     st_test_set = KidneyDataset(in_dict=st_dict, data_dir=data_dir, cov_input=cov_in, silent_trial=True)
     st_test_generator = DataLoader(st_test_set, num_workers=0, batch_size=16)
 
-    stan_test_set = KidneyDataset(in_dict=stan_dict, cov_input=cov_in, crop=True)
+    stan_test_set = KidneyDataset(in_dict=stan_dict, data_dir=data_dir, cov_input=cov_in, crop=True)
     stan_test_generator = DataLoader(stan_test_set, num_workers=0, batch_size=16)
 
-    ui_test_set = KidneyDataset(in_dict=ui_dict, cov_input=cov_in, crop=True)
+    ui_test_set = KidneyDataset(in_dict=ui_dict, data_dir=data_dir, cov_input=cov_in, crop=True)
     ui_test_generator = DataLoader(ui_test_set, num_workers=0, batch_size=16)
 
     if train_only:
         ## make tuple
-        train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict, random_crop=rand_crop, update_num=1)
+        train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict, data_dir=data_dir, random_crop=rand_crop, update_num=1)
         train_study_ids = shuffle(list(train_study_ids), random_state=42)
         fold = 1
         n_splits = 1
@@ -738,10 +743,10 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
         # train_cov = np.array(train_cov)
 
         if rand_crop:
-            train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict,
+            train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict, data_dir=data_dir,
                                                                                            random_crop=rand_crop,
                                                                                            update_num=1)
-            train_img_dict2, train_label_dict2, train_cov_dict2, train_study_ids2 = get_images(train_dict,
+            train_img_dict2, train_label_dict2, train_cov_dict2, train_study_ids2 = get_images(train_dict, data_dir=data_dir,
                                                                                            random_crop=rand_crop,
                                                                                            update_num=2)
             train_img_dict.update(train_img_dict2)
@@ -749,7 +754,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             train_cov_dict.update(train_cov_dict2)
             # train_study_ids.update(train_study_ids2)
 
-            train_img_dict3, train_label_dict3, train_cov_dict3, train_study_ids3 = get_images(train_dict,
+            train_img_dict3, train_label_dict3, train_cov_dict3, train_study_ids3 = get_images(train_dict, data_dir=data_dir,
                                                                                            random_crop=rand_crop,
                                                                                            update_num=3)
             train_img_dict.update(train_img_dict3)
@@ -760,7 +765,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             train_study_ids = train_img_dict.keys()
 
         else:
-            train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict)
+            train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict, data_dir=data_dir)
 
         train_study_ids = shuffle(list(train_study_ids), random_state=42)
 
@@ -1489,20 +1494,20 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             #if not os.path.isdir(args.dir + "/" + str(fold)):
                 #os.makedirs(args.dir + "/" + str(fold))
 
-            if epoch == 9:
-                path_to_checkpoint = out_file_root + '_10thEpoch.pth'
-                torch.save(checkpoint, path_to_checkpoint)
-            if epoch == 12:
-                path_to_checkpoint = out_file_root + '_13thEpoch.pth'
-                torch.save(checkpoint, path_to_checkpoint)
-            if epoch == 15:
-                path_to_checkpoint = out_file_root + '_16thEpoch.pth'
-                torch.save(checkpoint, path_to_checkpoint)
+            # if epoch == 9:
+            #     path_to_checkpoint = out_file_root + '_10thEpoch.pth'
+            #     torch.save(checkpoint, path_to_checkpoint)
+            # if epoch == 12:
+            #     path_to_checkpoint = out_file_root + '_13thEpoch.pth'
+            #     torch.save(checkpoint, path_to_checkpoint)
+            # if epoch == 15:
+            #     path_to_checkpoint = out_file_root + '_16thEpoch.pth'
+            #     torch.save(checkpoint, path_to_checkpoint)
 
             ## TO SAVE THE CHECKPOINT
-            if epoch+1 == args.epoch_save:
-                path_to_checkpoint = out_file_root + '_30thEpoch.pth'
-                torch.save(checkpoint, path_to_checkpoint)
+            # if epoch+1 == args.epoch_save:
+            #     path_to_checkpoint = out_file_root + '_30thEpoch.pth'
+            #     torch.save(checkpoint, path_to_checkpoint)
             
         fold += 1
 
@@ -1579,6 +1584,8 @@ def main():
 
     print("ARGS" + '\t' + str(args))
 
+    print("break")
+
     if args.train_only:
         train_dict = load_dataset(args.json_infile, test_prop=0.2, ordered_split=args.ordered_split,
                                              train_only=args.train_only, data_dir=args.data_dir)
@@ -1592,12 +1599,15 @@ def main():
     stan_test_dict = load_test_dataset(args.json_stan_test, data_dir=args.data_dir)
     ui_test_dict = load_test_dataset(args.json_ui_test, data_dir=args.data_dir)
 
+    # print("break")
     # any(item in list(train_dict.keys()) for item in list(st_test_dict.keys()))
 
     if args.train_only:
-        train(args, data_dir=args.datadir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        ## data_dir is getting overwritten between reading in the silent trial data and reading in Stanford data
+                ## causing an error
+        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
     else:
-        train(args, data_dir=args.datadir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
 
     # if args.view == "sag" or args.view == "trans":
     #     train_X_single=[]

@@ -27,34 +27,34 @@ sk_list[["STID43"]]
 sk_list[["ORIG483"]]
 
 ##### Check number of repeated STID visits
-r_n_visits = c()
-l_n_visits = c()
-
-for(id in names(sk_list)[substr(names(sk_list),1,2) == "ST"]){
-  r_vis = length(sk_list[[id]][["Right"]]) - 1 
-  l_vis = length(sk_list[[id]][["Left"]]) - 1
-  
-  ## make for surg only
-  
-  if(length(sk_list[[id]][["Right"]][["surgery"]]) > 0){
-    if(sk_list[[id]][["Right"]][["surgery"]] == 1){
-      if(r_vis > 0){
-      r_n_visits = c(r_n_visits, r_vis)
-      }
-    }
-  }
-  
-    
-  if(length(sk_list[[id]][["Left"]][["surgery"]]) > 0){
-    if(sk_list[[id]][["Left"]][["surgery"]] == 1){
-      if(l_vis > 0){
-      l_n_visits = c(l_n_visits, l_vis)
-      }
-    }  
-  }
-}
-
-table(c(r_n_visits, l_n_visits))
+# r_n_visits = c()
+# l_n_visits = c()
+# 
+# for(id in names(sk_list)[substr(names(sk_list),1,2) == "ST"]){
+#   r_vis = length(sk_list[[id]][["Right"]]) - 1 
+#   l_vis = length(sk_list[[id]][["Left"]]) - 1
+#   
+#   ## make for surg only
+#   
+#   if(length(sk_list[[id]][["Right"]][["surgery"]]) > 0){
+#     if(sk_list[[id]][["Right"]][["surgery"]] == 1){
+#       if(r_vis > 0){
+#       r_n_visits = c(r_n_visits, r_vis)
+#       }
+#     }
+#   }
+#   
+#     
+#   if(length(sk_list[[id]][["Left"]][["surgery"]]) > 0){
+#     if(sk_list[[id]][["Left"]][["surgery"]] == 1){
+#       if(l_vis > 0){
+#       l_n_visits = c(l_n_visits, l_vis)
+#       }
+#     }  
+#   }
+# }
+# 
+# table(c(r_n_visits, l_n_visits))
 
 
 ##### Revising data list 
@@ -98,8 +98,29 @@ for(id in names(sk_list)){
 }
 
 sk_list
+names(sk_list)
 
-write(toJSON(si_tri_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/HNTrain_rootfilenames_20211229.json")
+sk_list[["STID5"]] = NULL
+sk_list[["STID6"]] = NULL
+sk_list[["STID7"]] = NULL
+sk_list[["STID8"]] = NULL
+sk_list[["STID9"]] = NULL
+sk_list[["STID9"]] = NULL
+sk_list[["STID46"]] = NULL
+sk_list[c("STID47","STID48",  "STID50",  "STID51",  "STID53",  "STID55",  "STID56",  "STID57",  "STID58",  "STID59",  "STID61",  "STID62",  "STID63", 
+          "STID65",  "STID67",  "STID68",  "STID69",  "STID71",  "STID72",  "STID74",  "STID75",  "STID76",  "STID77",  "STID78",  "STID79",  "STID80",  "STID81",  "STID82",  "STID84",  "STID85", 
+          "STID86",  "STID87",  "STID88",  "STID89",  "STID92",  "STID93",  "STID95",  "STID96",  "STID98",  "STID94",  "STID99")] = NULL
+
+
+sk_list[["STID40"]][["Left"]][["5"]][["sag"]] = "/SilentTrial/HN Outputs/Study ID 40/Sag 5L-preprocessed.png"
+sk_list[["STID40"]][["Right"]][["5"]][["sag"]] = "/SilentTrial/HN Outputs/Study ID 40/Sag 5R-preprocessed.png"
+
+sk_list[["STID192"]][["Left"]][[5]] = NULL
+
+sk_list[["STID195"]][["Right"]][[3]] = NULL
+
+
+write(toJSON(sk_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/HNTrain_rootfilenames_20211229.json")
 
 
 ### 
@@ -146,7 +167,10 @@ for(id in names(si_tri_list)){
   
 }
 
-si_tri_list
+si_tri_list[["STID314"]][["Right"]][['1']] = NULL
+si_tri_list[["STID302"]][["Left"]][['4']] = NULL
+si_tri_list[["STID349"]][["Left"]][['3']] = NULL
+si_tri_list[["STID224"]][["Right"]][['3']][["sag"]] = "/SilentTrial/HN Outputs/Study ID 224//224 originals/SAG 3R.png"
 
 write(toJSON(si_tri_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/newSTonly_rootfilenames_20211229.json")
 
@@ -251,6 +275,10 @@ for(id in unique(stan_dat$anon_mrn)){
     }
   }
 }
+
+
+    ### 
+    ### UPDATING TO HAVE VISIT NUMBERS INSTEAD OF DE-ID VALUES
 
 
 stan_list[["SU2bae87d"]]
