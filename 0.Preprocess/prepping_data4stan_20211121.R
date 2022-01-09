@@ -109,7 +109,8 @@ sk_list[["STID9"]] = NULL
 sk_list[["STID46"]] = NULL
 sk_list[c("STID47","STID48",  "STID50",  "STID51",  "STID53",  "STID55",  "STID56",  "STID57",  "STID58",  "STID59",  "STID61",  "STID62",  "STID63", 
           "STID65",  "STID67",  "STID68",  "STID69",  "STID71",  "STID72",  "STID74",  "STID75",  "STID76",  "STID77",  "STID78",  "STID79",  "STID80",  "STID81",  "STID82",  "STID84",  "STID85", 
-          "STID86",  "STID87",  "STID88",  "STID89",  "STID92",  "STID93",  "STID95",  "STID96",  "STID98",  "STID94",  "STID99")] = NULL
+          "STID86",  "STID87",  "STID88",  "STID89",  "STID92",  "STID93",  "STID95",  "STID96",  "STID98",  "STID94",  "STID99",
+          "STID43",  "STID44",  "STID45",  "STID49", "STID52",  "STID54",  "STID64",  "STID66",  "STID70",  "STID73",  "STID83",  "STID90",  "STID91",  "STID97")] = NULL
 
 
 sk_list[["STID40"]][["Left"]][["5"]][["sag"]] = "/SilentTrial/HN Outputs/Study ID 40/Sag 5L-preprocessed.png"
@@ -275,10 +276,6 @@ for(id in unique(stan_dat$anon_mrn)){
     }
   }
 }
-
-
-    ### 
-    ### UPDATING TO HAVE VISIT NUMBERS INSTEAD OF DE-ID VALUES
 
 
 stan_list[["SU2bae87d"]]

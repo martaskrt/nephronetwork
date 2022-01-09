@@ -194,6 +194,8 @@ lapply(ui_list,function(x){na.omit(c(x$Right$surgery,x$Left$surgery))})
 ##
 #######
 
+    ### FULL PATH      
+
 chop_datasheet = read_excel("C:/Users/lauren erdman/Desktop/kidney_img/HN/CHOP/ARCUS RBUS.xlsx")
 head(chop_datasheet)
 unique(chop_datasheet$Surgery)
@@ -214,14 +216,16 @@ for(obs in 1:nrow(chop_datasheet)){
     if(file.exists(sag_file) & file.exists(trans_file)){
       
       chop_list[[paste0("CHOP",img_id_num)]] = list()
-      chop_list[[paste0("CHOP",img_id_num)]][["surgery"]] = ifelse(chop_datasheet$Surgery[obs] == "None", 0, 1)
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]] = list()
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]][["Age_wks"]] = chop_datasheet$`Age of patient at US (weeks)`[obs]
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]][["sag"]] = sag_file
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]][["trv"]] = trans_file
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]][["ApD"]] = chop_datasheet$`ApD (mm)`[obs]
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]][["SFUgrade"]] = chop_datasheet$`HN SFU grade (0-4)`[obs]
-      chop_list[[paste0("CHOP",img_id_num)]][["1"]][["US_machine"]] = chop_datasheet$`US machine Toshiba, Philips, General Electric, etc`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][["Sex"]] = chop_datasheet$Sex[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]] = list()
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["surgery"]] = ifelse(chop_datasheet$Surgery[obs] == "None", 0, 1)
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]] = list()
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["Age_wks"]] = chop_datasheet$`Age of patient at US (weeks)`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["sag"]] = sag_file
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["trv"]] = trans_file
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["ApD"]] = chop_datasheet$`ApD (mm)`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["SFUgrade"]] = chop_datasheet$`HN SFU grade (0-4)`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["US_machine"]] = chop_datasheet$`US machine Toshiba, Philips, General Electric, etc`[obs]
       
     }
       
@@ -234,7 +238,168 @@ str(ui_list)
 str(chop_list)
 
 
-# write(toJSON(chop_list), "C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_CHOPonly_filenames_20211216.json")
+write(toJSON(chop_list), "C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_CHOPonly_filenames_20211216.json")
+
+    ### ROOTH PATH
+
+chop_datasheet = read_excel("C:/Users/lauren erdman/Desktop/kidney_img/HN/CHOP/ARCUS RBUS.xlsx")
+head(chop_datasheet)
+unique(chop_datasheet$Surgery)
+
+chop_img_root_dir = "C:/Users/lauren erdman/Desktop/kidney_img/HN/CHOP/ARCUS RBUS Images/Cropped/"
+
+chop_list = list()
+
+for(obs in 1:nrow(chop_datasheet)){
+  
+  img_id_num = chop_datasheet$`Pt ID for images`[obs]
+  
+  for(side in c("R","L")){
+
+    full_sag_file = paste0(chop_img_root_dir,"/",img_id_num,"_SAG_",side,"_cropped.png")
+    full_trans_file = paste0(chop_img_root_dir,"/",img_id_num,"_TRAN_",side,"_cropped.png")
+
+    sag_file = paste0("/CHOP/Cropped/",img_id_num,"_SAG_",side,"_cropped.png")
+    trans_file = paste0("/CHOP/Cropped/",img_id_num,"_TRAN_",side,"_cropped.png")
+    
+    
+    if(file.exists(full_sag_file) & file.exists(full_trans_file)){
+    
+      chop_list[[paste0("CHOP",img_id_num)]] = list()
+      chop_list[[paste0("CHOP",img_id_num)]][["Sex"]] = chop_datasheet$Sex[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]] = list()
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["surgery"]] = ifelse(chop_datasheet$Surgery[obs] == "None", 0, 1)
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]] = list()
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["Age_wks"]] = chop_datasheet$`Age of patient at US (weeks)`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["sag"]] = sag_file
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["trv"]] = trans_file
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["ApD"]] = chop_datasheet$`ApD (mm)`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["SFUgrade"]] = chop_datasheet$`HN SFU grade (0-4)`[obs]
+      chop_list[[paste0("CHOP",img_id_num)]][[side]][["1"]][["US_machine"]] = chop_datasheet$`US machine Toshiba, Philips, General Electric, etc`[obs]
+      
+    }
+    
+  }
+  
+}
+
+
+# str(ui_list)
+str(chop_list)
+
+
+write(toJSON(chop_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/CHOP_rootfilenames_20220108.json")
+
+###
+###     PRENATAL INPUT FOR CURRENT SURGERY MODEL
+###
+
+get_pt_id = function(pt_dir){
+  
+  split_dir = strsplit(x = pt_dir,split = "/")[[1]]
+  pt_name = split_dir[length(split_dir)]
+  
+  pt_num = gsub(x = pt_name,pattern = "Study ID ",replacement = "")
+  
+  return(pt_num)
+  
+}
+
+get_us_folder_name = function(us_dir){
+  
+  split_dir = strsplit(x = us_dir,split = "/")[[1]]
+  
+  us_folder_name = split_dir[length(split_dir)]
+  
+  return(us_folder_name)
+}
+
+get_age_wks = function(folder_name){
+  
+  age_wks_str = strsplit(x = folder_name,split = " weeks")[[1]][1]
+  age_wks = substr(age_wks_str,start = nchar(age_wks_str) - 2, stop = nchar(age_wks_str))
+  
+  return(age_wks)
+  
+}
+
+prenat_chars = read_excel("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalHN/Prenatal Characteristics.xlsx")
+
+head(prenat_chars)
+
+prenatal_list = list()
+
+
+for(pt_folder in list.dirs("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalHN/Images/",recursive = FALSE)){
+  
+  pt_num = get_pt_id(pt_folder)  
+  
+  prenatal_list[[paste0("Prenat", pt_num)]] = list()
+  
+  for(us_folder in list.dirs(pt_folder,recursive = FALSE)){
+    
+    folder_name = get_us_folder_name(us_folder)
+    
+    if(length(folder_name) > 0){
+      if(grep(pattern = "Postnatal",x = folder_name) < 1 & grep(pattern = "NoKid",x = folder_name) < 1){
+        
+        us_split = strsplit(x = folder_name,split = "#")[[1]][2]
+        us_num = substr(x = us_split,start = 1,stop = 1)
+        
+        age_wks = get_age_wks(folder_name = folder_name)      
+        
+        for(side in c("Right","Left")){
+          
+          prenatal_list[[paste0("Prenat", pt_num)]][[side]] = list()
+          
+          prenatal_list[[paste0("Prenat", pt_num)]][[side]][["surgery"]] = "NA" ## REPLACE WHEN YOU HAVE THIS INFO
+          
+          prenatal_list[[paste0("Prenat", pt_num)]][[side]][[as.character(us_num)]] = list()
+          
+          for(view in c("sag","trx")){
+            
+            img_vec = list.dirs(us_folder)
+            
+            view_vec = img_vec[grep(x = tolower(img_vec),pattern = view)]
+            
+            side_view_vec = view_vec[grep(pattern = side,x = tolower(view_vec))]
+            
+            if(length(side_view_vec) > 0){
+              prenatal_list[[paste0("Prenat", pt_num)]][[side]][[as.character(us_num)]][[view]] = side_view_vec[1]
+            } else{
+              prenatal_list[[paste0("Prenat", pt_num)]][[side]][[as.character(us_num)]][[view]] = "NA"
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+  }
+  
+}
+
+
+
+
+
+###
+###     PRENATAL + POSTNATAL INPUT FOR CURRENT SURGERY MODEL
+###
+
+
+
+###
+###     POSTNATAL INPUT FOR CURRENT SURGERY MODEL
+###
+
+
+
+
+
 
 ###
 ###     STANFORD ONLY INPUT FOR CURRENT SURGERY MODEL

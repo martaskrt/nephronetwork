@@ -436,11 +436,7 @@ def special_ST_preprocessing(img_file, output_dim=256):
         my_img = set_contrast(resized_img) ## ultimately add contrast variable
         img_name = img_file.split('/')[len(img_file.split('/')) - 1]
         img_folder = "/".join(img_file.split('/')[:-2])
-
-        if not os.path.exists(img_folder + "/Preprocessed/"):
-            os.makedirs(img_folder + "/Preprocessed/")
-
-        out_img_filename = img_folder + "/Preprocessed/" + img_name.split('.')[0] + "-preprocessed.png"
+        out_img_filename = img_folder + "/" + img_name.split('.')[0] + "-preprocessed.png"
         # out_img_filename = 'C:/Users/lauren erdman/Desktop/kidney_img/img_debugging/' + img_name.split('.')[0] + "-preprocessed.png"
         Image.fromarray(my_img*255).convert('RGB').save(out_img_filename)
 
@@ -496,6 +492,8 @@ def get_images(in_dict, data_dir, crop=False, random_crop=False, update=False, u
     img_dict = dict()
     label_dict = dict()
     cov_dict = dict()
+
+    print("break")
 
     for study_id in in_dict.keys():
 
@@ -581,6 +579,8 @@ class KidneyDataset(torch.utils.data.Dataset):
 
     def __init__(self, from_full_dict=True, in_dict=None, data_dir=None, image_dict=None, label_dict=None, cov_dict=None, study_ids=None,
                  cov_input=False, rand_crop=False, crop=False, silent_trial=False):
+        print("in_dict")
+        print(in_dict)
 
         if from_full_dict:
             self.image_dict, self.label_dict, self.cov_dict, self.study_ids = get_images(in_dict, data_dir=data_dir,
@@ -684,15 +684,15 @@ def init_weights(m):
     print(m.weight)
 
 
-def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
+def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, chop_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
 
     if train_only:
-        out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_" + str(max_epochs) + "epochs_bs" + \
+        out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_TestSTSTanUICHOP_" + str(max_epochs) + "epochs_bs" + \
                         str(args.batch_size) + "_lr" + str(args.lr) + \
                         "_RC" + str(args.random_crop) + "_cov" + str(cov_in) + "_OS" + str(args.ordered_split)
         out_file_name = out_file_root+".txt"
     else:
-        out_file_root = args.out_dir + "/SickKids_origST_" + str(max_epochs) + "epochs_bs" + \
+        out_file_root = args.out_dir + "/SickKids_origST_TestSTSTanUICHOP_" + str(max_epochs) + "epochs_bs" + \
                         str(args.batch_size) + "_lr" + str(args.lr) + \
                         "_RC" + str(args.random_crop) + "_cov" + str(cov_in) + "_OS" + str(args.ordered_split)
         out_file_name = out_file_root+".txt"
@@ -723,6 +723,9 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
     ui_test_set = KidneyDataset(in_dict=ui_dict, data_dir=data_dir, cov_input=cov_in, crop=True)
     ui_test_generator = DataLoader(ui_test_set, num_workers=0, batch_size=16)
 
+    chop_test_set = KidneyDataset(in_dict=chop_dict, data_dir=data_dir, cov_input=cov_in, crop=True)
+    chop_test_generator = DataLoader(chop_test_set, num_workers=0, batch_size=16)
+
     if train_only:
         ## make tuple
         train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict, data_dir=data_dir, random_crop=rand_crop, update_num=1)
@@ -734,7 +737,8 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
                         "val": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "st": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "stan": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
-                        "ui": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
+                        "ui": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
+                        "chop": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
 
         skf = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
         id_tuples = skf.split(X=train_study_ids, y=list(train_label_dict.values()))
@@ -778,7 +782,8 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
                         "test": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "st": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "stan": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
-                        "ui": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
+                        "ui": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
+                        "chop": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
         split = 0
 
         id_tuples = skf.split(train_study_ids, list(train_label_dict.values()))
@@ -879,6 +884,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             accurate_labels_st = 0
             accurate_labels_stan = 0
             accurate_labels_ui = 0
+            accurate_labels_chop = 0
 
             loss_accum_train = 0
             loss_accum_val = 0
@@ -886,6 +892,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             loss_accum_st = 0
             loss_accum_stan = 0
             loss_accum_ui = 0
+            loss_accum_chop = 0
 
             all_targets_train = []
             all_pred_prob_train = []
@@ -911,11 +918,9 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             all_pred_prob_ui = []
             all_pred_label_ui = []
 
-            all_train_ids = []
-            all_val_ids = []
-            all_test_ids = []
-            all_st_ids = []
-            all_stan_ids = []
+            all_targets_chop = []
+            all_pred_prob_chop = []
+            all_pred_label_chop = []
 
             patient_ID_train = []
             patient_ID_val = []
@@ -923,6 +928,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             patient_ID_st = []
             patient_ID_stan = []
             patient_ID_ui = []
+            patient_ID_chop = []
 
             counter_train = 0
             counter_val = 0
@@ -930,6 +936,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             counter_st = 0
             counter_stan = 0
             counter_ui = 0
+            counter_chop = 0
             net.train()
 
             ## Run training set
@@ -1237,6 +1244,56 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
                     patient_ID_ui.append(list(id))
 
 
+            ## Run CHOP test set
+            with torch.no_grad():
+            #with torch.set_grad_enabled(False):
+                for batch_idx, (data, target, id) in enumerate(chop_test_generator):
+                    # print("Test batch drawn.")
+                    net.zero_grad()
+                    net.eval() # 20190619
+                    optimizer.zero_grad()
+
+                    if epoch == 30 and args.embed:
+                        output, test_embed = net(data, get_embeddings=args.embed)
+                        embd_pd = pd.DataFrame(test_embed.cpu().detach().numpy())
+                        embd_pd['id'] = id
+                        embd_pd.to_csv(args.out_dir + "/CHOP_embeddings.csv", mode='a', header=False)
+                    else:
+                        output = net(data)
+
+                    target = target.type(torch.LongTensor).to(device)
+
+                    loss = F.cross_entropy(output, target)
+                    #loss = cross_entropy(output, target)
+                    loss_accum_chop += loss.item() * len(target)
+                    counter_chop += len(target)
+                    output_softmax = softmax(output)
+                    #output_softmax = output
+                    accurate_labels_chop += torch.sum(torch.argmax(output, dim=1) == target).cpu()
+
+                    pred_prob = output_softmax[:, 1]
+                    pred_prob = pred_prob.squeeze()
+                    pred_label = torch.argmax(output, dim=1)
+
+                    # print("Testing")
+                    # print(target)
+                    # print(pred_prob)
+                    # print(len(target))
+                    # print(len(pred_prob))
+
+                    if pred_prob.shape == torch.Size([]):
+                        pred_prob = pred_prob.unsqueeze(0)
+
+                    assert len(pred_prob) == len(target)
+                    assert len(pred_label) == len(target)
+
+                    all_pred_prob_chop.append(pred_prob)
+                    all_targets_chop.append(target)
+                    all_pred_label_chop.append(pred_label)
+
+                    patient_ID_chop.append(list(id))
+
+
             all_pred_prob_train = torch.cat(all_pred_prob_train)
             all_targets_train = torch.cat(all_targets_train)
             all_pred_label_train = torch.cat(all_pred_label_train)
@@ -1445,6 +1502,41 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ma
             outfile.close()
 
 
+            all_pred_prob_chop = torch.cat(all_pred_prob_chop)
+            all_targets_chop = torch.cat(all_targets_chop)
+            all_pred_label_chop = torch.cat(all_pred_label_chop)
+            all_chop_ids = flatten(patient_ID_ui)
+
+            model_output['chop'][str(split)][str(epoch)]['id'] = all_chop_ids
+            model_output['chop'][str(split)][str(epoch)]['pred'] = all_pred_prob_chop.tolist()
+            model_output['chop'][str(split)][str(epoch)]['target'] = all_targets_chop.tolist()
+
+            # patient_ID_test = torch.cat(patient_ID_test)
+
+            # assert len(all_targets_st) == len(test_set)
+            # assert len(all_pred_label_st) == len(test_set)
+            # assert len(all_pred_prob_st) == len(test_set)
+            # assert len(patient_ID_test) == len(test_set)
+
+            results_chop = process_results.get_metrics(y_score=all_pred_prob_chop.cpu().detach().numpy(),
+                                                      y_true=all_targets_chop.cpu().detach().numpy(),
+                                                      y_pred=all_pred_label_chop.cpu().detach().numpy())
+            print('Fold\t{}\tUIowaEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_chop) / counter_chop,
+                                                                         loss_accum_chop / counter_chop, results_chop['auc'],
+                                                                         results_chop['auprc'], results_chop['tn'],
+                                                                         results_chop['fp'], results_chop['fn'],
+                                                                         results_chop['tp']))
+            outfile = open(out_file_name, 'a')
+            outfile.write('Fold\t{}\tUIowaEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_chop) / counter_chop,
+                                                                         loss_accum_chop / counter_chop, results_chop['auc'],
+                                                                         results_chop['auprc'], results_chop['tn'],
+                                                                         results_chop['fp'], results_chop['fn'],
+                                                                         results_chop['tp']))
+            outfile.close()
+
+
             # if ((epoch+1) % 5) == 0 and epoch > 0:
             if train_only:
                 checkpoint = {'epoch': epoch,
@@ -1570,6 +1662,9 @@ def main():
     parser.add_argument("--json_ui_test", default="UIonly_rootfilenames_20211229.json",
                         help="Json file of held-out, retrospective Stanford data")
 
+    parser.add_argument("--json_chop_test", default="CHOP_rootfilenames_20220108.json",
+                        help="Json file of held-out, retrospective CHOP data")
+
     # parser.add_argument("--json_ui_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_UIowa_finetune60%_test_20210711.json",
     #                     help="Json file of held-out, retrospective Stanford data")
 
@@ -1602,6 +1697,7 @@ def main():
     st_test_dict = load_test_dataset(args.json_st_test, data_dir=args.data_dir)
     stan_test_dict = load_test_dataset(args.json_stan_test, data_dir=args.data_dir)
     ui_test_dict = load_test_dataset(args.json_ui_test, data_dir=args.data_dir)
+    chop_test_dict = load_test_dataset(args.json_chop_test, data_dir=args.data_dir)
 
     # print("break")
     # any(item in list(train_dict.keys()) for item in list(st_test_dict.keys()))
@@ -1609,9 +1705,9 @@ def main():
     if args.train_only:
         ## data_dir is getting overwritten between reading in the silent trial data and reading in Stanford data
                 ## causing an error
-        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, chop_dict=chop_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
     else:
-        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, chop_dict=chop_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
 
     # if args.view == "sag" or args.view == "trans":
     #     train_X_single=[]
