@@ -238,9 +238,9 @@ str(ui_list)
 str(chop_list)
 
 
-write(toJSON(chop_list), "C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_CHOPonly_filenames_20211216.json")
+# write(toJSON(chop_list), "C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_CHOPonly_filenames_20211216.json")
 
-    ### ROOTH PATH
+    ### ROOT PATH
 
 chop_datasheet = read_excel("C:/Users/lauren erdman/Desktop/kidney_img/HN/CHOP/ARCUS RBUS.xlsx")
 head(chop_datasheet)
@@ -288,7 +288,7 @@ for(obs in 1:nrow(chop_datasheet)){
 str(chop_list)
 
 
-write(toJSON(chop_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/CHOP_rootfilenames_20220108.json")
+# write(toJSON(chop_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/CHOP_rootfilenames_20220108.json")
 
 ###
 ###     PRENATAL INPUT FOR CURRENT SURGERY MODEL
@@ -323,55 +323,66 @@ get_age_wks = function(folder_name){
   
 }
 
-prenat_chars = read_excel("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalHN/Prenatal Characteristics.xlsx")
+prenat_chars = read_excel("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalHN/Prenatal Characteristics.xlsx",sheet = 2)
 
 head(prenat_chars)
+names(prenat_chars)
 
 prenatal_list = list()
-
 
 for(pt_folder in list.dirs("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalHN/Images/",recursive = FALSE)){
   
   pt_num = get_pt_id(pt_folder)  
   
-  prenatal_list[[paste0("Prenat", pt_num)]] = list()
+  prenatal_list[[paste0("Prenatal", pt_num)]] = list()
+  prenatal_list[[paste0("Prenatal", pt_num)]][["Sex"]] = prenat_chars$Sex[prenat_chars$`Prenatal Redcap ID` == pt_num]
   
   for(us_folder in list.dirs(pt_folder,recursive = FALSE)){
     
     folder_name = get_us_folder_name(us_folder)
     
-    if(length(folder_name) > 0){
-      if(grep(pattern = "Postnatal",x = folder_name) < 1 & grep(pattern = "NoKid",x = folder_name) < 1){
+    if(length(grep(pattern = "Postnatal",x = folder_name)) == 0 & 
+       length(grep(pattern = "NoKid",x = folder_name)) == 0){
+      
+      us_split = strsplit(x = folder_name,split = "#")[[1]][2]
+      us_num = substr(x = us_split,start = 1,stop = 1)
+      
+      age_wks = get_age_wks(folder_name = folder_name)      
+      
+      for(side in c("Right","Left")){
         
-        us_split = strsplit(x = folder_name,split = "#")[[1]][2]
-        us_num = substr(x = us_split,start = 1,stop = 1)
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]] = list()
         
-        age_wks = get_age_wks(folder_name = folder_name)      
         
-        for(side in c("Right","Left")){
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][["surgery"]] = ifelse(prenat_chars$`Surgery side`[prenat_chars$`Prenatal Redcap ID` == pt_num] == tolower(side), 1, 0) 
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][["surgery"]] = ifelse(prenat_chars$`Surgery side`[prenat_chars$`Prenatal Redcap ID` == pt_num] == "bladder", 1, 0) 
+                
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]] = list()
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["Age_wks"]] = as.numeric(age_wks) - 40
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["US_machine"]] = "Prenatal"
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["ApD"]] = "NA"
+        
+        for(view in c("sag","trx")){
           
-          prenatal_list[[paste0("Prenat", pt_num)]][[side]] = list()
-          
-          prenatal_list[[paste0("Prenat", pt_num)]][[side]][["surgery"]] = "NA" ## REPLACE WHEN YOU HAVE THIS INFO
-          
-          prenatal_list[[paste0("Prenat", pt_num)]][[side]][[as.character(us_num)]] = list()
-          
-          for(view in c("sag","trx")){
-            
-            img_vec = list.dirs(us_folder)
-            
-            view_vec = img_vec[grep(x = tolower(img_vec),pattern = view)]
-            
-            side_view_vec = view_vec[grep(pattern = side,x = tolower(view_vec))]
-            
-            if(length(side_view_vec) > 0){
-              prenatal_list[[paste0("Prenat", pt_num)]][[side]][[as.character(us_num)]][[view]] = side_view_vec[1]
-            } else{
-              prenatal_list[[paste0("Prenat", pt_num)]][[side]][[as.character(us_num)]][[view]] = "NA"
-            }
-            
+          if(view == "trx"){
+            view_label = "trv"
+          } else{
+            view_label = "sag"
           }
           
+          img_vec = list.files(us_folder)
+          
+          view_vec = img_vec[grep(x = tolower(img_vec),pattern = view)]
+          
+          side_view_vec = view_vec[grep(pattern = tolower(side),x = tolower(view_vec))]
+          
+          if(length(side_view_vec) > 0){
+            prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][[view_label]] = paste0("/Prenatal/Images/Study ID ",pt_num,"/",folder_name,"/",side_view_vec[1])
+          } else{
+            prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][[view_label]] = "NA"
+          }
+          
+
         }
         
       }
@@ -383,7 +394,9 @@ for(pt_folder in list.dirs("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalH
 }
 
 
+prenatal_list
 
+write(toJSON(prenatal_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/Prenatal_rootfilenames_20220109.json")
 
 
 ###

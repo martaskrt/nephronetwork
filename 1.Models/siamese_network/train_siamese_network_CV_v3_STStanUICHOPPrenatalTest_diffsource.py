@@ -436,7 +436,7 @@ def special_ST_preprocessing(img_file, output_dim=256):
         my_img = set_contrast(resized_img) ## ultimately add contrast variable
         img_name = img_file.split('/')[len(img_file.split('/')) - 1]
         img_folder = "/".join(img_file.split('/')[:-2])
-        out_img_filename = img_folder + "/" + img_name.split('.')[0] + "-preprocessed.png"
+        out_img_filename = img_folder + "/Preprocessed/" + img_name.split('.')[0] + "-preprocessed.png"
         # out_img_filename = 'C:/Users/lauren erdman/Desktop/kidney_img/img_debugging/' + img_name.split('.')[0] + "-preprocessed.png"
         Image.fromarray(my_img*255).convert('RGB').save(out_img_filename)
 
@@ -684,15 +684,15 @@ def init_weights(m):
     print(m.weight)
 
 
-def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, chop_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
+def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, chop_dict, prenatal_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
 
     if train_only:
-        out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_TestSTSTanUICHOP_" + str(max_epochs) + "epochs_bs" + \
+        out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_TestSTSTanUICHOPPrenatal_" + str(max_epochs) + "epochs_bs" + \
                         str(args.batch_size) + "_lr" + str(args.lr) + \
                         "_RC" + str(args.random_crop) + "_cov" + str(cov_in) + "_OS" + str(args.ordered_split)
         out_file_name = out_file_root+".txt"
     else:
-        out_file_root = args.out_dir + "/SickKids_origST_TestSTSTanUICHOP_" + str(max_epochs) + "epochs_bs" + \
+        out_file_root = args.out_dir + "/SickKids_origST_TestSTSTanUICHOPPrenatal_" + str(max_epochs) + "epochs_bs" + \
                         str(args.batch_size) + "_lr" + str(args.lr) + \
                         "_RC" + str(args.random_crop) + "_cov" + str(cov_in) + "_OS" + str(args.ordered_split)
         out_file_name = out_file_root+".txt"
@@ -726,6 +726,9 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
     chop_test_set = KidneyDataset(in_dict=chop_dict, data_dir=data_dir, cov_input=cov_in, crop=True)
     chop_test_generator = DataLoader(chop_test_set, num_workers=0, batch_size=16)
 
+    prenatal_test_set = KidneyDataset(in_dict=prenatal_dict, data_dir=data_dir, cov_input=cov_in, crop=True)
+    prenatal_test_generator = DataLoader(prenatal_test_set, num_workers=0, batch_size=16)
+
     if train_only:
         ## make tuple
         train_img_dict, train_label_dict, train_cov_dict, train_study_ids = get_images(train_dict, data_dir=data_dir, random_crop=rand_crop, update_num=1)
@@ -738,7 +741,8 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
                         "st": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "stan": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "ui": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
-                        "chop": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
+                        "chop": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
+                        "prenatal": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
 
         skf = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
         id_tuples = skf.split(X=train_study_ids, y=list(train_label_dict.values()))
@@ -783,7 +787,8 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
                         "st": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "stan": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
                         "ui": {str(j+1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
-                        "chop": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
+                        "chop": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)},
+                        "prenatal": {str(j + 1): {str(k): dict() for k in range(max_epochs)} for j in range(n_splits)}}
         split = 0
 
         id_tuples = skf.split(train_study_ids, list(train_label_dict.values()))
@@ -885,6 +890,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             accurate_labels_stan = 0
             accurate_labels_ui = 0
             accurate_labels_chop = 0
+            accurate_labels_prenatal = 0
 
             loss_accum_train = 0
             loss_accum_val = 0
@@ -893,6 +899,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             loss_accum_stan = 0
             loss_accum_ui = 0
             loss_accum_chop = 0
+            loss_accum_prenatal = 0
 
             all_targets_train = []
             all_pred_prob_train = []
@@ -922,6 +929,10 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             all_pred_prob_chop = []
             all_pred_label_chop = []
 
+            all_targets_prenatal = []
+            all_pred_prob_prenatal = []
+            all_pred_label_prenatal = []
+
             patient_ID_train = []
             patient_ID_val = []
             patient_ID_test = []
@@ -929,6 +940,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             patient_ID_stan = []
             patient_ID_ui = []
             patient_ID_chop = []
+            patient_ID_prenatal = []
 
             counter_train = 0
             counter_val = 0
@@ -937,6 +949,8 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             counter_stan = 0
             counter_ui = 0
             counter_chop = 0
+            counter_prenatal = 0
+
             net.train()
 
             ## Run training set
@@ -1243,7 +1257,6 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
 
                     patient_ID_ui.append(list(id))
 
-
             ## Run CHOP test set
             with torch.no_grad():
             #with torch.set_grad_enabled(False):
@@ -1293,6 +1306,54 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
 
                     patient_ID_chop.append(list(id))
 
+            ## Run CHOP test set
+            with torch.no_grad():
+            #with torch.set_grad_enabled(False):
+                for batch_idx, (data, target, id) in enumerate(prenatal_test_generator):
+                    # print("Test batch drawn.")
+                    net.zero_grad()
+                    net.eval() # 20190619
+                    optimizer.zero_grad()
+
+                    if epoch == 30 and args.embed:
+                        output, test_embed = net(data, get_embeddings=args.embed)
+                        embd_pd = pd.DataFrame(test_embed.cpu().detach().numpy())
+                        embd_pd['id'] = id
+                        embd_pd.to_csv(args.out_dir + "/Prenatal_embeddings.csv", mode='a', header=False)
+                    else:
+                        output = net(data)
+
+                    target = target.type(torch.LongTensor).to(device)
+
+                    loss = F.cross_entropy(output, target)
+                    #loss = cross_entropy(output, target)
+                    loss_accum_prenatal += loss.item() * len(target)
+                    counter_prenatal += len(target)
+                    output_softmax = softmax(output)
+                    #output_softmax = output
+                    accurate_labels_chop += torch.sum(torch.argmax(output, dim=1) == target).cpu()
+
+                    pred_prob = output_softmax[:, 1]
+                    pred_prob = pred_prob.squeeze()
+                    pred_label = torch.argmax(output, dim=1)
+
+                    # print("Testing")
+                    # print(target)
+                    # print(pred_prob)
+                    # print(len(target))
+                    # print(len(pred_prob))
+
+                    if pred_prob.shape == torch.Size([]):
+                        pred_prob = pred_prob.unsqueeze(0)
+
+                    assert len(pred_prob) == len(target)
+                    assert len(pred_label) == len(target)
+
+                    all_pred_prob_prenatal.append(pred_prob)
+                    all_targets_prenatal.append(target)
+                    all_pred_label_prenatal.append(pred_label)
+
+                    patient_ID_prenatal.append(list(id))
 
             all_pred_prob_train = torch.cat(all_pred_prob_train)
             all_targets_train = torch.cat(all_targets_train)
@@ -1505,7 +1566,7 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             all_pred_prob_chop = torch.cat(all_pred_prob_chop)
             all_targets_chop = torch.cat(all_targets_chop)
             all_pred_label_chop = torch.cat(all_pred_label_chop)
-            all_chop_ids = flatten(patient_ID_ui)
+            all_chop_ids = flatten(patient_ID_chop)
 
             model_output['chop'][str(split)][str(epoch)]['id'] = all_chop_ids
             model_output['chop'][str(split)][str(epoch)]['pred'] = all_pred_prob_chop.tolist()
@@ -1521,14 +1582,14 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
             results_chop = process_results.get_metrics(y_score=all_pred_prob_chop.cpu().detach().numpy(),
                                                       y_true=all_targets_chop.cpu().detach().numpy(),
                                                       y_pred=all_pred_label_chop.cpu().detach().numpy())
-            print('Fold\t{}\tUIowaEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+            print('Fold\t{}\tCHOPEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
                   'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_chop) / counter_chop,
                                                                          loss_accum_chop / counter_chop, results_chop['auc'],
                                                                          results_chop['auprc'], results_chop['tn'],
                                                                          results_chop['fp'], results_chop['fn'],
                                                                          results_chop['tp']))
             outfile = open(out_file_name, 'a')
-            outfile.write('Fold\t{}\tUIowaEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+            outfile.write('Fold\t{}\tCHOPEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
                   'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_chop) / counter_chop,
                                                                          loss_accum_chop / counter_chop, results_chop['auc'],
                                                                          results_chop['auprc'], results_chop['tn'],
@@ -1536,6 +1597,39 @@ def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, ch
                                                                          results_chop['tp']))
             outfile.close()
 
+            all_pred_prob_prenatal = torch.cat(all_pred_prob_prenatal)
+            all_targets_prenatal = torch.cat(all_targets_prenatal)
+            all_pred_label_prenatal = torch.cat(all_pred_label_prenatal)
+            all_prenatal_ids = flatten(patient_ID_prenatal)
+
+            model_output['prenatal'][str(split)][str(epoch)]['id'] = all_prenatal_ids
+            model_output['prenatal'][str(split)][str(epoch)]['pred'] = all_pred_prob_prenatal.tolist()
+            model_output['prenatal'][str(split)][str(epoch)]['target'] = all_targets_prenatal.tolist()
+
+            # patient_ID_test = torch.cat(patient_ID_test)
+
+            # assert len(all_targets_st) == len(test_set)
+            # assert len(all_pred_label_st) == len(test_set)
+            # assert len(all_pred_prob_st) == len(test_set)
+            # assert len(patient_ID_test) == len(test_set)
+
+            results_prenatal = process_results.get_metrics(y_score=all_pred_prob_prenatal.cpu().detach().numpy(),
+                                                      y_true=all_targets_prenatal.cpu().detach().numpy(),
+                                                      y_pred=all_pred_label_prenatal.cpu().detach().numpy())
+            print('Fold\t{}\tPrenatalEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_prenatal) / counter_prenatal,
+                                                                         loss_accum_prenatal / counter_prenatal, results_prenatal['auc'],
+                                                                         results_prenatal['auprc'], results_prenatal['tn'],
+                                                                         results_prenatal['fp'], results_prenatal['fn'],
+                                                                         results_prenatal['tp']))
+            outfile = open(out_file_name, 'a')
+            outfile.write('Fold\t{}\tPrenatalEpoch\t{}\tACC\t{:.6f}\tLoss\t{:.6f}\tAUC\t{:.6f}\t'
+                  'AUPRC\t{:.6f}\tTN\t{}\tFP\t{}\tFN\t{}\tTP\t{}'.format(fold, epoch, int(accurate_labels_prenatal) / counter_prenatal,
+                                                                         loss_accum_prenatal / counter_prenatal, results_prenatal['auc'],
+                                                                         results_prenatal['auprc'], results_prenatal['tn'],
+                                                                         results_prenatal['fp'], results_prenatal['fn'],
+                                                                         results_prenatal['tp']))
+            outfile.close()
 
             # if ((epoch+1) % 5) == 0 and epoch > 0:
             if train_only:
@@ -1665,6 +1759,9 @@ def main():
     parser.add_argument("--json_chop_test", default="CHOP_rootfilenames_20220108.json",
                         help="Json file of held-out, retrospective CHOP data")
 
+    parser.add_argument("--json_prenatal_test", default="Prenatal_rootfilenames_20220109.json",
+                        help="Json file of held-out, retrospective CHOP data")
+
     # parser.add_argument("--json_ui_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_UIowa_finetune60%_test_20210711.json",
     #                     help="Json file of held-out, retrospective Stanford data")
 
@@ -1698,6 +1795,7 @@ def main():
     stan_test_dict = load_test_dataset(args.json_stan_test, data_dir=args.data_dir)
     ui_test_dict = load_test_dataset(args.json_ui_test, data_dir=args.data_dir)
     chop_test_dict = load_test_dataset(args.json_chop_test, data_dir=args.data_dir)
+    prenatal_test_dict = load_test_dataset(args.json_prenatal_test, data_dir=args.data_dir)
 
     # print("break")
     # any(item in list(train_dict.keys()) for item in list(st_test_dict.keys()))
@@ -1705,9 +1803,9 @@ def main():
     if args.train_only:
         ## data_dir is getting overwritten between reading in the silent trial data and reading in Stanford data
                 ## causing an error
-        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, chop_dict=chop_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=None, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, chop_dict=chop_test_dict, prenatal_dict=prenatal_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
     else:
-        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, chop_dict=chop_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
+        train(args, data_dir=args.data_dir, train_dict=train_dict, test_dict=test_dict, st_dict=st_test_dict, stan_dict=stan_test_dict, ui_dict=ui_test_dict, chop_dict=chop_test_dict, prenatal_dict=prenatal_test_dict, max_epochs=args.epochs, rand_crop=args.random_crop, cov_in=args.cov_in, train_only=args.train_only)
 
     # if args.view == "sag" or args.view == "trans":
     #     train_X_single=[]
