@@ -437,6 +437,9 @@ def special_ST_preprocessing(img_file, output_dim=256):
         img_name = img_file.split('/')[len(img_file.split('/')) - 1]
         img_folder = "/".join(img_file.split('/')[:-2])
         out_img_filename = img_folder + "/Preprocessed/" + img_name.split('.')[0] + "-preprocessed.png"
+        if not os.path.exists(img_folder + "/Preprocessed/"):
+            os.makedirs(img_folder + "/Preprocessed/")
+
         # out_img_filename = 'C:/Users/lauren erdman/Desktop/kidney_img/img_debugging/' + img_name.split('.')[0] + "-preprocessed.png"
         Image.fromarray(my_img*255).convert('RGB').save(out_img_filename)
 
@@ -687,12 +690,12 @@ def init_weights(m):
 def train(args, data_dir, train_dict, test_dict, st_dict, stan_dict, ui_dict, chop_dict, prenatal_dict, max_epochs, cov_in, rand_crop=False, train_only=False):
 
     if train_only:
-        out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_TestSTSTanUICHOPPrenatal_" + str(max_epochs) + "epochs_bs" + \
+        out_file_root = args.out_dir + "/SickKids_origST_TrainOnly_TestSTSTanUICHOPPrenatalage0_" + str(max_epochs) + "epochs_bs" + \
                         str(args.batch_size) + "_lr" + str(args.lr) + \
                         "_RC" + str(args.random_crop) + "_cov" + str(cov_in) + "_OS" + str(args.ordered_split)
         out_file_name = out_file_root+".txt"
     else:
-        out_file_root = args.out_dir + "/SickKids_origST_TestSTSTanUICHOPPrenatal_" + str(max_epochs) + "epochs_bs" + \
+        out_file_root = args.out_dir + "/SickKids_origST_TestSTSTanUICHOPPrenatalage0_" + str(max_epochs) + "epochs_bs" + \
                         str(args.batch_size) + "_lr" + str(args.lr) + \
                         "_RC" + str(args.random_crop) + "_cov" + str(cov_in) + "_OS" + str(args.ordered_split)
         out_file_name = out_file_root+".txt"
@@ -1759,7 +1762,7 @@ def main():
     parser.add_argument("--json_chop_test", default="CHOP_rootfilenames_20220108.json",
                         help="Json file of held-out, retrospective CHOP data")
 
-    parser.add_argument("--json_prenatal_test", default="Prenatal_rootfilenames_20220109.json",
+    parser.add_argument("--json_prenatal_test", default="Prenatal_rootfilenames_age0_20220109.json",
                         help="Json file of held-out, retrospective CHOP data")
 
     # parser.add_argument("--json_ui_test", default="C:/Users/lauren erdman/Desktop/kidney_img/HN/SickKids/preprocessed_images_UIowa_finetune60%_test_20210711.json",

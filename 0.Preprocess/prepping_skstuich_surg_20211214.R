@@ -358,7 +358,8 @@ for(pt_folder in list.dirs("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalH
         prenatal_list[[paste0("Prenatal", pt_num)]][[side]][["surgery"]] = ifelse(prenat_chars$`Surgery side`[prenat_chars$`Prenatal Redcap ID` == pt_num] == "bladder", 1, 0) 
                 
         prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]] = list()
-        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["Age_wks"]] = as.numeric(age_wks) - 40
+        # prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["Age_wks"]] = as.numeric(age_wks) - 40
+        prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["Age_wks"]] = 0
         prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["US_machine"]] = "Prenatal"
         prenatal_list[[paste0("Prenatal", pt_num)]][[side]][[as.character(us_num)]][["ApD"]] = "NA"
         
@@ -394,7 +395,9 @@ for(pt_folder in list.dirs("C:/Users/lauren erdman/OneDrive - SickKids/PrenatalH
 }
 
 
-prenatal_list
+prenatal_list[["Prenatal14"]][["Right"]][["1"]] = NULL
+prenatal_list[["Prenatal37"]][["Right"]][["1"]] = NULL
+prenatal_list[["Prenatal94"]][["Left"]] = NULL
 
 write(toJSON(prenatal_list), "C:/Users/lauren erdman/OneDrive - SickKids/HN_Stanley/Prenatal_rootfilenames_20220109.json")
 
